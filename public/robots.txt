@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Áreas privadas (login, admin, pedidos, etc.)
+Disallow: /admin
+Disallow: /checkout
+Disallow: /pedidos
+Disallow: /perfil
+Disallow: /debug-login
+
+# Sitemap (URL absoluta)
+Sitemap: https://aquimaq.com.br/sitemap.xml

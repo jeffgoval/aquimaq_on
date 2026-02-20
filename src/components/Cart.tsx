@@ -1,0 +1,239 @@
+import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff } from 'lucide-react';
+import { CartItem, ShippingOption } from '@/types';
+import { formatCurrency } from '@/utils/format';
+import ShippingCalculator from './ShippingCalculator';
+import CartProgress from './CartProgress';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface CartProps {
+  items: CartItem[];
+  cartSubtotal: number;
+  shippingCost: number;
+  grandTotal: number;
+  selectedShipping: ShippingOption | null;
+  onUpdateQuantity: (id: string, delta: number) => void;
+  onRemoveItem: (id: string) => void;
+  onSelectShipping: (option: ShippingOption | null) => void;
+  onZipValid?: (rawZip: string) => void;
+  onCheckout?: () => void;
+  onBackToCatalog?: () => void;
+  initialZip?: string;
+  isProcessing?: boolean;
+}
+
+const Cart: React.FC<CartProps> = ({
+  items,
+  cartSubtotal,
+  shippingCost,
+  grandTotal,
+  selectedShipping,
+  onUpdateQuantity,
+  onRemoveItem,
+  onSelectShipping,
+  onZipValid,
+  onCheckout,
+  onBackToCatalog,
+  initialZip,
+  isProcessing = false
+}) => {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const handleImageError = useCallback((itemId: string) => {
+    setImageErrors(prev => new Set(prev).add(itemId));
+  }, []);
+
+  const handleBackToCatalog = () => {
+    navigate('/');
+  };
+
+  const handleCheckout = () => {
+    if (!session) {
+      navigate('/login?redirect=/checkout');
+      return;
+    }
+    navigate('/checkout');
+  };
+
+  // Empty state
+  if (items.length === 0) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center mb-6">
+          <button onClick={handleBackToCatalog} className="mr-4 text-gray-500 hover:text-gray-900 md:hidden" aria-label="Voltar ao catálogo">
+            <ChevronLeft />
+          </button>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <ShoppingCart className="mr-3" /> Carrinho de Compras
+          </h2>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <ShoppingCart className="text-gray-400" size={32} />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Seu carrinho está vazio</h3>
+          <p className="text-gray-500 mb-6">Navegue pelo catálogo e adicione itens essenciais para sua produção.</p>
+          <button
+            onClick={handleBackToCatalog}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
+            aria-label="Ir para o catálogo de produtos"
+          >
+            Ir para o Catálogo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center mb-6">
+        <button onClick={handleBackToCatalog} className="mr-4 text-gray-500 hover:text-gray-900 md:hidden">
+          <ChevronLeft />
+        </button>
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <ShoppingCart className="mr-3" /> Carrinho de Compras
+        </h2>
+      </div>
+
+      <CartProgress items={items} />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <ul className="divide-y divide-gray-200">
+          {items.map(item => (
+            <li key={item.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+
+              {/* Mobile: Top Row (Image + Info) */}
+              <div className="flex items-start gap-4 w-full sm:w-auto">
+                {imageErrors.has(item.id) ? (
+                  <div className="w-20 h-20 rounded-md flex-shrink-0 border border-gray-100 bg-gray-100 flex flex-col items-center justify-center text-gray-400" aria-hidden>
+                    <ImageOff size={20} />
+                  </div>
+                ) : (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-gray-100"
+                    onError={() => handleImageError(item.id)}
+                  />
+                )}
+                <div className="flex-1 sm:w-64">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2">{item.name}</h4>
+                  <p className="text-xs text-gray-500 mb-1">{item.category}</p>
+                  <p className="text-sm font-bold text-agro-600">
+                    {formatCurrency(item.price)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Mobile: Bottom Row (Controls) | Desktop: Right Side */}
+              <div className="flex items-center justify-between w-full sm:w-auto sm:flex-1 sm:justify-end gap-4 mt-2 sm:mt-0 bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none">
+                <div className="flex items-center bg-white sm:bg-gray-50 border border-gray-200 rounded-lg">
+                  <button
+                    onClick={() => onUpdateQuantity(item.id, -1)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-l-lg transition-colors w-8 flex items-center justify-center"
+                    aria-label={`Diminuir quantidade de ${item.name}`}
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-medium text-sm text-gray-900" aria-label={`Quantidade: ${item.quantity}`}>{item.quantity}</span>
+                  <button
+                    onClick={() => onUpdateQuantity(item.id, 1)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-r-lg transition-colors w-8 flex items-center justify-center"
+                    aria-label={`Aumentar quantidade de ${item.name}`}
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* Total Item Mobile/Desktop */}
+                  <span className="font-bold text-gray-900 text-sm sm:hidden">
+                    {formatCurrency(item.price * item.quantity)}
+                  </span>
+
+                  <button
+                    onClick={() => onRemoveItem(item.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    title="Remover item"
+                    aria-label={`Remover ${item.name} do carrinho`}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="bg-gray-50 p-6 border-t border-gray-200">
+          {/* Shipping Calculator Integration */}
+          <ShippingCalculator
+            cartTotal={cartSubtotal}
+            items={items}
+            onSelectOption={onSelectShipping}
+            selectedOptionId={selectedShipping?.id}
+            initialZip={initialZip}
+            onZipValid={onZipValid}
+          />
+
+          <div className="space-y-3 mb-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center text-sm text-gray-600">
+              <span>Subtotal</span>
+              <span>
+                {formatCurrency(cartSubtotal)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm text-gray-600">
+              <span>Frete</span>
+              <span>
+                {selectedShipping
+                  ? selectedShipping.price === 0
+                    ? 'Grátis'
+                    : formatCurrency(shippingCost)
+                  : '--'
+                }
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2">
+              <span>Total</span>
+              <span className="text-agro-700">
+                {formatCurrency(grandTotal)}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCheckout}
+            disabled={!selectedShipping || isProcessing}
+            className={`w-full bg-agro-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-agro-700 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isProcessing ? 'cursor-wait' : ''}`}
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Processando...
+              </>
+            ) : (
+              selectedShipping ? (
+                <>
+                  Ir para Pagamento
+                  <ChevronLeft className="rotate-180" size={20} />
+                </>
+              ) : 'Selecione o Frete para Continuar'
+            )}
+          </button>
+          <p className="text-xs text-center text-gray-500 mt-4">
+            Pagamento seguro via Mercado Pago (Pix ou Cartão).
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Cart;

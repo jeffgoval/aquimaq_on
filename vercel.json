@@ -1,0 +1,26 @@
+{
+  "env": {
+    "VITE_SUPABASE_URL": "https://ctkknpbcczukkhblwpea.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0a2tucGJjY3p1a2toYmx3cGVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExOTEwOTEsImV4cCI6MjA4Njc2NzA5MX0.7t-RfA__gE1YoJjr6JDmWo2kiPScw-UfP_eg_E04mkw"
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
