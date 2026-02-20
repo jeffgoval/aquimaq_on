@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
-import { supabase } from '@/services/supabase';
-import { mapProductRowToProduct } from '../utils/productAdapter';
-import { ProductRow } from '@/types/database';
+import { getProductById } from '@/services/productService';
 
 export const useProduct = (id: string | undefined) => {
     const [product, setProduct] = useState<Product | null>(null);
@@ -19,16 +17,9 @@ export const useProduct = (id: string | undefined) => {
             setError(null);
 
             try {
-                const { data, error: sbError } = await supabase
-                    .from('products')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
-                if (sbError) throw sbError;
-
+                const data = await getProductById(id);
                 if (isMounted && data) {
-                    setProduct(mapProductRowToProduct(data as ProductRow));
+                    setProduct(data);
                 }
             } catch (err: unknown) {
                 if (isMounted) {

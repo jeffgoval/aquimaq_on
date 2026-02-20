@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/constants/routes';
 import UserProfile from '@/components/UserProfile';
 import { Helmet } from 'react-helmet-async';
 import type { Cliente } from '@/types';
 import type { ProfileRow } from '@/types/database';
-import { supabase } from '@/services/supabase';
+import { updateProfile } from '@/services/profileService';
 
 function profileToCliente(profile: ProfileRow, emailFromAuth?: string | null): Cliente {
   return {
@@ -60,12 +61,8 @@ const ProfilePage: React.FC = () => {
 
   const handleUpdateUser = async (updatedUser: Cliente) => {
     if (!user) return;
-    const update = clienteToProfileUpdate(updatedUser);
-    const { error } = await supabase
-      .from('profiles')
-      .update(update as Record<string, unknown>)
-      .eq('id', user.id);
-    if (error) throw error;
+    const payload = clienteToProfileUpdate(updatedUser);
+    await updateProfile(user.id, payload);
     await refreshProfile();
   };
 
@@ -79,7 +76,7 @@ const ProfilePage: React.FC = () => {
   }
 
   if (!user || !profile || !cliente) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
   return (

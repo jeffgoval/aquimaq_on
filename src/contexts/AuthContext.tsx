@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
+import { getProfile, ensureProfile } from '@/services/profileService';
 import type { ProfileRow } from '@/types/database';
 
 export interface AuthContextValue {
@@ -20,31 +21,6 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function fetchProfile(clientId: string): Promise<ProfileRow | null> {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', clientId).single();
-  if (error || !data) return null;
-  return data as ProfileRow;
-}
-
-async function ensureProfile(clientId: string, email: string | undefined): Promise<ProfileRow | null> {
-  const existing = await fetchProfile(clientId);
-  if (existing) return existing;
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert(
-      {
-        id: clientId,
-        email: email ?? null,
-        role: 'cliente',
-      },
-      { onConflict: 'id' }
-    )
-    .select()
-    .single();
-  if (error || !data) return null;
-  return data as ProfileRow;
-}
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -52,15 +28,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
   const [isRecovery, setIsRecovery] = useState(false);
 
-  const loadProfile = useCallback((clientId: string, email?: string) => {
-    ensureProfile(clientId, email).then((p) => {
-      setProfile(p);
-    });
-  }, []);
-
   const refreshProfile = useCallback(async () => {
     if (!user?.id) return;
-    const p = await fetchProfile(user.id);
+    const p = await getProfile(user.id);
     setProfile(p);
   }, [user?.id]);
 
@@ -75,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setProfile(null);
         return;
       }
-      loadProfile(s.user.id, s.user.email ?? undefined);
+      ensureProfile(s.user.id, s.user.email ?? undefined).then(setProfile);
     };
 
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -95,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       if (s?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
         setTimeout(() => {
-          loadProfile(s.user.id, s.user.email ?? undefined);
+          ensureProfile(s.user.id, s.user.email ?? undefined).then(setProfile);
         }, 0);
       }
     });
@@ -104,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, []);
 
   const signIn = useCallback(
     async (params: { email: string; password: string }) => {

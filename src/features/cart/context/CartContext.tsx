@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Product, CartItem, ShippingOption } from '@/types';
 import { CartItemsSchema } from '../schemas/cartSchema';
-import { calculateItemSubtotal } from '@/utils/price';
+import { getCartSubtotal, getCartItemCount, getShippingCost, getGrandTotal } from '@/utils/cart-calculations';
 
 const CART_SHIPPING_KEY = 'cart_shipping';
 
@@ -97,11 +97,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try { localStorage.removeItem(CART_SHIPPING_KEY); } catch { /* */ }
     }, []);
 
-    const cartSubtotal = cart.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
-
-    const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const shippingCost = selectedShipping ? selectedShipping.price : 0;
-    const grandTotal = cartSubtotal + shippingCost;
+    const cartSubtotal = getCartSubtotal(cart);
+    const cartItemCount = getCartItemCount(cart);
+    const shippingCost = getShippingCost(selectedShipping);
+    const grandTotal = getGrandTotal(cartSubtotal, shippingCost);
 
     return (
         <CartContext.Provider value={{

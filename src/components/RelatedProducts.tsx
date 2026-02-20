@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
+import { ROUTES } from '@/constants/routes';
 import { useProducts } from '@/hooks/useCatalogProducts';
 import { ShoppingCart, ArrowRight } from 'lucide-react';
 
@@ -44,7 +45,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
             className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col"
           >
             <Link
-              to={`/produto/${product.id}`}
+              to={ROUTES.PRODUCT(product.id)}
               className="h-32 bg-gray-100 relative cursor-pointer group block"
             >
               <Image
@@ -59,7 +60,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
                 {product.category}
               </span>
               <Link
-                to={`/produto/${product.id}`}
+                to={ROUTES.PRODUCT(product.id)}
                 className="text-sm font-medium text-gray-900 leading-snug mb-2 line-clamp-2 cursor-pointer hover:text-agro-700 block"
               >
                 {product.name}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
 
 const UpdatePasswordPage: React.FC = () => {
@@ -30,7 +31,7 @@ const UpdatePasswordPage: React.FC = () => {
       return;
     }
     clearRecovery();
-    navigate('/', { replace: true });
+    navigate(ROUTES.HOME, { replace: true });
   };
 
   return (
@@ -91,7 +92,7 @@ const UpdatePasswordPage: React.FC = () => {
           </button>
         </form>
         <p className="mt-6 text-center text-gray-600 text-sm">
-          <Link to="/login" className="text-agro-600 font-medium hover:underline">
+          <Link to={ROUTES.LOGIN} className="text-agro-600 font-medium hover:underline">
             Voltar a entrar
           </Link>
         </p>

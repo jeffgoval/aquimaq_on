@@ -1,0 +1,221 @@
+import { supabase } from './supabase';
+import { getProfilesByIds } from './profileService';
+
+export interface DashboardStats {
+  totalRevenue: number;
+  totalOrders: number;
+  pendingOrders: number;
+  totalClientes: number;
+}
+
+export interface RecentOrderRow {
+  id: string;
+  cliente: string;
+  total: number;
+  status: string;
+  date: string;
+}
+
+/** Estatísticas e últimos pedidos para o dashboard admin. */
+export const getDashboardStats = async (): Promise<{
+  stats: DashboardStats;
+  recentOrders: RecentOrderRow[];
+}> => {
+  const now = new Date();
+  const startOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1
+  ).toISOString();
+
+  const [
+    { data: recentData },
+    { count: totalOrders },
+    { count: pendingCount },
+    { count: clientesCount },
+    { data: monthOrders },
+  ] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('id, total, status, created_at, cliente_id')
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['aguardando_pagamento', 'pago', 'em_separacao']),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('orders')
+      .select('total')
+      .gte('created_at', startOfMonth)
+      .neq('status', 'cancelado'),
+  ]);
+
+  const totalRevenue = (monthOrders ?? []).reduce(
+    (acc: number, o: { total: number }) => acc + (o.total ?? 0),
+    0
+  );
+
+  const stats: DashboardStats = {
+    totalRevenue,
+    totalOrders: totalOrders ?? 0,
+    pendingOrders: pendingCount ?? 0,
+    totalClientes: clientesCount ?? 0,
+  };
+
+  const rows = (recentData ?? []) as Array<{
+    id: string;
+    total: number;
+    status: string;
+    created_at: string;
+    cliente_id: string;
+  }>;
+  const clienteIds = [...new Set(rows.map((o) => o.cliente_id).filter(Boolean))];
+  const profiles = await getProfilesByIds(clienteIds);
+  const profilesMap = new Map(
+    profiles.map((p) => [p.id, p.name ?? 'Cliente'])
+  );
+
+  const formatRelativeDate = (iso: string): string => {
+    const d = new Date(iso);
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 60) return `Há ${diffMins} min`;
+    if (diffHours < 24)
+      return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    if (diffDays === 1) return 'Ontem';
+    if (diffDays < 7) return `Há ${diffDays} dias`;
+    return d.toLocaleDateString('pt-BR');
+  };
+
+  const recentOrders: RecentOrderRow[] = rows.map((o) => ({
+    id: o.id,
+    cliente: profilesMap.get(o.cliente_id ?? '') ?? 'Cliente',
+    total: o.total,
+    status: o.status,
+    date: formatRelativeDate(o.created_at),
+  }));
+
+  return { stats, recentOrders };
+};
+
+export interface OrderAdminRow {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientPhone: string;
+  items: never[];
+  subtotal: number;
+  shippingCost: number;
+  shippingMethod: string | null;
+  total: number;
+  status: string;
+  createdAt: string;
+  paymentMethod?: string | null;
+  trackingCode?: string | null;
+}
+
+/** Lista pedidos para admin (com nome/telefone do cliente). */
+export const getOrdersAdmin = async (): Promise<OrderAdminRow[]> => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, profiles:cliente_id (name, phone)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  type Row = (typeof data)[number] & {
+    profiles?: { name?: string | null; phone?: string | null } | null;
+  };
+  return (data ?? []).map((order: Row) => ({
+    id: order.id,
+    clientId: order.cliente_id ?? '',
+    clientName: order.profiles?.name ?? 'Cliente',
+    clientPhone: order.profiles?.phone ?? '',
+    items: [],
+    subtotal: order.subtotal,
+    shippingCost: order.shipping_cost,
+    shippingMethod: order.shipping_method ?? null,
+    total: order.total,
+    status: order.status,
+    createdAt: order.created_at,
+    paymentMethod: order.payment_method,
+    trackingCode: order.tracking_code,
+  }));
+};
+
+/** Atualiza status de um pedido. */
+export const updateOrderStatus = async (
+  orderId: string,
+  status: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId);
+  if (error) throw error;
+};
+
+export interface SalesSummary {
+  total_revenue: number;
+  total_orders: number;
+  paid_orders: number;
+  pending_orders: number;
+  cancelled_orders: number;
+  avg_ticket: number;
+  orders_today: number;
+  revenue_today: number;
+}
+
+export interface DailySale {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface ProductRank {
+  product_name: string;
+  product_id: string;
+  total_sold: number;
+  total_revenue: number;
+}
+
+/** Resumo de vendas (RPC). */
+export const getSalesSummary = async (
+  periodDays: number
+): Promise<SalesSummary | null> => {
+  const { data } = await supabase.rpc('get_sales_summary', {
+    period_days: periodDays,
+  });
+  return data as SalesSummary | null;
+};
+
+/** Vendas por dia (RPC). */
+export const getDailySales = async (
+  periodDays: number
+): Promise<DailySale[]> => {
+  const { data } = await supabase.rpc('get_daily_sales', {
+    period_days: periodDays,
+  });
+  return (data as DailySale[]) ?? [];
+};
+
+/** Ranking de produtos (RPC). */
+export const getProductRanking = async (
+  maxResults: number = 10
+): Promise<ProductRank[]> => {
+  const { data } = await supabase.rpc('get_product_ranking', {
+    max_results: maxResults,
+  });
+  return (data as ProductRank[]) ?? [];
+};
+
+/** Restaura estoque de pedidos não pagos (RPC). */
+export const restoreStockFromUnpaidOrders = async (): Promise<void> => {
+  const { error } = await supabase.rpc('restore_stock_from_unpaid_orders');
+  if (error) throw error;
+};

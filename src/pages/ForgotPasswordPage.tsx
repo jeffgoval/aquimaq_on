@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
 
 const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/atualizar-password` : '';
@@ -39,7 +40,7 @@ const ForgotPasswordPage: React.FC = () => {
             </p>
           </div>
           <p className="mt-6 text-center text-gray-600 text-sm">
-            <Link to="/login" className="text-agro-600 font-medium hover:underline">
+            <Link to={ROUTES.LOGIN} className="text-agro-600 font-medium hover:underline">
               Voltar a entrar
             </Link>
           </p>
@@ -85,7 +86,7 @@ const ForgotPasswordPage: React.FC = () => {
           </button>
         </form>
         <p className="mt-6 text-center text-gray-600 text-sm">
-          <Link to="/login" className="text-agro-600 font-medium hover:underline">
+          <Link to={ROUTES.LOGIN} className="text-agro-600 font-medium hover:underline">
             Voltar a entrar
           </Link>
         </p>

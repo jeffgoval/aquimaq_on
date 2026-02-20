@@ -14,6 +14,7 @@ import { useStore } from '@/contexts/StoreContext';
 import { useProductDocuments } from '@/hooks/useProductDocuments';
 import ProductSEO from './product/ProductSEO';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES, loginWithRedirect } from '@/constants/routes';
 
 interface ProductDetailProps {
     product: Product;
@@ -48,7 +49,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <ProductSEO product={product} />
             <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate(ROUTES.HOME)}
                 className="flex items-center text-gray-600 hover:text-agro-600 mb-6 transition-colors"
             >
                 <ChevronLeft size={20} className="mr-1" /> Voltar ao catálogo
@@ -167,11 +168,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                                 onClick={() => {
                                     if (!session) {
                                         onAddToCart(product, quantity);
-                                        navigate('/login?redirect=/checkout');
+                                        navigate(loginWithRedirect(ROUTES.CHECKOUT));
                                         return;
                                     }
                                     onAddToCart(product, quantity);
-                                    navigate('/checkout');
+                                    navigate(ROUTES.CHECKOUT);
                                 }}
                                 disabled={isOutOfStock}
                                 className="w-full bg-orange-600 text-white py-3.5 rounded-lg font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg shadow-orange-200 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"

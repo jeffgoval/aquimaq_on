@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from '@/services/supabase';
-
-interface Banner {
-    id: string;
-    title: string;
-    subtitle: string | null;
-    image_url: string;
-    cta_text: string | null;
-    cta_link: string | null;
-    color_gradient: string;
-}
+import { ROUTES } from '@/constants/routes';
+import { getActiveBanners } from '@/services/bannerService';
 
 const HeroBanner: React.FC = () => {
-    const [banners, setBanners] = useState<Banner[]>([]);
+    const [banners, setBanners] = useState<Awaited<ReturnType<typeof getActiveBanners>>>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const loadBanners = async () => {
+            try {
+                const data = await getActiveBanners();
+                if (data?.length) setBanners(data);
+            } catch (err) {
+                console.error('Error loading banners:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
         loadBanners();
     }, []);
 
@@ -32,33 +33,6 @@ const HeroBanner: React.FC = () => {
 
         return () => clearInterval(interval);
     }, [banners.length]);
-
-    const loadBanners = async () => {
-        try {
-            const now = new Date().toISOString();
-            // Query for active banners that are within the date range or have no dates set (always active).
-            // Note: Chaining .or() filters adds them as AND clauses to the query.
-            // (starts_at is null OR <= now) AND (ends_at is null OR >= now)
-            const { data, error } = await supabase
-                .from('banners')
-                .select('*')
-                .eq('is_active', true)
-                .or(`starts_at.is.null,starts_at.lte."${now}"`)
-                .or(`ends_at.is.null,ends_at.gte."${now}"`)
-                .order('position', { ascending: true });
-
-            if (error) {
-                console.error('Error loading banners:', error);
-                return;
-            }
-
-            if (data?.length) setBanners(data);
-        } catch (err) {
-            console.error('Error loading banners:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const goToSlide = (index: number) => {
         setCurrentSlide(index);
@@ -130,7 +104,7 @@ const HeroBanner: React.FC = () => {
                                         )
                                     )}
                                     <Link
-                                        to="/#contato"
+                                        to={`${ROUTES.HOME}#contato`}
                                         className="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-900 font-bold text-lg rounded-lg shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center"
                                     >
                                         Falar com Consultor

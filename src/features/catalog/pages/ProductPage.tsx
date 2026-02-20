@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 import ProductDetail from '@/components/ProductDetail';
 import { useCart } from '@/features/cart';
 import { useProduct } from '../hooks/useProduct';
@@ -21,7 +22,7 @@ const ProductPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Produto não encontrado'}</h2>
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate(ROUTES.HOME)}
                     className="text-agro-600 hover:underline"
                 >
                     Voltar ao catálogo

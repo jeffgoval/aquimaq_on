@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/services/supabase';
+import { getProductDocuments, type ProductDocument } from '@/services/productService';
 
-export interface ProductDocument {
-  id: string;
-  file_url: string | null;
-  doc_type: string;
-  title: string;
-}
+export type { ProductDocument } from '@/services/productService';
 
 export const useProductDocuments = (productId: string | undefined) => {
   const [documents, setDocuments] = useState<ProductDocument[]>([]);
@@ -23,20 +18,8 @@ export const useProductDocuments = (productId: string | undefined) => {
     const fetchDocuments = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('product_documents')
-          .select('id, file_url, doc_type, title')
-          .eq('product_id', productId)
-          .order('doc_type', { ascending: true });
-
-        if (error) {
-          console.warn('product_documents:', error.message);
-          if (isMounted) setDocuments([]);
-          return;
-        }
-        if (isMounted && data) {
-          setDocuments((data as ProductDocument[]) ?? []);
-        }
+        const data = await getProductDocuments(productId);
+        if (isMounted) setDocuments(data);
       } catch {
         if (isMounted) setDocuments([]);
       } finally {

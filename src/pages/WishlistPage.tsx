@@ -7,6 +7,7 @@ import { useCart } from '@/features/cart';
 import { useToast } from '@/contexts/ToastContext';
 import { Heart, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 
 const WishlistPage: React.FC = () => {
     const { wishlist, loading } = useWishlist();
@@ -30,7 +31,7 @@ const WishlistPage: React.FC = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                    <Link to="/" className="hover:text-agro-600 flex items-center gap-1">
+                    <Link to={ROUTES.HOME} className="hover:text-agro-600 flex items-center gap-1">
                         <Home size={14} /> Início
                     </Link>
                     <span>/</span>
@@ -55,7 +56,7 @@ const WishlistPage: React.FC = () => {
                         <p className="text-gray-500 mb-6">
                             Salve os produtos que você mais gostou para ver depois.
                         </p>
-                        <Link to="/" className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-agro-600 hover:bg-agro-700">
+                        <Link to={ROUTES.HOME} className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-agro-600 hover:bg-agro-700">
                             Explorar Produtos
                         </Link>
                     </div>

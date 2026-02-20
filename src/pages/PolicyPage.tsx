@@ -1,7 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ShieldCheck, Lock, Truck, RefreshCcw } from 'lucide-react';
+import { Lock, Truck, RefreshCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 
 const policySections = [
     {
@@ -91,7 +92,7 @@ const PolicyPage: React.FC<{ type: 'privacidade' | 'entrega' | 'trocas' }> = ({ 
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <nav className="flex mb-8 text-sm text-gray-500">
-                    <Link to="/" className="hover:text-agro-600">Início</Link>
+                    <Link to={ROUTES.HOME} className="hover:text-agro-600">Início</Link>
                     <span className="mx-2">/</span>
                     <span className="font-semibold text-gray-900">{policy.title}</span>
                 </nav>
@@ -112,7 +113,7 @@ const PolicyPage: React.FC<{ type: 'privacidade' | 'entrega' | 'trocas' }> = ({ 
 
                     <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
                         <span>Ainda tem dúvidas?</span>
-                        <Link to="/contato" className="text-agro-600 font-semibold hover:underline">
+                        <Link to={ROUTES.CONTACT} className="text-agro-600 font-semibold hover:underline">
                             Fale com nosso atendimento
                         </Link>
                     </div>

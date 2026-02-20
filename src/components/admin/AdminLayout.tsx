@@ -14,27 +14,28 @@ import {
     Store
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
+import { ROUTES } from '@/constants/routes';
 
 export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'ANALYTICS';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
-    '/admin': 'DASHBOARD',
-    '/admin/pedidos': 'ORDERS',
-    '/admin/produtos': 'PRODUCTS',
-    '/admin/banners': 'BANNERS',
-    '/admin/usuarios': 'USERS',
-    '/admin/configuracoes': 'SETTINGS',
-    '/admin/analytics': 'ANALYTICS',
+    [ROUTES.ADMIN]: 'DASHBOARD',
+    [ROUTES.ADMIN_ORDERS]: 'ORDERS',
+    [ROUTES.ADMIN_PRODUCTS]: 'PRODUCTS',
+    [ROUTES.ADMIN_BANNERS]: 'BANNERS',
+    [ROUTES.ADMIN_USERS]: 'USERS',
+    [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
+    [ROUTES.ADMIN_ANALYTICS]: 'ANALYTICS',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
-    DASHBOARD: '/admin',
-    ORDERS: '/admin/pedidos',
-    PRODUCTS: '/admin/produtos',
-    BANNERS: '/admin/banners',
-    USERS: '/admin/usuarios',
-    SETTINGS: '/admin/configuracoes',
-    ANALYTICS: '/admin/analytics',
+    DASHBOARD: ROUTES.ADMIN,
+    ORDERS: ROUTES.ADMIN_ORDERS,
+    PRODUCTS: ROUTES.ADMIN_PRODUCTS,
+    BANNERS: ROUTES.ADMIN_BANNERS,
+    USERS: ROUTES.ADMIN_USERS,
+    SETTINGS: ROUTES.ADMIN_SETTINGS,
+    ANALYTICS: ROUTES.ADMIN_ANALYTICS,
 };
 
 interface AdminLayoutProps {
@@ -64,7 +65,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         const exact = ADMIN_PATH_TO_VIEW[pathname];
         if (exact) return exact;
         for (const [path, view] of Object.entries(ADMIN_PATH_TO_VIEW)) {
-            if (path !== '/admin' && pathname.startsWith(path)) return view;
+            if (path !== ROUTES.ADMIN && pathname.startsWith(path)) return view;
         }
         return 'DASHBOARD';
     }, [pathname, propActiveView]);
@@ -158,7 +159,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     <button
                         type="button"
                         onClick={() => {
-                            navigate('/');
+                            navigate(ROUTES.HOME);
                             setIsSidebarOpen(false);
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-colors duration-150"

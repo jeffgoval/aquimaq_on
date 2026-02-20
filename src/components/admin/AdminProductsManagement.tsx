@@ -10,9 +10,9 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { getProductsAdmin } from '@/services/productService';
 import { Product, ProductCategory } from '@/types';
-import type { ProductRow } from '@/types/api';
+import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
 
 interface ProductWithFlags extends Product {
@@ -48,12 +48,7 @@ const AdminProductsManagement: React.FC = () => {
     const loadProducts = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .order('name');
-
-            if (error) throw error;
+            const data = await getProductsAdmin();
 
             const mapped = (data || []).map((p: ProductRow) => ({
                 id: p.id,

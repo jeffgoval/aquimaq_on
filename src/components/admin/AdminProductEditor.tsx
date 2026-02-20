@@ -10,7 +10,11 @@ import {
     Sparkles,
     TrendingUp
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import {
+    getProductRowById,
+    createProduct,
+    updateProduct,
+} from '@/services/productService';
 import { Product, ProductCategory } from '@/types';
 import ImageUploader from './ImageUploader';
 
@@ -92,15 +96,9 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         if (!productId) return;
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', productId)
-            .single();
+        const data = await getProductRowById(productId);
 
-        if (error) {
-            setMessage({ type: 'error', text: 'Erro ao carregar produto.' });
-        } else if (data) {
+        if (data) {
             setFormData({
                 name: data.name || '',
                 description: data.description || '',
@@ -122,6 +120,8 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 wholesaleMinAmount: data.wholesale_min_amount || null,
                 wholesaleDiscountPercent: data.wholesale_discount_percent || null,
             });
+        } else {
+            setMessage({ type: 'error', text: 'Erro ao carregar produto.' });
         }
         setLoading(false);
     };
@@ -196,30 +196,20 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
             culture: formData.culture || null,
         };
 
-        let error;
-
-        if (productId) {
-            // Update
-            ({ error } = await supabase
-                .from('products')
-                .update(productData)
-                .eq('id', productId));
-        } else {
-            // Insert
-            ({ error } = await supabase
-                .from('products')
-                .insert(productData));
-        }
-
-        setSaving(false);
-
-        if (error) {
-            setMessage({ type: 'error', text: `Erro: ${error.message}` });
-        } else {
+        try {
+            if (productId) {
+                await updateProduct(productId, productData);
+            } else {
+                await createProduct(productData);
+            }
             setMessage({ type: 'success', text: productId ? 'Produto atualizado!' : 'Produto criado!' });
             setTimeout(() => {
                 onSave();
             }, 1000);
+        } catch (err) {
+            setMessage({ type: 'error', text: `Erro: ${err instanceof Error ? err.message : 'Falha ao salvar.'}` });
+        } finally {
+            setSaving(false);
         }
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
 
 const LoginPage: React.FC = () => {
@@ -19,9 +20,9 @@ const LoginPage: React.FC = () => {
     if (redirectTo && redirectTo.startsWith('/')) {
       navigate(redirectTo, { replace: true });
     } else if (profile.role === 'admin' || profile.role === 'gerente') {
-      navigate('/admin', { replace: true });
+      navigate(ROUTES.ADMIN, { replace: true });
     } else {
-      navigate('/', { replace: true });
+      navigate(ROUTES.HOME, { replace: true });
     }
     setPendingRedirect(false);
   }, [pendingRedirect, profile, navigate, redirectTo]);
@@ -82,7 +83,7 @@ const LoginPage: React.FC = () => {
             />
           </div>
           <div className="flex justify-end">
-            <Link to="/recuperar-password" className="text-sm text-agro-600 hover:underline">
+            <Link to={ROUTES.FORGOT_PASSWORD} className="text-sm text-agro-600 hover:underline">
               Esqueci a palavra-passe
             </Link>
           </div>
@@ -96,7 +97,7 @@ const LoginPage: React.FC = () => {
         </form>
         <p className="mt-6 text-center text-gray-600 text-sm">
           Ainda não tem conta?{' '}
-          <Link to="/registar" className="text-agro-600 font-medium hover:underline">
+          <Link to={ROUTES.REGISTER} className="text-agro-600 font-medium hover:underline">
             Registar
           </Link>
         </p>

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { maskPhone } from '@/utils/masks';
 import MegaMenu from './MegaMenu';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { ROUTES } from '@/constants/routes';
 
 interface HeaderProps {
     cartItemCount: number;
@@ -63,14 +64,14 @@ const Header: React.FC<HeaderProps> = ({
     const handleLogoClick = () => {
         if (onCategoryReset) onCategoryReset();
         if (onSearchChange) onSearchChange('');
-        navigate('/');
+        navigate(ROUTES.HOME);
         setIsMobileMenuOpen(false);
     };
 
     const handleCategoryClick = (category: ProductCategory | 'ALL') => {
         if (onCategoryChange) {
             onCategoryChange(category);
-            navigate('/');
+            navigate(ROUTES.HOME);
         }
         setIsMobileMenuOpen(false);
     };
@@ -197,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({
                                     {userMenuOpen && (
                                       <div className="absolute right-0 top-full mt-1 py-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
                                         <Link
-                                          to="/perfil"
+                                          to={ROUTES.PROFILE}
                                           onClick={() => setUserMenuOpen(false)}
                                           className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                                         >
@@ -206,7 +207,7 @@ const Header: React.FC<HeaderProps> = ({
                                         </Link>
                                         {isAdmin && (
                                           <Link
-                                            to="/admin"
+                                            to={ROUTES.ADMIN}
                                             onClick={() => setUserMenuOpen(false)}
                                             className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                                           >
@@ -227,11 +228,11 @@ const Header: React.FC<HeaderProps> = ({
                                   </div>
                                 ) : (
                                   <div className="hidden sm:flex items-center gap-2">
-                                    <Link to="/login" className="text-slate-600 hover:text-agro-600 text-sm font-medium">
-                                      Entrar
+<Link to={ROUTES.LOGIN} className="text-slate-600 hover:text-agro-600 text-sm font-medium">
+                                    Entrar
                                     </Link>
                                     <span className="text-slate-300">|</span>
-                                    <Link to="/registar" className="text-slate-600 hover:text-agro-600 text-sm font-medium">
+                                    <Link to={ROUTES.REGISTER} className="text-slate-600 hover:text-agro-600 text-sm font-medium">
                                       Registar
                                     </Link>
                                   </div>
@@ -241,11 +242,11 @@ const Header: React.FC<HeaderProps> = ({
 
                             {/* Cart */}
                             <Link
-                                to="/carrinho"
+                                to={ROUTES.CART}
                                 onMouseEnter={() => {
                                     import('@/features/cart/pages/CartPage');
                                 }}
-                                className={`p-2 hover:bg-agro-50 rounded-full relative transition-all group mr-1 ${isActive('/carrinho') ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
+                                className={`p-2 hover:bg-agro-50 rounded-full relative transition-all group mr-1 ${isActive(ROUTES.CART) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
                                 aria-label={`Carrinho de compras, ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'itens'} `}
                             >
                                 <ShoppingCart size={22} />
@@ -328,12 +329,12 @@ const Header: React.FC<HeaderProps> = ({
                                 <div className="flex items-center gap-3">
                                     {user ? (
                                         <div className="flex flex-col gap-2">
-                                            <Link to="/perfil" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-slate-300 hover:text-white text-sm">
+                                            <Link to={ROUTES.PROFILE} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-slate-300 hover:text-white text-sm">
                                                 <User size={16} />
                                                 Minha Conta
                                             </Link>
                                             {isAdmin && (
-                                                <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-slate-300 hover:text-white text-sm">
+                                                <Link to={ROUTES.ADMIN} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-slate-300 hover:text-white text-sm">
                                                     <LayoutDashboard size={16} />
                                                     Painel Admin
                                                 </Link>
@@ -349,10 +350,10 @@ const Header: React.FC<HeaderProps> = ({
                                         </div>
                                     ) : (
                                         <>
-                                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-agro-400 hover:text-agro-300 text-sm font-medium">
+                                            <Link to={ROUTES.LOGIN} onClick={() => setIsMobileMenuOpen(false)} className="text-agro-400 hover:text-agro-300 text-sm font-medium">
                                                 Entrar
                                             </Link>
-                                            <Link to="/registar" onClick={() => setIsMobileMenuOpen(false)} className="text-agro-400 hover:text-agro-300 text-sm font-medium">
+                                            <Link to={ROUTES.REGISTER} onClick={() => setIsMobileMenuOpen(false)} className="text-agro-400 hover:text-agro-300 text-sm font-medium">
                                                 Registar
                                             </Link>
                                         </>
@@ -428,7 +429,7 @@ const Header: React.FC<HeaderProps> = ({
                                         if (e.key === 'Enter') {
                                             setIsSearchOpen(false);
                                             // Search handled by useEffect/props, navigate home logic:
-                                            navigate('/');
+                                            navigate(ROUTES.HOME);
                                         }
                                     }}
                                 />
@@ -438,7 +439,7 @@ const Header: React.FC<HeaderProps> = ({
                                 <button
                                     onClick={() => {
                                         setIsSearchOpen(false);
-                                        navigate('/');
+                                        navigate(ROUTES.HOME);
                                     }}
                                     className="w-full mt-4 bg-agro-600 text-white rounded-xl py-3 font-semibold hover:bg-agro-700 transition-colors"
                                 >

@@ -11,22 +11,15 @@ import {
     Save,
     Calendar
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import {
+    getBanners,
+    createBanner,
+    updateBanner,
+    deleteBanner,
+    toggleBannerActive,
+    type Banner,
+} from '@/services/bannerService';
 import ImageUploader from './ImageUploader';
-
-interface Banner {
-    id: string;
-    title: string;
-    subtitle: string | null;
-    image_url: string;
-    cta_text: string | null;
-    cta_link: string | null;
-    color_gradient: string;
-    position: number;
-    is_active: boolean;
-    starts_at: string | null;
-    ends_at: string | null;
-}
 
 const colorOptions = [
     { value: 'from-agro-900 to-agro-800', label: 'Verde Escuro' },
@@ -63,13 +56,8 @@ const AdminBannerManagement: React.FC = () => {
     const loadBanners = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('banners')
-                .select('*')
-                .order('position', { ascending: true });
-
-            if (error) throw error;
-            setBanners(data || []);
+            const data = await getBanners();
+            setBanners(data);
         } catch (error) {
             console.error('Error loading banners:', error);
             setMessage({ type: 'error', text: 'Erro ao carregar banners.' });
@@ -143,16 +131,9 @@ const AdminBannerManagement: React.FC = () => {
 
         try {
             if (editingBanner) {
-                const { error } = await supabase
-                    .from('banners')
-                    .update(bannerData)
-                    .eq('id', editingBanner.id);
-                if (error) throw error;
+                await updateBanner(editingBanner.id, bannerData);
             } else {
-                const { error } = await supabase
-                    .from('banners')
-                    .insert(bannerData);
-                if (error) throw error;
+                await createBanner(bannerData);
             }
 
             setMessage({ type: 'success', text: editingBanner ? 'Banner atualizado!' : 'Banner criado!' });
@@ -170,8 +151,7 @@ const AdminBannerManagement: React.FC = () => {
         if (!confirm('Tem certeza que deseja excluir este banner?')) return;
 
         try {
-            const { error } = await supabase.from('banners').delete().eq('id', id);
-            if (error) throw error;
+            await deleteBanner(id);
             setMessage({ type: 'success', text: 'Banner excluído.' });
             loadBanners();
         } catch (error) {
@@ -182,11 +162,7 @@ const AdminBannerManagement: React.FC = () => {
 
     const toggleActive = async (banner: Banner) => {
         try {
-            const { error } = await supabase
-                .from('banners')
-                .update({ is_active: !banner.is_active })
-                .eq('id', banner.id);
-            if (error) throw error;
+            await toggleBannerActive(banner.id, !banner.is_active);
             loadBanners();
         } catch (error) {
             console.error('Error toggling banner:', error);

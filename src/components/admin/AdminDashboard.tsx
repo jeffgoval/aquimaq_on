@@ -10,7 +10,10 @@ import {
     ArrowDownRight,
     RotateCcw
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import {
+    getDashboardStats,
+    restoreStockFromUnpaidOrders,
+} from '@/services/adminService';
 
 interface StatCardProps {
     title: string;
@@ -88,20 +91,6 @@ interface AdminDashboardProps {
     onNavigate: (view: 'ORDERS' | 'PRODUCTS' | 'USERS') => void;
 }
 
-const formatRelativeDate = (iso: string): string => {
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    if (diffMins < 60) return `Há ${diffMins} min`;
-    if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
-    if (diffDays === 1) return 'Ontem';
-    if (diffDays < 7) return `Há ${diffDays} dias`;
-    return d.toLocaleDateString('pt-BR');
-};
-
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const [stats, setStats] = useState({
         totalRevenue: 0,
@@ -117,45 +106,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     useEffect(() => {
         const load = async () => {
             try {
-                const now = new Date();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-                const [
-                    { data: recentData },
-                    { count: totalOrders },
-                    { count: pendingCount },
-                    { count: clientesCount },
-                    { data: monthOrders },
-                ] = await Promise.all([
-                    supabase.from('orders').select('id, total, status, created_at, cliente_id').order('created_at', { ascending: false }).limit(5),
-                    supabase.from('orders').select('*', { count: 'exact', head: true }),
-                    supabase.from('orders').select('*', { count: 'exact', head: true }).in('status', ['aguardando_pagamento', 'pago', 'em_separacao']),
-                    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-                    supabase.from('orders').select('total').gte('created_at', startOfMonth).neq('status', 'cancelado'),
-                ]);
-
-                const totalRevenue = (monthOrders ?? []).reduce((acc: number, o: { total: number }) => acc + (o.total ?? 0), 0);
-
-                setStats({
-                    totalRevenue,
-                    totalOrders: totalOrders ?? 0,
-                    pendingOrders: pendingCount ?? 0,
-                    totalClientes: clientesCount ?? 0,
-                });
-
-                const clienteIds = [...new Set((recentData ?? []).map((o: { cliente_id: string }) => o.cliente_id).filter(Boolean))];
-                const { data: profilesData } = clienteIds.length ? await supabase.from('profiles').select('id, name').in('id', clienteIds) : { data: [] };
-                const profilesMap = new Map((profilesData ?? []).map((p: { id: string; name: string | null }) => [p.id, p.name ?? 'Cliente']));
-
-                setRecentOrders(
-                    (recentData ?? []).map((o: { id: string; total: number; status: string; created_at: string; cliente_id: string }) => ({
-                        id: o.id,
-                        cliente: profilesMap.get(o.cliente_id ?? '') ?? 'Cliente',
-                        total: o.total,
-                        status: o.status,
-                        date: formatRelativeDate(o.created_at),
-                    }))
-                );
+                const { stats: nextStats, recentOrders: nextRecent } = await getDashboardStats();
+                setStats(nextStats);
+                setRecentOrders(nextRecent);
             } catch (e) {
                 console.error('AdminDashboard load:', e);
             } finally {
@@ -264,8 +217,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                             setRestoreStockMessage(null);
                             setRestoreStockLoading(true);
                             try {
-                                const { error } = await supabase.rpc('restore_stock_from_unpaid_orders');
-                                if (error) throw error;
+                                await restoreStockFromUnpaidOrders();
                                 setRestoreStockMessage({ type: 'success', text: 'Estoque restaurado.' });
                             } catch (e) {
                                 const msg = e instanceof Error ? e.message : 'Erro ao restaurar estoque.';

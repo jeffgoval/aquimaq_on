@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/services/supabase';
+import { getCropCalendar } from '@/services/productService';
 import type { CropCalendarRow } from '@/types/database';
 
 export interface UseCropCalendarResult {
@@ -65,19 +65,8 @@ export function useCropCalendar(): UseCropCalendarResult {
       }
 
       try {
-        const { data, error: err } = await supabase
-          .from('crop_calendar')
-          .select('*')
-          .order('culture');
-
+        const result = await getCropCalendar();
         if (!mounted) return;
-
-        if (err) {
-          setError(err.message);
-          return;
-        }
-
-        const result = (data as CropCalendarRow[]) ?? [];
         setRows(result);
         setCachedData(result);
       } catch (err: unknown) {

@@ -7,6 +7,7 @@ import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 import ShippingCalculator from './ShippingCalculator';
 import CartProgress from './CartProgress';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES, loginWithRedirect } from '@/constants/routes';
 
 interface CartProps {
   items: CartItem[];
@@ -47,15 +48,15 @@ const Cart: React.FC<CartProps> = ({
   }, []);
 
   const handleBackToCatalog = () => {
-    navigate('/');
+    navigate(ROUTES.HOME);
   };
 
   const handleCheckout = () => {
     if (!session) {
-      navigate('/login?redirect=/checkout');
+      navigate(loginWithRedirect(ROUTES.CHECKOUT));
       return;
     }
-    navigate('/checkout');
+    navigate(ROUTES.CHECKOUT);
   };
 
   // Empty state

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
 
 const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : '';
@@ -41,7 +42,7 @@ const RegisterPage: React.FC = () => {
             </p>
           </div>
           <p className="mt-6 text-center text-gray-600 text-sm">
-            <Link to="/login" className="text-agro-600 font-medium hover:underline">
+            <Link to={ROUTES.LOGIN} className="text-agro-600 font-medium hover:underline">
               Ir para entrar
             </Link>
           </p>
@@ -104,7 +105,7 @@ const RegisterPage: React.FC = () => {
         </form>
         <p className="mt-6 text-center text-gray-600 text-sm">
           Já tem conta?{' '}
-          <Link to="/login" className="text-agro-600 font-medium hover:underline">
+          <Link to={ROUTES.LOGIN} className="text-agro-600 font-medium hover:underline">
             Entrar
           </Link>
         </p>

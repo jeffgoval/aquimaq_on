@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
+import { ROUTES } from '@/constants/routes';
 import { ShoppingCart, Heart, ImageOff } from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
 import StarRating from './StarRating';
@@ -38,7 +39,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
       </button>
 
       <Link
-        to={`/produto/${product.id}`}
+        to={ROUTES.PRODUCT(product.id)}
         className="h-48 w-full bg-gray-100 overflow-hidden cursor-pointer relative block"
         aria-label={`Ver detalhes de ${product.name}`}
       >
@@ -80,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
           <StarRating rating={product.rating} count={product.reviewCount} />
         </div>
 
-        <Link to={`/produto/${product.id}`} className="hover:text-agro-600 block">
+        <Link to={ROUTES.PRODUCT(product.id)} className="hover:text-agro-600 block">
           <h3 className="text-gray-900 font-semibold text-lg leading-tight mb-2">
             {product.name}
           </h3>

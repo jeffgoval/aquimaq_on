@@ -12,13 +12,12 @@ import {
     RefreshCw,
     X
 } from 'lucide-react';
-import { supabase } from '@/services/supabase';
-import { Order, OrderStatus } from '@/types';
-import type { OrderRow } from '@/types/api';
+import { getOrdersAdmin, updateOrderStatus } from '@/services/adminService';
+import type { OrderAdminRow } from '@/services/adminService';
+import { OrderStatus } from '@/types';
 
-interface PedidoComCliente extends Order {
-    clientName?: string;
-    clientPhone?: string;
+interface PedidoComCliente extends OrderAdminRow {
+    status: OrderStatus;
 }
 
 const statusOptions = [
@@ -58,34 +57,8 @@ const AdminOrdersManagement: React.FC = () => {
     const loadOrders = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('orders')
-                .select(`
-                    *,
-                    profiles:cliente_id (name, phone)
-                `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            type OrderWithProfile = OrderRow & { profiles?: { name?: string | null; phone?: string | null } | null };
-            const mappedOrders: PedidoComCliente[] = (data || []).map((order: OrderWithProfile) => ({
-                id: order.id,
-                clientId: order.cliente_id ?? '',
-                clientName: order.profiles?.name ?? 'Cliente',
-                clientPhone: order.profiles?.phone ?? '',
-                items: [],
-                subtotal: order.subtotal,
-                shippingCost: order.shipping_cost,
-                shippingMethod: order.shipping_method,
-                total: order.total,
-                status: order.status as OrderStatus,
-                createdAt: order.created_at,
-                paymentMethod: order.payment_method,
-                trackingCode: order.tracking_code,
-            }));
-
-            setOrders(mappedOrders);
+            const data = await getOrdersAdmin();
+            setOrders(data as PedidoComCliente[]);
         } catch (error) {
             if (import.meta.env.DEV) console.error('Error loading orders:', error);
             setMessage({ type: 'error', text: 'Erro ao carregar pedidos.' });
@@ -97,12 +70,7 @@ const AdminOrdersManagement: React.FC = () => {
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         try {
             setUpdatingOrderId(orderId);
-            const { error } = await supabase
-                .from('orders')
-                .update({ status: newStatus })
-                .eq('id', orderId);
-
-            if (error) throw error;
+            await updateOrderStatus(orderId, newStatus);
 
             setOrders(prev => prev.map(order =>
                 order.id === orderId ? { ...order, status: newStatus as OrderStatus } : order

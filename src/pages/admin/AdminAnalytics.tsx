@@ -1,30 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, DollarSign, ShoppingCart, TrendingUp, Package, RefreshCw } from 'lucide-react';
-import { supabase } from '@/services/supabase';
-
-interface SalesSummary {
-    total_revenue: number;
-    total_orders: number;
-    paid_orders: number;
-    pending_orders: number;
-    cancelled_orders: number;
-    avg_ticket: number;
-    orders_today: number;
-    revenue_today: number;
-}
-
-interface DailySale {
-    date: string;
-    revenue: number;
-    orders: number;
-}
-
-interface ProductRank {
-    product_name: string;
-    product_id: string;
-    total_sold: number;
-    total_revenue: number;
-}
+import {
+    getSalesSummary,
+    getDailySales,
+    getProductRanking,
+    type SalesSummary,
+    type DailySale,
+    type ProductRank,
+} from '@/services/adminService';
 
 const PERIODS = [
     { label: '7 dias', days: 7 },
@@ -42,15 +25,15 @@ const AdminAnalytics: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [salesRes, dailyRes, productsRes] = await Promise.all([
-                supabase.rpc('get_sales_summary', { period_days: period }),
-                supabase.rpc('get_daily_sales', { period_days: period }),
-                supabase.rpc('get_product_ranking', { max_results: 10 }),
+            const [salesData, dailyData, productsData] = await Promise.all([
+                getSalesSummary(period),
+                getDailySales(period),
+                getProductRanking(10),
             ]);
 
-            if (salesRes.data) setSales(salesRes.data);
-            if (dailyRes.data) setDailySales(dailyRes.data || []);
-            if (productsRes.data) setTopProducts(productsRes.data || []);
+            if (salesData) setSales(salesData);
+            setDailySales(dailyData || []);
+            setTopProducts(productsData || []);
         } catch (err) {
             console.error('Analytics load error:', err);
         } finally {

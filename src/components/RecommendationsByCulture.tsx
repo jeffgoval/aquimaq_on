@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/types';
+import { ROUTES } from '@/constants/routes';
 import { useProducts } from '@/hooks/useCatalogProducts';
 import ProductCard from './ProductCard';
 import { Sprout } from 'lucide-react';
@@ -86,7 +87,7 @@ const RecommendationsByCulture: React.FC<RecommendationsByCultureProps> = ({
             <ProductCard
               key={product.id}
               product={product}
-              onViewDetails={(p) => navigate(`/produto/${p.id}`)}
+              onViewDetails={(p) => navigate(ROUTES.PRODUCT(p.id))}
               onAddToCart={onAddToCart}
             />
           ))}

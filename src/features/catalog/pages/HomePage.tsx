@@ -5,6 +5,7 @@ import TrustBar from '@/components/TrustBar';
 import { useCart } from '@/features/cart';
 import { ProductCategory } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { ROUTES } from '@/constants/routes';
 import { parseCategoryFromUrl } from '../utils/urlSearch';
 import { useProducts } from '../hooks/useCatalogProducts';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
@@ -91,7 +92,7 @@ const HomePage: React.FC = () => {
                     onSearchChange={onSearchChange}
                     selectedCategory={selectedCategory}
                     onCategoryChange={onCategoryChange}
-                    onProductClick={(p) => navigate(`/produto/${p.id}`)}
+                    onProductClick={(p) => navigate(ROUTES.PRODUCT(p.id))}
                     onAddToCart={addToCart}
                     isLoading={isLoading}
                     error={error}

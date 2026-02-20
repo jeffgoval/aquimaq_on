@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES, loginWithRedirect } from '@/constants/routes';
 import { useCart } from '../context/CartContext';
 import { createOrder, checkStockAvailability } from '../services/orderService';
 import type { Cliente } from '@/types';
@@ -41,18 +42,18 @@ const CheckoutPage: React.FC = () => {
 
   // Sem sessão → login com redirect de volta ao checkout
   if (!session || !user) {
-    navigate('/login?redirect=/checkout', { replace: true });
+    navigate(loginWithRedirect(ROUTES.CHECKOUT), { replace: true });
     return null;
   }
 
   // Carrinho vazio ou frete não selecionado → voltar ao carrinho
   if (cart.length === 0) {
-    navigate('/carrinho', { replace: true });
+    navigate(ROUTES.CART, { replace: true });
     return null;
   }
 
   if (!selectedShipping) {
-    navigate('/carrinho', { replace: true });
+    navigate(ROUTES.CART, { replace: true });
     return null;
   }
 
@@ -69,7 +70,7 @@ const CheckoutPage: React.FC = () => {
             Preencha seu endereço de entrega no perfil para continuar com a compra.
           </p>
           <button
-            onClick={() => navigate('/perfil')}
+            onClick={() => navigate(ROUTES.PROFILE)}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
           >
             Ir para o Perfil
@@ -91,7 +92,7 @@ const CheckoutPage: React.FC = () => {
         return;
       }
       clearCart();
-      navigate('/pedidos', { replace: true, state: { orderCreated: order.id } });
+      navigate(ROUTES.ORDERS, { replace: true, state: { orderCreated: order.id } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao processar. Tente novamente.');
     } finally {

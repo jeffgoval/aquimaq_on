@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
+import { ROUTES, ROUTE_PATHS } from '@/constants/routes';
 import { AppProviders } from './providers';
 import { useToast } from './contexts/ToastContext';
 
@@ -55,35 +56,35 @@ function AppContent() {
             <ErrorBoundary>
                 <Suspense fallback={PageFallback}>
                     <Routes>
-                        <Route path="/" element={<MainLayout />}>
+                        <Route path={ROUTES.HOME} element={<MainLayout />}>
                             <Route index element={<HomePage />} />
-                            <Route path="produto/:id" element={<ProductPage />} />
-                            <Route path="carrinho" element={<CartPage />} />
-                            <Route path="checkout" element={<CheckoutPage />} />
-                            <Route path="favoritos" element={<WishlistPage />} />
-                            <Route path="politica-privacidade" element={<PolicyPage type="privacidade" />} />
-                            <Route path="politica-entrega" element={<PolicyPage type="entrega" />} />
-                            <Route path="trocas" element={<PolicyPage type="trocas" />} />
-                            <Route path="login" element={<LoginPage />} />
-                            <Route path="registar" element={<RegisterPage />} />
-                            <Route path="recuperar-password" element={<ForgotPasswordPage />} />
-                            <Route path="atualizar-password" element={<UpdatePasswordPage />} />
-                            <Route path="perfil" element={<ProfilePage />} />
+                            <Route path={ROUTE_PATHS.PRODUCT} element={<ProductPage />} />
+                            <Route path={ROUTE_PATHS.CART} element={<CartPage />} />
+                            <Route path={ROUTE_PATHS.CHECKOUT} element={<CheckoutPage />} />
+                            <Route path={ROUTE_PATHS.WISHLIST} element={<WishlistPage />} />
+                            <Route path={ROUTE_PATHS.POLICY_PRIVACY} element={<PolicyPage type="privacidade" />} />
+                            <Route path={ROUTE_PATHS.POLICY_DELIVERY} element={<PolicyPage type="entrega" />} />
+                            <Route path={ROUTE_PATHS.POLICY_RETURNS} element={<PolicyPage type="trocas" />} />
+                            <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
+                            <Route path={ROUTE_PATHS.REGISTER} element={<RegisterPage />} />
+                            <Route path={ROUTE_PATHS.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+                            <Route path={ROUTE_PATHS.UPDATE_PASSWORD} element={<UpdatePasswordPage />} />
+                            <Route path={ROUTE_PATHS.PROFILE} element={<ProfilePage />} />
                         </Route>
 
-                        <Route path="admin" element={<AdminGuard />}>
+                        <Route path={ROUTE_PATHS.ADMIN} element={<AdminGuard />}>
                             <Route element={<AdminLayoutPage />}>
                                 <Route index element={<AdminDashboardPage />} />
-                                <Route path="produtos" element={<AdminProductsPage />} />
-                                <Route path="pedidos" element={<AdminOrdersPage />} />
-                                <Route path="banners" element={<AdminBannersPage />} />
-                                <Route path="usuarios" element={<AdminUsersPage />} />
-                                <Route path="configuracoes" element={<AdminSettingsPage />} />
-                                <Route path="analytics" element={<AdminAnalytics />} />
+                                <Route path={ROUTE_PATHS.ADMIN_PRODUCTS} element={<AdminProductsPage />} />
+                                <Route path={ROUTE_PATHS.ADMIN_ORDERS} element={<AdminOrdersPage />} />
+                                <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={<AdminBannersPage />} />
+                                <Route path={ROUTE_PATHS.ADMIN_USERS} element={<AdminUsersPage />} />
+                                <Route path={ROUTE_PATHS.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
+                                <Route path={ROUTE_PATHS.ADMIN_ANALYTICS} element={<AdminAnalytics />} />
                             </Route>
                         </Route>
 
-                        <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
                     </Routes>
                 </Suspense>
             </ErrorBoundary>

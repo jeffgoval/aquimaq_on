@@ -2,44 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import StarRating from './StarRating';
 import { CheckCircle, ThumbsUp, User } from 'lucide-react';
-import { supabase } from '@/services/supabase';
+import { getReviewsByProductId } from '@/services/reviewService';
+import type { ReviewWithProfile } from '@/services/reviewService';
 
 interface ProductReviewsProps {
   product: Product;
 }
 
-interface Review {
-  id: string;
-  cliente_id: string;
-  product_id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  verified_purchase: boolean;
-  profiles?: {
-    name: string;
-  };
-}
-
 const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const { data, error } = await supabase.from('reviews')
-          .select('*')
-          .eq('product_id', product.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          // Silently fail or log
-          console.warn("Could not fetch reviews", error);
-        }
-        if (data) setReviews(data);
+        const data = await getReviewsByProductId(product.id);
+        setReviews(data);
       } catch (err) {
-        console.error("Error fetching reviews:", err);
+        console.error('Error fetching reviews:', err);
       } finally {
         setLoading(false);
       }

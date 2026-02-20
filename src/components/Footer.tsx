@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { CreditCard, ShieldCheck, Phone, Mail, MapPin, Facebook, Instagram, Lock } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
+import { ROUTES } from '@/constants/routes';
 import { maskPhone } from '@/utils/masks';
 
 const Footer: React.FC = () => {
@@ -27,10 +28,10 @@ const Footer: React.FC = () => {
                     <div>
                         <h3 className="text-white font-bold text-lg mb-4">Institucional</h3>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/sobre" className="hover:text-agro-400 transition-colors">Sobre Nós</Link></li>
-                            <li><Link to="/politica-entrega" className="hover:text-agro-400 transition-colors">Política de Entrega</Link></li>
-                            <li><Link to="/trocas" className="hover:text-agro-400 transition-colors">Trocas e Devoluções</Link></li>
-                            <li><Link to="/trabalhe-conosco" className="hover:text-agro-400 transition-colors">Trabalhe Conosco</Link></li>
+                            <li><Link to={ROUTES.ABOUT} className="hover:text-agro-400 transition-colors">Sobre Nós</Link></li>
+                            <li><Link to={ROUTES.POLICY_DELIVERY} className="hover:text-agro-400 transition-colors">Política de Entrega</Link></li>
+                            <li><Link to={ROUTES.POLICY_RETURNS} className="hover:text-agro-400 transition-colors">Trocas e Devoluções</Link></li>
+                            <li><Link to={ROUTES.WORK_WITH_US} className="hover:text-agro-400 transition-colors">Trabalhe Conosco</Link></li>
                         </ul>
                     </div>
 
@@ -38,11 +39,11 @@ const Footer: React.FC = () => {
                     <div>
                         <h3 className="text-white font-bold text-lg mb-4">Ajuda</h3>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/perfil" className="hover:text-agro-400 transition-colors">Minha Conta</Link></li>
-                            <li><Link to="/pedidos" className="hover:text-agro-400 transition-colors">Meus Pedidos</Link></li>
-                            <li><Link to="/favoritos" className="hover:text-agro-400 transition-colors">Meus Favoritos</Link></li>
-                            <li><Link to="/contato" className="hover:text-agro-400 transition-colors">Fale Conosco</Link></li>
-                            <li><Link to="/faq" className="hover:text-agro-400 transition-colors">Perguntas Frequentes</Link></li>
+                            <li><Link to={ROUTES.PROFILE} className="hover:text-agro-400 transition-colors">Minha Conta</Link></li>
+                            <li><Link to={ROUTES.ORDERS} className="hover:text-agro-400 transition-colors">Meus Pedidos</Link></li>
+                            <li><Link to={ROUTES.WISHLIST} className="hover:text-agro-400 transition-colors">Meus Favoritos</Link></li>
+                            <li><Link to={ROUTES.CONTACT} className="hover:text-agro-400 transition-colors">Fale Conosco</Link></li>
+                            <li><Link to={ROUTES.FAQ} className="hover:text-agro-400 transition-colors">Perguntas Frequentes</Link></li>
                         </ul>
                     </div>
 
