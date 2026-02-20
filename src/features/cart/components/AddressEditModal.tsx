@@ -61,10 +61,8 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       }
     };
 
-    // Trap focus inside modal
     document.addEventListener('keydown', handleKeyDown);
 
-    // Initial focus on close button or first input
     const timer = setTimeout(() => {
       const firstInput = containerRef.current?.querySelector('input');
       if (firstInput) {
@@ -91,8 +89,6 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
     setAddress((prev) => ({ ...prev, [field]: value }));
     setError(null);
   };
-  // ... rest of logic ...
-
 
   useEffect(() => {
     if (address.zip.replace(/\D/g, '').length === 8) {
@@ -290,4 +286,3 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 };
 
 export default AddressEditModal;
-

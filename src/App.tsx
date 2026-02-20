@@ -1,22 +1,18 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-import { StoreProvider } from './contexts/StoreContext';
-import { CartProvider } from './contexts/CartContext';
-import { ToastProvider, useToast } from './contexts/ToastContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { HelmetProvider } from 'react-helmet-async';
-import { WishlistProvider } from './contexts/WishlistContext';
+import { AppProviders } from './providers';
+import { useToast } from './contexts/ToastContext';
 
 import MainLayout from './layouts/MainLayout';
-import HomePage from './pages/HomePage';
+import HomePage from '@/features/catalog/pages/HomePage';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import AdminGuard from './components/AdminGuard';
+import { AdminGuard } from '@/features/admin';
 
-const ProductPage = lazy(() => import('./pages/ProductPage'));
-const CartPage = lazy(() => import('./pages/CartPage'));
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const ProductPage = lazy(() => import('@/features/catalog/pages/ProductPage'));
+const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
+const CheckoutPage = lazy(() => import('@/features/cart/pages/CheckoutPage'));
 
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const PolicyPage = lazy(() => import('./pages/PolicyPage'));
@@ -26,15 +22,14 @@ const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
-const AdminLayoutPage = lazy(() => import('./pages/admin/AdminLayoutPage'));
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
-const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage'));
-const AdminBannersPage = lazy(() => import('./pages/admin/AdminBannersPage'));
-const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
-
-const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
-const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminLayoutPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminLayoutPage })));
+const AdminDashboardPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminDashboardPage })));
+const AdminOrdersPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminOrdersPage })));
+const AdminProductsPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminProductsPage })));
+const AdminBannersPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminBannersPage })));
+const AdminUsersPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminUsersPage })));
+const AdminSettingsPage = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminSettingsPage })));
+const AdminAnalytics = lazy(() => import('@/features/admin').then(m => ({ default: m.AdminAnalytics })));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -107,18 +102,8 @@ function AppContent() {
 
 export default function App() {
     return (
-        <HelmetProvider>
-            <StoreProvider>
-                <CartProvider>
-                    <ToastProvider>
-                        <AuthProvider>
-                            <WishlistProvider>
-                                <AppContent />
-                            </WishlistProvider>
-                        </AuthProvider>
-                    </ToastProvider>
-                </CartProvider>
-            </StoreProvider>
-        </HelmetProvider>
+        <AppProviders>
+            <AppContent />
+        </AppProviders>
     );
 }

@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useProducts as useCatalogProducts } from '@/hooks/useCatalogProducts';
 import ProductCard from '@/components/ProductCard';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/features/cart';
 import { useToast } from '@/contexts/ToastContext';
 import { Heart, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';

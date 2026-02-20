@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WhatsAppCTA from '@/components/WhatsAppCTA';
 import CookieConsent from '@/components/CookieConsent';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/features/cart';
 import { ProductCategory } from '@/types';
 import { parseCategoryFromUrl } from '@/utils/urlSearch';
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ChevronLeft, Trash2, ImageOff } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
+import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 import ShippingCalculator from './ShippingCalculator';
 import CartProgress from './CartProgress';
 import { useAuth } from '@/contexts/AuthContext';
@@ -124,7 +125,7 @@ const Cart: React.FC<CartProps> = ({
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2">{item.name}</h4>
                   <p className="text-xs text-gray-500 mb-1">{item.category}</p>
                   <p className="text-sm font-bold text-agro-600">
-                    {formatCurrency(item.price)}
+                    {formatCurrency(calculateItemPrice(item))}
                   </p>
                 </div>
               </div>
@@ -152,7 +153,7 @@ const Cart: React.FC<CartProps> = ({
                 <div className="flex items-center gap-4">
                   {/* Total Item Mobile/Desktop */}
                   <span className="font-bold text-gray-900 text-sm sm:hidden">
-                    {formatCurrency(item.price * item.quantity)}
+                    {formatCurrency(calculateItemSubtotal(item))}
                   </span>
 
                   <button

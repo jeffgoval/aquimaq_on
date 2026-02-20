@@ -86,4 +86,3 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
 };
 
 export default CartProgress;
-

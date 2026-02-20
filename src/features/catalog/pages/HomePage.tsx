@@ -1,12 +1,13 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import Catalog from '@/components/Catalog';
+import Catalog from '../components/Catalog';
 import TrustBar from '@/components/TrustBar';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/features/cart';
 import { ProductCategory } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { parseCategoryFromUrl } from '@/utils/urlSearch';
-import { useProducts, SortOption } from '../hooks/useCatalogProducts';
+import { parseCategoryFromUrl } from '../utils/urlSearch';
+import { useProducts } from '../hooks/useCatalogProducts';
+import { useCatalogFilters } from '../hooks/useCatalogFilters';
 import { useCropCalendar } from '../hooks/useCropCalendar';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -16,17 +17,9 @@ const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart } = useCart();
-
-    // Pagination state
     const [page, setPage] = useState(1);
 
-    // Filter states
-    const [sortBy, setSortBy] = useState<SortOption>('relevance');
-    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-    const [inStock, setInStock] = useState(false);
-    const [selectedCulture, setSelectedCulture] = useState<string | null>(null);
-    const [inSeason, setInSeason] = useState(false);
-    const [recommendationCulture, setRecommendationCulture] = useState<string | null>(null);
+    const filters = useCatalogFilters({ onFilterChange: () => setPage(1) });
 
     const { cultures: availableCultures, culturesInSeasonThisMonth } = useCropCalendar();
 
@@ -36,24 +29,21 @@ const HomePage: React.FC = () => {
         [searchParams]
     );
 
-    const { products, isLoading, error, totalCount, hasMore, availableBrands } = useProducts({
+    const { products, isLoading, error, totalCount, hasMore } = useProducts({
         page,
         pageSize: PAGE_SIZE,
         category: selectedCategory,
         searchQuery,
-        sortBy,
-        selectedBrands,
-        inStock,
-        culture: selectedCulture,
-        inSeason,
-        culturesInSeason: culturesInSeasonThisMonth
+        sortBy: filters.sortBy,
+        selectedBrands: filters.selectedBrands,
+        inStock: filters.inStock,
+        culture: filters.selectedCulture,
+        inSeason: filters.inSeason,
+        culturesInSeason: culturesInSeasonThisMonth,
     });
 
-
-
-
     const onSearchChange = useCallback((query: string) => {
-        setPage(1); // Reset to page 1 on search
+        setPage(1);
         setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             if (query) next.set('q', query);
@@ -62,62 +52,32 @@ const HomePage: React.FC = () => {
         });
     }, [setSearchParams]);
 
-    const onCategoryChange = useCallback((category: ProductCategory | 'ALL') => {
-        setPage(1); // Reset to page 1 on category change
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            if (category === 'ALL') next.delete('category');
-            else next.set('category', category);
-            return next;
-        });
-        // Clear filters on category change too
-        setSelectedBrands([]);
-        setInStock(false);
-    }, [setSearchParams]);
+    const onCategoryChange = useCallback(
+        (category: ProductCategory | 'ALL') => {
+            setPage(1);
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (category === 'ALL') next.delete('category');
+                else next.set('category', category);
+                return next;
+            });
+            filters.clearFilters();
+        },
+        [setSearchParams, filters]
+    );
 
     const handleNextPage = () => {
         if (hasMore) {
-            setPage(p => p + 1);
+            setPage((p) => p + 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
     const handlePrevPage = () => {
         if (page > 1) {
-            setPage(p => p - 1);
+            setPage((p) => p - 1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    };
-
-    const handleBrandChange = (brand: string) => {
-        setPage(1);
-        setSelectedBrands(prev =>
-            prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
-        );
-    };
-
-
-
-    const handleClearFilters = () => {
-        setPage(1);
-        setSelectedBrands([]);
-        setSortBy('relevance');
-        setInStock(false);
-        setSelectedCulture(null);
-        setInSeason(false);
-    };
-
-    // Calculate dynamic title/description based on state
-    const getPageTitle = () => {
-        if (searchQuery) return `Busca: ${searchQuery} | Aquimaq`;
-        if (selectedCategory !== 'ALL') return `${selectedCategory} | Aquimaq`;
-        return 'Aquimaq';
-    };
-
-    const getPageDescription = () => {
-        if (searchQuery) return `Resultados para ${searchQuery} na Aquimaq.`;
-        if (selectedCategory !== 'ALL') return `Confira nossa seleção de ${selectedCategory}.`;
-        return 'A melhor seleção de produtos agropecuários, ferramentas e peças você encontra na Aquimaq.';
     };
 
     return (
@@ -136,28 +96,12 @@ const HomePage: React.FC = () => {
                     isLoading={isLoading}
                     error={error}
                     onRetry={() => window.location.reload()}
-                    // Filter props
-                    sortBy={sortBy}
-                    onSortChange={(s) => { setSortBy(s); setPage(1); }}
-
-                    availableBrands={availableBrands}
-                    selectedBrands={selectedBrands}
-                    onBrandChange={handleBrandChange}
-                    clearFilters={handleClearFilters}
-                    inStock={inStock}
-                    onInStockChange={(val) => { setInStock(val); setPage(1); }}
+                    filters={filters}
                     availableCultures={availableCultures}
-                    selectedCulture={selectedCulture}
-                    onCultureChange={(c) => { setSelectedCulture(c); setPage(1); }}
-                    inSeason={inSeason}
-                    onInSeasonChange={(val) => { setInSeason(val); setPage(1); }}
                     culturesInSeasonThisMonth={culturesInSeasonThisMonth}
-                    recommendationCulture={recommendationCulture}
-                    onRecommendationCultureChange={setRecommendationCulture}
                 />
             </ErrorBoundary>
 
-            {/* Pagination Controls */}
             {!isLoading && products.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-4 flex justify-center items-center gap-4 bg-gray-50 rounded-b-xl mb-8">
                     <button
@@ -188,4 +132,3 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
-

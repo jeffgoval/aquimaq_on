@@ -1,8 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductDetail from '@/components/ProductDetail';
-import { useCart } from '@/contexts/CartContext';
-import { useProduct } from '@/hooks/useProduct';
+import { useCart } from '@/features/cart';
+import { useProduct } from '../hooks/useProduct';
 import ProductSkeleton from '@/components/ProductSkeleton';
 
 const ProductPage: React.FC = () => {
@@ -39,4 +39,3 @@ const ProductPage: React.FC = () => {
 };
 
 export default ProductPage;
-

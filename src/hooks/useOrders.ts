@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchOrders } from '@/services/orderService';
+import { fetchOrders } from '@/features/cart';
 import { Order } from '@/types';
 
 export const useOrders = (clientId: string | undefined) => {

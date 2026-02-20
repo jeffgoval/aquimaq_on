@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Cart from '@/components/Cart';
-import { useCart } from '@/contexts/CartContext';
+import Cart from '../components/Cart';
+import { useCart } from '../context/CartContext';
 
 const CartPage: React.FC = () => {
     const {
@@ -16,7 +16,6 @@ const CartPage: React.FC = () => {
         shippingZip
     } = useCart();
 
-    // Local state for processing indication if needed by Cart
     const [isProcessing, setIsProcessing] = useState(false);
 
     return (
@@ -37,4 +36,3 @@ const CartPage: React.FC = () => {
 };
 
 export default CartPage;
-

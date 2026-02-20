@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
-import { createOrder } from '@/services/orderService';
-import { checkStockAvailability } from '@/services/orderService';
+import { useCart } from '../context/CartContext';
+import { createOrder, checkStockAvailability } from '../services/orderService';
 import type { Cliente } from '@/types';
 import type { ProfileRow } from '@/types/database';
 import { Helmet } from 'react-helmet-async';

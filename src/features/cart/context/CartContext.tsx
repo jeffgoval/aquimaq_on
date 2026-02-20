@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Product, CartItem, ShippingOption } from '@/types';
-import { CartItemsSchema } from '@/schemas/cartSchema';
+import { CartItemsSchema } from '../schemas/cartSchema';
+import { calculateItemSubtotal } from '@/utils/price';
 
 const CART_SHIPPING_KEY = 'cart_shipping';
 
@@ -96,15 +97,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try { localStorage.removeItem(CART_SHIPPING_KEY); } catch { /* */ }
     }, []);
 
-    const cartSubtotal = cart.reduce((acc, item) => {
-        let itemPrice = item.price;
-        if (item.wholesaleMinAmount && (item.price * item.quantity >= item.wholesaleMinAmount)) {
-            if (item.wholesaleDiscountPercent) {
-                itemPrice = item.price * (1 - item.wholesaleDiscountPercent / 100);
-            }
-        }
-        return acc + (itemPrice * item.quantity);
-    }, 0);
+    const cartSubtotal = cart.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
 
     const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
     const shippingCost = selectedShipping ? selectedShipping.price : 0;

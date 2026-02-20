@@ -243,7 +243,7 @@ const Header: React.FC<HeaderProps> = ({
                             <Link
                                 to="/carrinho"
                                 onMouseEnter={() => {
-                                    import('../pages/CartPage');
+                                    import('@/features/cart/pages/CartPage');
                                 }}
                                 className={`p-2 hover:bg-agro-50 rounded-full relative transition-all group mr-1 ${isActive('/carrinho') ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
                                 aria-label={`Carrinho de compras, ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'itens'} `}

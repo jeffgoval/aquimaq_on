@@ -68,10 +68,6 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
 
     setLoading(true);
     setError(null);
-    // Do not reset calculated state immediately to avoid flashing if preserving?
-    // But we need to show loading.
-    // setCalculated(false); // Valid approach: keep showing old data with loading spinner?
-    // Let's keep existing behavior:
     if (!preserveSelection) {
       setCalculated(false);
       onSelectOption(null);

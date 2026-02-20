@@ -1,5 +1,6 @@
-import { supabase } from './supabase';
+import { supabase } from '@/services/supabase';
 import { CartItem, Order, OrderStatus, ShippingOption, Cliente } from '@/types';
+import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 
 type Address = NonNullable<Cliente['address']>;
 
@@ -14,17 +15,17 @@ export const createOrder = async (
     shippingAddress: Address
 ): Promise<Order | null> => {
 
-    // 1. Calculate totals (Server-side validation ideally, but client-side here for MVP)
-    const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    // 1. Calculate totals (usa regra de atacado centralizada em price.ts)
+    const subtotal = cart.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
     const shippingCost = shippingOption.price;
     const total = subtotal + shippingCost;
 
-    // 2. Call RPC to create order and items atomically
+    // 2. Call RPC to create order and items atomically (unit_price = preço efetivo com atacado)
     const rpcItems = cart.map(item => ({
         product_id: item.id,
         product_name: item.name,
         quantity: item.quantity,
-        unit_price: item.price
+        unit_price: calculateItemPrice(item)
     }));
 
     const { data: orderResponse, error: rpcError } = await supabase.rpc('create_order', {
@@ -48,7 +49,7 @@ export const createOrder = async (
         throw new Error('Erro ao criar pedido: ' + rpcError.message);
     }
 
-    const newOrder = orderResponse as any; // RPC returns JSONB
+    const newOrder = orderResponse as { id: string; cliente_id: string | null; status: string; created_at: string; [k: string]: unknown };
 
     // 4. Return mapped order object for UI
     return {
@@ -64,7 +65,7 @@ export const createOrder = async (
             productId: c.id,
             productName: c.name,
             quantity: c.quantity,
-            unitPrice: c.price
+            unitPrice: calculateItemPrice(c)
         })),
     };
 };
@@ -198,4 +199,3 @@ export const checkStockAvailability = async (cart: CartItem[]): Promise<void> =>
         }
     }
 };
-
