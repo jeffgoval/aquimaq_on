@@ -13,8 +13,7 @@ import { useCropCalendar } from '@/hooks/useCropCalendar';
 import { useStore } from '@/contexts/StoreContext';
 import { useProductDocuments } from '@/hooks/useProductDocuments';
 import ProductSEO from './product/ProductSEO';
-import { useAuth } from '@/contexts/AuthContext';
-import { ROUTES, loginWithRedirect } from '@/constants/routes';
+import { ROUTES } from '@/constants/routes';
 
 interface ProductDetailProps {
     product: Product;
@@ -27,7 +26,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 }) => {
     const navigate = useNavigate();
     const { settings } = useStore();
-    const { session } = useAuth();
     const [quantity, setQuantity] = useState(1);
     const { documents: productDocs, loading: docsLoading } = useProductDocuments(product.id);
     const { cultures: availableCultures } = useCropCalendar();
@@ -166,13 +164,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
                             <button
                                 onClick={() => {
-                                    if (!session) {
-                                        onAddToCart(product, quantity);
-                                        navigate(loginWithRedirect(ROUTES.CHECKOUT));
-                                        return;
-                                    }
                                     onAddToCart(product, quantity);
-                                    navigate(ROUTES.CHECKOUT);
+                                    navigate(ROUTES.CART);
                                 }}
                                 disabled={isOutOfStock}
                                 className="w-full bg-orange-600 text-white py-3.5 rounded-lg font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg shadow-orange-200 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
@@ -236,4 +229,3 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 };
 
 export default ProductDetail;
-

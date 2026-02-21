@@ -104,18 +104,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const [restoreStockMessage, setRestoreStockMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
+        let mounted = true;
+        const timeoutId = setTimeout(() => {
+            if (mounted) {
+                console.warn('AdminDashboard load timeout');
+                setLoading(false);
+            }
+        }, 10000);
+
         const load = async () => {
             try {
                 const { stats: nextStats, recentOrders: nextRecent } = await getDashboardStats();
-                setStats(nextStats);
-                setRecentOrders(nextRecent);
+                if (mounted) {
+                    setStats(nextStats);
+                    setRecentOrders(nextRecent);
+                }
             } catch (e) {
                 console.error('AdminDashboard load:', e);
             } finally {
-                setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                    clearTimeout(timeoutId);
+                }
             }
         };
         load();
+        return () => {
+            mounted = false;
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     if (loading) {

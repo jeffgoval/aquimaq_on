@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, Trash2, ImageOff } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 import ShippingCalculator from './ShippingCalculator';
 import CartProgress from './CartProgress';
-import { useAuth } from '@/contexts/AuthContext';
-import { ROUTES, loginWithRedirect } from '@/constants/routes';
+import { ROUTES } from '@/constants/routes';
+import { useStore } from '@/contexts/StoreContext';
 
 interface CartProps {
   items: CartItem[];
@@ -41,8 +41,9 @@ const Cart: React.FC<CartProps> = ({
   isProcessing = false
 }) => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { settings } = useStore();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+
   const handleImageError = useCallback((itemId: string) => {
     setImageErrors(prev => new Set(prev).add(itemId));
   }, []);
@@ -51,12 +52,12 @@ const Cart: React.FC<CartProps> = ({
     navigate(ROUTES.HOME);
   };
 
-  const handleCheckout = () => {
-    if (!session) {
-      navigate(loginWithRedirect(ROUTES.CHECKOUT));
-      return;
-    }
-    navigate(ROUTES.CHECKOUT);
+  const whatsappNumber = settings?.phone?.replace(/\D/g, '') ?? '';
+
+  const handleWhatsAppCheckout = () => {
+    const itemsList = items.map(item => `- ${item.name} (${item.quantity}x)`).join('\n');
+    const message = `Olá! Gostaria de finalizar o pedido:\n\n${itemsList}\n\nSubtotal: ${formatCurrency(cartSubtotal)}\nFrete: ${selectedShipping ? formatCurrency(shippingCost) : 'A combinar'}\nTotal: ${formatCurrency(grandTotal)}`;
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   // Empty state
@@ -107,11 +108,9 @@ const Cart: React.FC<CartProps> = ({
         <ul className="divide-y divide-gray-200">
           {items.map(item => (
             <li key={item.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
-
-              {/* Mobile: Top Row (Image + Info) */}
               <div className="flex items-start gap-4 w-full sm:w-auto">
                 {imageErrors.has(item.id) ? (
-                  <div className="w-20 h-20 rounded-md flex-shrink-0 border border-gray-100 bg-gray-100 flex flex-col items-center justify-center text-gray-400" aria-hidden>
+                  <div className="w-20 h-20 rounded-md flex-shrink-0 border border-gray-100 bg-gray-100 flex items-center justify-center text-gray-400">
                     <ImageOff size={20} />
                   </div>
                 ) : (
@@ -131,40 +130,15 @@ const Cart: React.FC<CartProps> = ({
                 </div>
               </div>
 
-              {/* Mobile: Bottom Row (Controls) | Desktop: Right Side */}
               <div className="flex items-center justify-between w-full sm:w-auto sm:flex-1 sm:justify-end gap-4 mt-2 sm:mt-0 bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none">
                 <div className="flex items-center bg-white sm:bg-gray-50 border border-gray-200 rounded-lg">
-                  <button
-                    onClick={() => onUpdateQuantity(item.id, -1)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-l-lg transition-colors w-8 flex items-center justify-center"
-                    aria-label={`Diminuir quantidade de ${item.name}`}
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-medium text-sm text-gray-900" aria-label={`Quantidade: ${item.quantity}`}>{item.quantity}</span>
-                  <button
-                    onClick={() => onUpdateQuantity(item.id, 1)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-r-lg transition-colors w-8 flex items-center justify-center"
-                    aria-label={`Aumentar quantidade de ${item.name}`}
-                  >
-                    +
-                  </button>
+                  <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-l-lg transition-colors w-8 flex items-center justify-center">-</button>
+                  <span className="w-8 text-center font-medium text-sm text-gray-900">{item.quantity}</span>
+                  <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-r-lg transition-colors w-8 flex items-center justify-center">+</button>
                 </div>
-
                 <div className="flex items-center gap-4">
-                  {/* Total Item Mobile/Desktop */}
-                  <span className="font-bold text-gray-900 text-sm sm:hidden">
-                    {formatCurrency(calculateItemSubtotal(item))}
-                  </span>
-
-                  <button
-                    onClick={() => onRemoveItem(item.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                    title="Remover item"
-                    aria-label={`Remover ${item.name} do carrinho`}
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <span className="font-bold text-gray-900 text-sm sm:hidden">{formatCurrency(calculateItemSubtotal(item))}</span>
+                  <button onClick={() => onRemoveItem(item.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={18} /></button>
                 </div>
               </div>
             </li>
@@ -172,7 +146,6 @@ const Cart: React.FC<CartProps> = ({
         </ul>
 
         <div className="bg-gray-50 p-6 border-t border-gray-200">
-          {/* Shipping Calculator Integration */}
           <ShippingCalculator
             cartTotal={cartSubtotal}
             items={items}
@@ -183,55 +156,19 @@ const Cart: React.FC<CartProps> = ({
           />
 
           <div className="space-y-3 mb-6 pt-4 border-t border-gray-200">
-            <div className="flex justify-between items-center text-sm text-gray-600">
-              <span>Subtotal</span>
-              <span>
-                {formatCurrency(cartSubtotal)}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm text-gray-600">
-              <span>Frete</span>
-              <span>
-                {selectedShipping
-                  ? selectedShipping.price === 0
-                    ? 'Grátis'
-                    : formatCurrency(shippingCost)
-                  : '--'
-                }
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2">
-              <span>Total</span>
-              <span className="text-agro-700">
-                {formatCurrency(grandTotal)}
-              </span>
-            </div>
+            <div className="flex justify-between items-center text-sm text-gray-600"><span>Subtotal</span><span>{formatCurrency(cartSubtotal)}</span></div>
+            <div className="flex justify-between items-center text-sm text-gray-600"><span>Frete</span><span>{selectedShipping ? (selectedShipping.price === 0 ? 'Grátis' : formatCurrency(shippingCost)) : '--'}</span></div>
+            <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2"><span>Total</span><span className="text-agro-700">{formatCurrency(grandTotal)}</span></div>
           </div>
 
           <button
-            onClick={handleCheckout}
-            disabled={!selectedShipping || isProcessing}
-            className={`w-full bg-agro-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-agro-700 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isProcessing ? 'cursor-wait' : ''}`}
+            onClick={handleWhatsAppCheckout}
+            className="w-full bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors shadow flex items-center justify-center gap-2"
           >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Processando...
-              </>
-            ) : (
-              selectedShipping ? (
-                <>
-                  Ir para Pagamento
-                  <ChevronLeft className="rotate-180" size={20} />
-                </>
-              ) : 'Selecione o Frete para Continuar'
-            )}
+            <MessageCircle size={22} />
+            Finalizar via WhatsApp
           </button>
-          <p className="text-xs text-center text-gray-500 mt-4">
-            Pagamento seguro via Mercado Pago (Pix ou Cartão).
-          </p>
+          <p className="text-xs text-center text-gray-500 mt-4">Faremos o fechamento do seu pedido via WhatsApp.</p>
         </div>
       </div>
     </div>

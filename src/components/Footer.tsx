@@ -39,8 +39,6 @@ const Footer: React.FC = () => {
                     <div>
                         <h3 className="text-white font-bold text-lg mb-4">Ajuda</h3>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to={ROUTES.PROFILE} className="hover:text-agro-400 transition-colors">Minha Conta</Link></li>
-                            <li><Link to={ROUTES.ORDERS} className="hover:text-agro-400 transition-colors">Meus Pedidos</Link></li>
                             <li><Link to={ROUTES.WISHLIST} className="hover:text-agro-400 transition-colors">Meus Favoritos</Link></li>
                             <li><Link to={ROUTES.CONTACT} className="hover:text-agro-400 transition-colors">Fale Conosco</Link></li>
                             <li><Link to={ROUTES.FAQ} className="hover:text-agro-400 transition-colors">Perguntas Frequentes</Link></li>

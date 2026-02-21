@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
-import { Cliente } from '@/types';
 import { maskCEP } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 
+interface AddressUser {
+  address?: {
+    zip: string;
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+  };
+  [key: string]: unknown;
+}
+
 interface AddressEditModalProps {
-  user: Cliente;
-  onSave: (updatedUser: Cliente) => Promise<void>;
+  user: AddressUser;
+  onSave: (updatedUser: AddressUser) => Promise<void>;
   onClose: () => void;
 }
 

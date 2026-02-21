@@ -1,8 +1,5 @@
 // -----------------------------------------------------------------------------
-// ATENÇÃO: Este arquivo define manualmente os tipos do banco de dados.
-// RECOMENDAÇÃO: Utilize a CLI do Supabase para gerar tipos automaticamente sempre que o banco mudar.
-// Comando: supabase gen types typescript --project-id <SEU_PROJECT_ID> > src/types/supabase.ts
-// E então atualize este arquivo ou aponte os imports para o novo arquivo gerado.
+// ATENÇÃO: Tipos simplificados para Catálogo Público.
 // -----------------------------------------------------------------------------
 
 import type { CartItem } from '@/types';
@@ -15,29 +12,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface ProfileRow {
-  id: string;
-  name: string | null;
-  email: string | null;
-  full_name: string | null;
-  document_number: string | null;
-  document_type: string | null;
-  state_registration: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  role: 'cliente' | 'admin' | 'vendedor' | 'gerente';
-  cep: string | null;
-  address: string | null;
-  address_number: string | null;
-  address_complement: string | null;
-  neighborhood: string | null;
-  city: string | null;
-  state: string | null;
-  created_at?: string;
-  updated_at?: string;
-  cart_items?: CartItem[] | null;
-}
-
 export interface CropCalendarRow {
   id: string;
   culture: string;
@@ -47,51 +21,6 @@ export interface CropCalendarRow {
   month_harvest_start: number;
   month_harvest_end: number;
   created_at?: string;
-}
-
-export interface WishlistRow {
-  id: string;
-  cliente_id: string;
-  product_id: string;
-  created_at: string;
-}
-
-export interface ReviewRow {
-  id: string;
-  cliente_id: string;
-  product_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  verified_purchase: boolean;
-  profiles?: {
-    name: string | null;
-  };
-}
-
-export interface OrderRow {
-  id: string;
-  cliente_id: string | null;
-  status: string;
-  shipping_cost: number;
-  subtotal: number;
-  total: number;
-  shipping_method: string | null;
-  shipping_address: unknown;
-  payment_method: string | null;
-  payment_details: unknown;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface OrderItemRow {
-  id: string;
-  order_id: string;
-  product_id: string;
-  product_name: string | null;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
 }
 
 export interface ProductRow {
@@ -125,89 +54,74 @@ export interface ProductRow {
   updated_at: string | null;
 }
 
+export interface PaymentRow {
+  id: string;
+  order_id: string;
+  external_id: string | null;
+  status: string;
+  amount: number | null;
+  created_at: string;
+}
+
+export interface ChatConversationRow {
+  id: string;
+  customer_id: string;
+  status: string;
+  subject: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessageRow {
+  id: string;
+  conversation_id: string;
+  sender_type: string;
+  content: string;
+  created_at: string;
+}
+
+export interface AIKnowledgeBaseRow {
+  id: string;
+  source_type: string;
+  source_id: string | null;
+  title: string | null;
+  content: string;
+  chunk_index: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
-      profiles: {
-        Row: ProfileRow;
-        Insert: Partial<ProfileRow>;
-        Update: Partial<ProfileRow>;
-        Relationships: [];
-      };
       crop_calendar: {
         Row: CropCalendarRow;
-        Insert: Omit<CropCalendarRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
-        Update: Partial<Omit<CropCalendarRow, 'id'>>;
+        Insert: any;
+        Update: any;
         Relationships: [];
-      };
-      wishlist: {
-        Row: WishlistRow;
-        Insert: Omit<WishlistRow, 'id' | 'created_at'>;
-        Update: Partial<Omit<WishlistRow, 'id' | 'created_at'>>;
-        Relationships: [
-          {
-            foreignKeyName: "wishlist_cliente_id_fkey"
-            columns: ["cliente_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wishlist_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          }
-        ];
-      };
-      reviews: {
-        Row: ReviewRow;
-        Insert: Omit<ReviewRow, 'id' | 'created_at' | 'profiles'>;
-        Update: Partial<Omit<ReviewRow, 'id' | 'created_at' | 'profiles'>>;
-        Relationships: [
-          {
-            foreignKeyName: "reviews_cliente_id_fkey"
-            columns: ["cliente_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          }
-        ];
-      };
-      orders: {
-        Row: OrderRow;
-        Insert: Omit<OrderRow, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<OrderRow, 'id' | 'created_at' | 'updated_at'>>;
-        Relationships: [
-          {
-            foreignKeyName: "orders_cliente_id_fkey"
-            columns: ["cliente_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ];
-      };
-      order_items: {
-        Row: OrderItemRow;
-        Insert: Omit<OrderItemRow, 'id'>;
-        Update: Partial<Omit<OrderItemRow, 'id'>>;
-        Relationships: [
-          {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          }
-        ];
       };
       products: {
         Row: ProductRow;
-        Insert: Omit<ProductRow, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<ProductRow>;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      ai_knowledge_base: {
+        Row: AIKnowledgeBaseRow;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      chat_conversations: {
+        Row: ChatConversationRow;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      chat_messages: {
+        Row: ChatMessageRow;
+        Insert: any;
+        Update: any;
         Relationships: [];
       };
     };
@@ -215,20 +129,7 @@ export interface Database {
       [_ in never]: never
     };
     Functions: {
-      create_order: {
-        Args: {
-          p_cliente_id: string;
-          p_items: Json;
-          p_shipping_cost: number;
-          p_subtotal: number;
-          p_total: number;
-          p_shipping_method: string;
-          p_shipping_address: Json;
-          p_payment_method: string;
-          p_payment_details: Json;
-        };
-        Returns: Json;
-      };
+      [_ in never]: never
     };
     Enums: {
       [_ in never]: never

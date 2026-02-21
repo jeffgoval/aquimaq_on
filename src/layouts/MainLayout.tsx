@@ -52,7 +52,7 @@ const MainLayout: React.FC = () => {
                 onCategoryChange={onCategoryChange}
             />
 
-            <main id="main-content" role="main">
+            <main id="main-content" role="main" className="min-h-[60vh] bg-gray-50">
                 <Outlet />
             </main>
 

@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { getProfilesByIds } from './profileService';
 
 export interface DashboardStats {
   totalRevenue: number;
@@ -32,7 +31,6 @@ export const getDashboardStats = async (): Promise<{
     { data: recentData },
     { count: totalOrders },
     { count: pendingCount },
-    { count: clientesCount },
     { data: monthOrders },
   ] = await Promise.all([
     supabase
@@ -45,7 +43,6 @@ export const getDashboardStats = async (): Promise<{
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .in('status', ['aguardando_pagamento', 'pago', 'em_separacao']),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase
       .from('orders')
       .select('total')
@@ -62,7 +59,7 @@ export const getDashboardStats = async (): Promise<{
     totalRevenue,
     totalOrders: totalOrders ?? 0,
     pendingOrders: pendingCount ?? 0,
-    totalClientes: clientesCount ?? 0,
+    totalClientes: 0,
   };
 
   const rows = (recentData ?? []) as Array<{
@@ -72,11 +69,6 @@ export const getDashboardStats = async (): Promise<{
     created_at: string;
     cliente_id: string;
   }>;
-  const clienteIds = [...new Set(rows.map((o) => o.cliente_id).filter(Boolean))];
-  const profiles = await getProfilesByIds(clienteIds);
-  const profilesMap = new Map(
-    profiles.map((p) => [p.id, p.name ?? 'Cliente'])
-  );
 
   const formatRelativeDate = (iso: string): string => {
     const d = new Date(iso);
@@ -94,7 +86,7 @@ export const getDashboardStats = async (): Promise<{
 
   const recentOrders: RecentOrderRow[] = rows.map((o) => ({
     id: o.id,
-    cliente: profilesMap.get(o.cliente_id ?? '') ?? 'Cliente',
+    cliente: o.cliente_id ?? 'Cliente',
     total: o.total,
     status: o.status,
     date: formatRelativeDate(o.created_at),
@@ -123,19 +115,17 @@ export interface OrderAdminRow {
 export const getOrdersAdmin = async (): Promise<OrderAdminRow[]> => {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, profiles:cliente_id (name, phone)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  type Row = (typeof data)[number] & {
-    profiles?: { name?: string | null; phone?: string | null } | null;
-  };
+  type Row = (typeof data)[number];
   return (data ?? []).map((order: Row) => ({
     id: order.id,
     clientId: order.cliente_id ?? '',
-    clientName: order.profiles?.name ?? 'Cliente',
-    clientPhone: order.profiles?.phone ?? '',
+    clientName: order.cliente_id ?? 'Cliente',
+    clientPhone: '',
     items: [],
     subtotal: order.subtotal,
     shippingCost: order.shipping_cost,

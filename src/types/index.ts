@@ -57,28 +57,6 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
-export interface Cliente {
-  id: string;
-  name: string;
-  phone: string; // Chave primária para WhatsApp
-  document: string; // CPF ou CNPJ
-  stateRegistration?: string; // Inscrição Estadual
-  email?: string;
-  avatar_url?: string;
-  role?: 'cliente' | 'admin' | 'vendedor' | 'gerente';
-
-  // Endereço Único
-  address?: {
-    zip: string;
-    street: string;
-    number: string;
-    complement?: string;
-    district: string;
-    city: string;
-    state: string;
-  };
-}
-
 export interface ShippingOption {
   id: string;
   carrier: string; // 'Correios', 'Jadlog', 'Transportadora Regional'
@@ -87,7 +65,7 @@ export interface ShippingOption {
   estimatedDays: number;
 }
 
-/** Resultado do cálculo de frete; pode incluir mensagem de erro quando o cálculo falha */
+/** Resultado do cálculo de frete */
 export interface ShippingResult {
   options: ShippingOption[];
   error?: string;
@@ -112,5 +90,39 @@ export interface Order {
   trackingCode?: string;
 }
 
-// Navigation Types
-export type ViewState = 'LOGIN' | 'CATALOG' | 'PRODUCT_DETAIL' | 'CART' | 'ORDERS' | 'ORDER_DETAIL' | 'CHECKOUT_PAYMENT' | 'PROFILE' | 'STORE_SETTINGS' | 'USER_MANAGEMENT' | 'ADMIN_DASHBOARD' | 'ADMIN_ORDERS' | 'ADMIN_PRODUCTS' | 'ADMIN_BANNERS' | 'ADMIN_AI_SETTINGS' | 'ADMIN_KNOWLEDGE';
+// Pagamento
+export type PaymentStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'refunded'
+  | 'cancelled'
+  | 'in_process'
+  | 'charged_back';
+
+// Chat (frontend)
+export type ChatStatus = 'active' | 'waiting_human' | 'closed';
+export type MessageSender = 'customer' | 'ai_agent' | 'human_agent';
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderType: MessageSender;
+  senderId: string | null;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatConversation {
+  id: string;
+  customerId: string;
+  assignedAgent: string | null;
+  status: ChatStatus;
+  channel: string | null;
+  subject: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Navigation Types (Simplified for Catalog Only)
+export type ViewState = 'CATALOG' | 'PRODUCT_DETAIL' | 'CART' | 'WISHLIST';

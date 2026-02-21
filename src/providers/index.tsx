@@ -3,7 +3,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from '../contexts/StoreContext';
 import { CartProvider } from '@/features/cart';
 import { ToastProvider } from '../contexts/ToastContext';
-import { AuthProvider } from '../contexts/AuthContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
 
 type ProviderComponent = React.ComponentType<{ children: ReactNode }>;
@@ -25,6 +24,5 @@ export const AppProviders = composeProviders(
     StoreProvider,
     CartProvider,
     ToastProvider,
-    AuthProvider,
     WishlistProvider
 );
