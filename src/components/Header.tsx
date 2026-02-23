@@ -1,12 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, Phone, Truck, ShieldCheck, Heart } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, Phone, Truck, ShieldCheck, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User } from 'lucide-react';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { maskPhone } from '@/utils/masks';
 import MegaMenu from './MegaMenu';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { ROUTES } from '@/constants/routes';
+
+const getAvatarInitials = (user: SupabaseUser): string => {
+  const name = (user.user_metadata?.full_name ?? user.user_metadata?.name) as string | undefined;
+  if (name && name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  const email = user.email ?? '';
+  const local = email.split('@')[0] || '?';
+  return local.slice(0, 2).toUpperCase() || '?';
+};
+
+const getRole = (user: SupabaseUser): string => {
+  return (user.app_metadata?.role as string) ?? (user.user_metadata?.role as string) ?? 'user';
+};
+
+const isAdmin = (user: SupabaseUser): boolean => {
+  const role = getRole(user);
+  return role === 'admin' || role === 'super_admin';
+};
 
 interface HeaderProps {
     cartItemCount: number;
@@ -26,12 +49,27 @@ const Header: React.FC<HeaderProps> = ({
     onCategoryChange
 }) => {
     const { settings } = useStore();
+    const { user, loading: authLoading, signOut } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+        if (isUserMenuOpen) {
+            document.addEventListener('click', handleClickOutside);
+        }
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [isUserMenuOpen]);
 
     // Focus Traps
     const mobileMenuRef = useFocusTrap(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
@@ -120,6 +158,100 @@ const Header: React.FC<HeaderProps> = ({
                             <button className="p-2 text-slate-500 md:hidden" onClick={() => setIsSearchOpen(true)}>
                                 <Search size={22} />
                             </button>
+                            {!authLoading && (
+                                user ? (
+                                    <div className="hidden md:block relative" ref={userMenuRef}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsUserMenuOpen((v) => !v)}
+                                            className="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-agro-500/30"
+                                            aria-expanded={isUserMenuOpen}
+                                            aria-haspopup="true"
+                                            title={user.email ?? undefined}
+                                        >
+                                            {user.user_metadata?.avatar_url ? (
+                                                <img
+                                                    src={user.user_metadata.avatar_url}
+                                                    alt=""
+                                                    className="w-9 h-9 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="w-9 h-9 rounded-full bg-agro-600 text-white text-sm font-medium flex items-center justify-center">
+                                                    {getAvatarInitials(user)}
+                                                </span>
+                                            )}
+                                            <ChevronDown size={18} className={`text-slate-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {isUserMenuOpen && (
+                                            <div
+                                                className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-slate-200 rounded-xl shadow-lg z-[60]"
+                                                role="menu"
+                                            >
+                                                <div className="px-3 py-2 border-b border-slate-100">
+                                                    <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
+                                                    <p className="text-xs text-slate-500">{isAdmin(user) ? 'Administrador' : 'Cliente'}</p>
+                                                </div>
+                                                {isAdmin(user) && (
+                                                    <Link
+                                                        to={ROUTES.ADMIN}
+                                                        onClick={() => { setIsUserMenuOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                        role="menuitem"
+                                                    >
+                                                        <LayoutDashboard size={16} />
+                                                        Painel Admin
+                                                    </Link>
+                                                )}
+                                                <Link
+                                                    to={ROUTES.ACCOUNT}
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                    role="menuitem"
+                                                >
+                                                    <User size={16} />
+                                                    Minha conta
+                                                </Link>
+                                                <Link
+                                                    to={ROUTES.WISHLIST}
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                    role="menuitem"
+                                                >
+                                                    <Heart size={16} />
+                                                    Favoritos
+                                                </Link>
+                                                <Link
+                                                    to={ROUTES.CART}
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                    role="menuitem"
+                                                >
+                                                    <ShoppingCart size={16} />
+                                                    Carrinho
+                                                </Link>
+                                                <div className="border-t border-slate-100 my-1" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { signOut(); setIsUserMenuOpen(false); }}
+                                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                    role="menuitem"
+                                                >
+                                                    <LogOut size={16} />
+                                                    Sair
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <Link
+                                        to={ROUTES.LOGIN}
+                                        className={`p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.LOGIN) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
+                                        title="Entrar"
+                                    >
+                                        <LogIn size={22} />
+                                    </Link>
+                                )
+                            )}
                             <Link
                                 to={ROUTES.CART}
                                 className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
@@ -169,6 +301,78 @@ const Header: React.FC<HeaderProps> = ({
                             <button onClick={() => setIsMobileMenuOpen(false)}><X size={24} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
+                            {!authLoading && (
+                                user ? (
+                                    <div className="px-4 py-3 border-b border-slate-100">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            {user.user_metadata?.avatar_url ? (
+                                                <img src={user.user_metadata.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />
+                                            ) : (
+                                                <span className="w-12 h-12 rounded-full bg-agro-600 text-white text-base font-medium flex items-center justify-center">
+                                                    {getAvatarInitials(user)}
+                                                </span>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-slate-900 text-sm font-medium truncate">{user.email}</p>
+                                                <p className="text-slate-500 text-xs">{isAdmin(user) ? 'Administrador' : 'Cliente'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                            {isAdmin(user) && (
+                                                <Link
+                                                    to={ROUTES.ADMIN}
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                                >
+                                                    <LayoutDashboard size={18} />
+                                                    Painel Admin
+                                                </Link>
+                                            )}
+                                            <Link
+                                                to={ROUTES.ACCOUNT}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                            >
+                                                <User size={18} />
+                                                Minha conta
+                                            </Link>
+                                            <Link
+                                                to={ROUTES.WISHLIST}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                            >
+                                                <Heart size={18} />
+                                                Favoritos
+                                            </Link>
+                                            <Link
+                                                to={ROUTES.CART}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                            >
+                                                <ShoppingCart size={18} />
+                                                Carrinho
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
+                                                className="flex items-center gap-2 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg text-left"
+                                            >
+                                                <LogOut size={18} />
+                                                Sair
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Link
+                                        to={ROUTES.LOGIN}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-2 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg"
+                                    >
+                                        <LogIn size={18} />
+                                        Entrar
+                                    </Link>
+                                )
+                            )}
                             {Object.values(ProductCategory).map((cat) => (
                                 <button
                                     key={cat}

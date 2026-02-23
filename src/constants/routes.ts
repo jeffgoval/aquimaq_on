@@ -4,6 +4,7 @@
  */
 export const ROUTES = {
   HOME: '/',
+  LOGIN: '/login',
   PRODUCT: (id: string) => `/produto/${id}`,
   CART: '/carrinho',
   WISHLIST: '/favoritos',
@@ -17,11 +18,15 @@ export const ROUTES = {
   ABOUT: '/sobre',
   WORK_WITH_US: '/trabalhe-conosco',
   FAQ: '/faq',
+  ADMIN: '/admin',
+  ACCOUNT: '/conta',
 } as const;
 
 /** Segmentos de path para <Route path="..." /> (sem barra inicial). */
 export const ROUTE_PATHS = {
   HOME: '',
+  LOGIN: 'login',
+  ACCOUNT: 'conta',
   PRODUCT: 'produto/:id',
   CART: 'carrinho',
   WISHLIST: 'favoritos',

@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from '../contexts/StoreContext';
+import { AuthProvider } from '../contexts/AuthContext';
 import { CartProvider } from '@/features/cart';
 import { ToastProvider } from '../contexts/ToastContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
@@ -22,6 +23,7 @@ function composeProviders(...providers: ProviderComponent[]) {
 export const AppProviders = composeProviders(
     HelmetProvider,
     StoreProvider,
+    AuthProvider,
     CartProvider,
     ToastProvider,
     WishlistProvider

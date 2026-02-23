@@ -39,7 +39,8 @@ export interface StoreSettingsDB {
   id?: string;
   store_name: string;
   description: string;
-  document: string;
+  document?: string; // legado; o banco usa cnpj
+  cnpj?: string;
   email: string;
   phone: string;
   whatsapp: string;
@@ -95,7 +96,7 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
   return {
     storeName: r.store_name ?? (r as Record<string, unknown>).name ?? '',
     description: r.description ?? '',
-    cnpj: r.document ?? (r as Record<string, unknown>).cnpj ?? '',
+    cnpj: (r as Record<string, unknown>).cnpj ?? r.document ?? '',
     email: r.email ?? '',
     phone: r.phone ?? '',
     whatsapp: r.whatsapp ?? '',
@@ -114,7 +115,7 @@ export const storeSettingsToDB = (
   const out: Partial<StoreSettingsDB> = {};
   if (s.storeName !== undefined) out.store_name = s.storeName;
   if (s.description !== undefined) out.description = s.description;
-  if (s.cnpj !== undefined) out.document = s.cnpj;
+  if (s.cnpj !== undefined) out.cnpj = s.cnpj;
   if (s.email !== undefined) out.email = s.email;
   if (s.phone !== undefined) out.phone = s.phone;
   if (s.whatsapp !== undefined) out.whatsapp = s.whatsapp;

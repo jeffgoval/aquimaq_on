@@ -46,6 +46,16 @@ export async function uploadBannerImage(
     return { url: data.publicUrl, error: null };
 }
 
+/** Upload de foto de perfil do utilizador (bucket store-assets, pasta avatars). */
+export async function uploadAvatar(file: File, userId: string): Promise<{ url: string; error: string | null }> {
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `avatars/${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('store-assets').upload(path, file, { cacheControl: '3600', upsert: true });
+    if (error) return { url: '', error: error.message };
+    const { data } = supabase.storage.from('store-assets').getPublicUrl(path);
+    return { url: data.publicUrl, error: null };
+}
+
 export async function deleteImage(
     bucket: 'product-images' | 'store-assets',
     path: string

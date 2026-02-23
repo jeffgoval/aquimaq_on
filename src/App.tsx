@@ -16,6 +16,8 @@ const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const PolicyPage = lazy(() => import('./pages/PolicyPage'));
 const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
 
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
 const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentFailurePage = lazy(() => import('./pages/PaymentFailurePage'));
 const PaymentPendingPage = lazy(() => import('./pages/PaymentPendingPage'));
@@ -46,6 +48,8 @@ function AppContent() {
                     <Routes>
                         <Route path={ROUTES.HOME} element={<MainLayout />}>
                             <Route index element={<HomePage />} />
+                            <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
+                            <Route path={ROUTE_PATHS.ACCOUNT} element={<AccountPage />} />
                             <Route path={ROUTE_PATHS.PRODUCT} element={<ProductPage />} />
                             <Route path={ROUTE_PATHS.CART} element={<CartPage />} />
                             <Route path={ROUTE_PATHS.WISHLIST} element={<WishlistPage />} />
