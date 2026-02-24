@@ -54,11 +54,13 @@ export interface ProductRow {
   updated_at: string | null;
 }
 
+export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'in_process' | 'cancelled';
+
 export interface PaymentRow {
   id: string;
   order_id: string;
   external_id: string | null;
-  status: string;
+  status: PaymentStatus;
   amount: number | null;
   created_at: string;
 }
@@ -120,6 +122,12 @@ export interface Database {
       };
       chat_messages: {
         Row: ChatMessageRow;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      payments: {
+        Row: PaymentRow;
         Insert: any;
         Update: any;
         Relationships: [];

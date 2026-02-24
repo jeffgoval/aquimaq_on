@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle, CreditCard, Loader2 } from 'lucide-react';
+import { Wallet } from '@mercadopago/sdk-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
@@ -23,6 +24,7 @@ interface CartProps {
   onBackToCatalog?: () => void;
   initialZip?: string;
   isProcessing?: boolean;
+  preferenceId?: string | null;
 }
 
 const Cart: React.FC<CartProps> = ({
@@ -38,7 +40,8 @@ const Cart: React.FC<CartProps> = ({
   onCheckout,
   onBackToCatalog,
   initialZip,
-  isProcessing = false
+  isProcessing = false,
+  preferenceId
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
@@ -160,6 +163,25 @@ const Cart: React.FC<CartProps> = ({
             <div className="flex justify-between items-center text-sm text-gray-600"><span>Frete</span><span>{selectedShipping ? (selectedShipping.price === 0 ? 'Grátis' : formatCurrency(shippingCost)) : '--'}</span></div>
             <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2"><span>Total</span><span className="text-agro-700">{formatCurrency(grandTotal)}</span></div>
           </div>
+
+          {preferenceId ? (
+            <div className="mb-3">
+              <Wallet initialization={{ preferenceId }} />
+            </div>
+          ) : (
+            <button
+              onClick={onCheckout}
+              disabled={isProcessing}
+              className="w-full bg-agro-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-agro-700 transition-colors shadow flex items-center justify-center gap-2 mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <Loader2 className="animate-spin" size={22} />
+              ) : (
+                <CreditCard size={22} />
+              )}
+              Pagar com Mercado Pago
+            </button>
+          )}
 
           <button
             onClick={handleWhatsAppCheckout}

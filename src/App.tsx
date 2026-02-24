@@ -4,6 +4,10 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { ROUTES, ROUTE_PATHS } from '@/constants/routes';
 import { AppProviders } from './providers';
 import { useToast } from './contexts/ToastContext';
+import { initMercadoPago } from '@mercadopago/sdk-react';
+import { ENV } from './config/env';
+
+initMercadoPago(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY);
 
 import MainLayout from './layouts/MainLayout';
 import HomePage from '@/features/catalog/pages/HomePage';

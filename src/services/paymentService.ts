@@ -9,17 +9,21 @@ const HEADERS = {
   apikey: ENV.VITE_SUPABASE_ANON_KEY,
 };
 
-export const createCheckoutPreference = async (orderId: string): Promise<{ checkout_url: string }> => {
+export const createCheckoutPreference = async (
+  orderId: string,
+  items?: any[],
+  payer?: any
+): Promise<{ id: string; checkout_url: string }> => {
   const res = await fetch(`${FUNCTIONS_URL}/mercado-pago-create-preference`, {
     method: 'POST',
     headers: HEADERS,
-    body: JSON.stringify({ order_id: orderId }),
+    body: JSON.stringify({ order_id: orderId, items, payer }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error((err as { error?: string }).error ?? 'Erro ao criar checkout');
   }
-  return res.json() as Promise<{ checkout_url: string }>;
+  return res.json() as Promise<{ id: string; checkout_url: string }>;
 };
 
 export const getPaymentByOrderId = async (orderId: string): Promise<PaymentRow | null> => {
