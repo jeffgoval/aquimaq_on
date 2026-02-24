@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ChevronLeft, Trash2, ImageOff, Loader2 } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
@@ -45,41 +45,31 @@ const Cart: React.FC<CartProps> = ({
   isProcessing = false
 }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { settings } = useStore();
-  const { profile, loading: authLoading } = useAuth();
+  const { profile } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const isAutoCheckoutAttempted = React.useRef(false);
-
-  // Helper to check if address is complete
-  const isAddressComplete = (p: ProfileRow | null) => {
-    return !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
-  };
+  const isAddressComplete = (p: ProfileRow | null) =>
+    !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
 
   const handleImageError = useCallback((itemId: string) => {
     setImageErrors(prev => new Set(prev).add(itemId));
   }, []);
 
-  const handleBackToCatalog = () => {
-    navigate(ROUTES.HOME);
-  };
+  const handleBackToCatalog = () => navigate(ROUTES.HOME);
 
   const handleMercadoPagoCheckout = useCallback(async () => {
     if (items.length === 0) return;
 
     if (!profile) {
-      showToast('Por favor, faça login ou cadastre-se para finalizar a compra.', 'info');
-      // Encode the redirect with a checkout flag to return and process automatically
-      const returnUrl = encodeURIComponent('/carrinho?checkout=true');
+      const returnUrl = encodeURIComponent('/carrinho');
       navigate(`/login?redirect=${returnUrl}`);
       return;
     }
 
-    // NEW: Check for complete address before proceeding
     if (!isAddressComplete(profile)) {
       setShowAddressModal(true);
       return;
@@ -87,7 +77,6 @@ const Cart: React.FC<CartProps> = ({
 
     setIsCheckoutLoading(true);
     try {
-      // 1. Map items to MP expected format
       const mpItems = items.map(item => ({
         id: item.id,
         title: item.name,
@@ -97,7 +86,6 @@ const Cart: React.FC<CartProps> = ({
         unit_price: calculateItemPrice(item),
       }));
 
-      // 2. Add shipping as an item if a shipping option is selected and has price > 0
       if (selectedShipping && shippingCost > 0) {
         mpItems.push({
           id: 'frete',
@@ -109,8 +97,7 @@ const Cart: React.FC<CartProps> = ({
         });
       }
 
-      // 3. Mount Payer object with user profile info
-      const payer = profile ? {
+      const payer = {
         email: profile.email || '',
         name: profile.name?.split(' ')[0] || '',
         surname: profile.name?.split(' ').slice(1).join(' ') || '',
@@ -123,26 +110,17 @@ const Cart: React.FC<CartProps> = ({
           city: profile.city || '',
           federal_unit: profile.state || '',
         },
-      } : {};
+      };
 
-      // 4. Generate order ID reference
       const order_id = `ORDER_${Date.now()}`;
 
-      // 5. Invoke Edge Function
       const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
-        body: {
-          order_id,
-          items: mpItems,
-          payer,
-        },
+        body: { order_id, items: mpItems, payer },
       });
 
-      if (error) {
-        throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
-      }
+      if (error) throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
 
       if (data?.checkout_url) {
-        // Redirect to Mercado Pago Checkout Pro
         window.location.href = data.checkout_url;
       } else {
         throw new Error('URL de checkout não gerada.');
@@ -150,28 +128,10 @@ const Cart: React.FC<CartProps> = ({
     } catch (err: any) {
       console.error('Checkout MP Error:', err);
       showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');
-    } finally {
       setIsCheckoutLoading(false);
     }
   }, [items, profile, selectedShipping, shippingCost, initialZip, showToast, navigate]);
 
-  // Intent handling: if ?checkout=true is in URL, auto-trigger checkout when ready
-  React.useEffect(() => {
-    if (searchParams.get('checkout') === 'true' && !authLoading && profile && items.length > 0 && !isAutoCheckoutAttempted.current) {
-      isAutoCheckoutAttempted.current = true;
-      setIsCheckoutLoading(true); // Show loader immediately
-      // Wait a bit to ensure context and shipping calculations from localStorage are ready
-      const timer = setTimeout(() => {
-        handleMercadoPagoCheckout();
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, authLoading, profile, items.length, handleMercadoPagoCheckout]);
-
-  // If we are coming back from login to checkout, show a clear transition instead of the cart "quote" page
-  const isAutoProcessing = searchParams.get('checkout') === 'true' && isCheckoutLoading;
-
-  // Empty state
   if (items.length === 0) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -183,7 +143,6 @@ const Cart: React.FC<CartProps> = ({
             <ShoppingCart className="mr-3" /> Carrinho de Compras
           </h2>
         </div>
-
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <ShoppingCart className="text-gray-400" size={32} />
@@ -203,22 +162,7 @@ const Cart: React.FC<CartProps> = ({
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-      {/* Checkout Transition Bridge Overlay */}
-      {isAutoProcessing && (
-        <div className="absolute inset-0 z-40 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl min-h-[400px]">
-          <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 bg-agro-100 rounded-full flex items-center justify-center mb-6">
-              <Loader2 className="text-agro-600 animate-spin" size={32} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Finalizando seu pedido...</h3>
-            <p className="text-gray-500 text-center max-w-xs mx-auto">
-              Estamos preparando tudo para o seu pagamento seguro via Mercado Pago.
-            </p>
-          </div>
-        </div>
-      )}
-
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center mb-6">
         <button onClick={handleBackToCatalog} className="mr-4 text-gray-500 hover:text-gray-900 md:hidden">
           <ChevronLeft />
@@ -250,9 +194,7 @@ const Cart: React.FC<CartProps> = ({
                 <div className="flex-1 sm:w-64">
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2">{item.name}</h4>
                   <p className="text-xs text-gray-500 mb-1">{item.category}</p>
-                  <p className="text-sm font-bold text-agro-600">
-                    {formatCurrency(calculateItemPrice(item))}
-                  </p>
+                  <p className="text-sm font-bold text-agro-600">{formatCurrency(calculateItemPrice(item))}</p>
                 </div>
               </div>
 
@@ -305,13 +247,9 @@ const Cart: React.FC<CartProps> = ({
                 showToast('Erro ao salvar endereço. Tente novamente.', 'error');
                 throw error;
               }
-
               setShowAddressModal(false);
-              showToast('Endereço atualizado com sucesso!', 'success');
-              // Trigger checkout again now that address is complete
-              setTimeout(() => {
-                handleMercadoPagoCheckout();
-              }, 500);
+              showToast('Endereço salvo!', 'success');
+              handleMercadoPagoCheckout();
             }}
           />
         )}
@@ -334,8 +272,8 @@ const Cart: React.FC<CartProps> = ({
 
           <button
             onClick={handleMercadoPagoCheckout}
-            disabled={isCheckoutLoading}
-            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'
+            disabled={isCheckoutLoading || isProcessing}
+            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'
               }`}
           >
             {isCheckoutLoading ? (
@@ -343,7 +281,7 @@ const Cart: React.FC<CartProps> = ({
             ) : (
               <ShoppingCart size={22} />
             )}
-            Pagar com Mercado Pago
+            {isCheckoutLoading ? 'Aguarde...' : 'Pagar com Mercado Pago'}
           </button>
           <p className="text-xs text-center text-gray-500 mt-4">Você será redirecionado para o ambiente seguro do Mercado Pago.</p>
         </div>
