@@ -105,7 +105,11 @@ function AppContent() {
     const { toasts, hideToast } = useToast();
 
     useEffect(() => {
-        if (ENV.VITE_MERCADO_PAGO_PUBLIC_KEY && ENV.VITE_MERCADO_PAGO_PUBLIC_KEY.startsWith('APP_USR')) {
+        if (
+            ENV.VITE_MERCADO_PAGO_PUBLIC_KEY &&
+            ENV.VITE_MERCADO_PAGO_PUBLIC_KEY.startsWith('APP_USR') &&
+            ENV.VITE_MERCADO_PAGO_PUBLIC_KEY !== 'APP_USR-00000000-0000-0000-0000-000000000000'
+        ) {
             try {
                 initMercadoPago(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
             } catch (e) {
