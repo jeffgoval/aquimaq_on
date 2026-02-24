@@ -62,7 +62,7 @@ export const calculateShipping = async (
     const { data: responseData, error: functionError } = await supabase.functions.invoke('melhor-envios-quote', {
       body: payload,
       headers: {
-        Authorization: 'Bearer ',
+        Authorization: `Bearer ${ENV.VITE_SUPABASE_ANON_KEY}`,
       }
     });
 
