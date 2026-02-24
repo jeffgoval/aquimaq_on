@@ -115,7 +115,7 @@ const Cart: React.FC<CartProps> = ({
       const order_id = `ORDER_${Date.now()}`;
 
       const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
-        body: { order_id, items: mpItems, payer },
+        body: { order_id, items: mpItems, payer, siteUrl: window.location.origin },
       });
 
       if (error) throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
