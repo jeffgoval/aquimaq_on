@@ -12,6 +12,8 @@ import { ENV } from '@/config/env';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import AddressEditModal from './AddressEditModal';
+import { ProfileRow } from '@/types/database';
 
 interface CartProps {
   items: CartItem[];
@@ -49,8 +51,14 @@ const Cart: React.FC<CartProps> = ({
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const isAutoCheckoutAttempted = React.useRef(false);
+
+  // Helper to check if address is complete
+  const isAddressComplete = (p: ProfileRow | null) => {
+    return !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
+  };
 
   const handleImageError = useCallback((itemId: string) => {
     setImageErrors(prev => new Set(prev).add(itemId));
@@ -68,6 +76,12 @@ const Cart: React.FC<CartProps> = ({
       // Encode the redirect with a checkout flag to return and process automatically
       const returnUrl = encodeURIComponent('/carrinho?checkout=true');
       navigate(`/login?redirect=${returnUrl}`);
+      return;
+    }
+
+    // NEW: Check for complete address before proceeding
+    if (!isAddressComplete(profile)) {
+      setShowAddressModal(true);
       return;
     }
 
@@ -100,8 +114,15 @@ const Cart: React.FC<CartProps> = ({
         email: profile.email || '',
         name: profile.name?.split(' ')[0] || '',
         surname: profile.name?.split(' ').slice(1).join(' ') || '',
-        // We only have zip initially unless profile has a full address structure mapped
-        address: initialZip ? { zip_code: initialZip } : undefined,
+        phone: profile.phone ? { number: profile.phone } : undefined,
+        address: {
+          zip_code: profile.zip_code || initialZip || '',
+          street_name: profile.street || '',
+          street_number: profile.number || '',
+          neighborhood: profile.neighborhood || '',
+          city: profile.city || '',
+          federal_unit: profile.state || '',
+        },
       } : {};
 
       // 4. Generate order ID reference
@@ -230,6 +251,51 @@ const Cart: React.FC<CartProps> = ({
             </li>
           ))}
         </ul>
+
+        {showAddressModal && profile && (
+          <AddressEditModal
+            user={{
+              ...profile,
+              address: {
+                street: profile.street || '',
+                number: profile.number || '',
+                complement: profile.complement || '',
+                district: profile.neighborhood || '',
+                city: profile.city || '',
+                state: profile.state || '',
+                zip: profile.zip_code || initialZip || '',
+              }
+            }}
+            onClose={() => setShowAddressModal(false)}
+            onSave={async (updatedData: any) => {
+              const addr = updatedData.address;
+              const { error } = await supabase
+                .from('profiles')
+                .update({
+                  street: addr.street,
+                  number: addr.number,
+                  complement: addr.complement,
+                  neighborhood: addr.district,
+                  city: addr.city,
+                  state: addr.state,
+                  zip_code: addr.zip,
+                } as any)
+                .eq('id', profile.id);
+
+              if (error) {
+                showToast('Erro ao salvar endereço. Tente novamente.', 'error');
+                throw error;
+              }
+
+              setShowAddressModal(false);
+              showToast('Endereço atualizado com sucesso!', 'success');
+              // Trigger checkout again now that address is complete
+              setTimeout(() => {
+                handleMercadoPagoCheckout();
+              }, 500);
+            }}
+          />
+        )}
 
         <div className="bg-gray-50 p-6 border-t border-gray-200">
           <ShippingCalculator

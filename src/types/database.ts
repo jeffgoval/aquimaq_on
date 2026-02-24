@@ -12,6 +12,14 @@ export interface ProfileRow {
   name: string | null;
   role: UserRole;
   avatar_url: string | null;
+  phone: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
   created_at?: string;
   updated_at?: string;
 }
