@@ -159,13 +159,17 @@ const Cart: React.FC<CartProps> = ({
   React.useEffect(() => {
     if (searchParams.get('checkout') === 'true' && !authLoading && profile && items.length > 0 && !isAutoCheckoutAttempted.current) {
       isAutoCheckoutAttempted.current = true;
-      // Delay slightly to allow context/localStorage sync to settle
+      setIsCheckoutLoading(true); // Show loader immediately
+      // Wait a bit to ensure context and shipping calculations from localStorage are ready
       const timer = setTimeout(() => {
         handleMercadoPagoCheckout();
-      }, 1000);
+      }, 1200);
       return () => clearTimeout(timer);
     }
   }, [searchParams, authLoading, profile, items.length, handleMercadoPagoCheckout]);
+
+  // If we are coming back from login to checkout, show a clear transition instead of the cart "quote" page
+  const isAutoProcessing = searchParams.get('checkout') === 'true' && isCheckoutLoading;
 
   // Empty state
   if (items.length === 0) {
@@ -199,7 +203,22 @@ const Cart: React.FC<CartProps> = ({
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      {/* Checkout Transition Bridge Overlay */}
+      {isAutoProcessing && (
+        <div className="absolute inset-0 z-40 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl min-h-[400px]">
+          <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-agro-100 rounded-full flex items-center justify-center mb-6">
+              <Loader2 className="text-agro-600 animate-spin" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Finalizando seu pedido...</h3>
+            <p className="text-gray-500 text-center max-w-xs mx-auto">
+              Estamos preparando tudo para o seu pagamento seguro via Mercado Pago.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center mb-6">
         <button onClick={handleBackToCatalog} className="mr-4 text-gray-500 hover:text-gray-900 md:hidden">
           <ChevronLeft />
