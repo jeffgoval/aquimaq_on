@@ -46,7 +46,7 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
@@ -61,45 +61,35 @@ const Cart: React.FC<CartProps> = ({
 
   const handleBackToCatalog = () => navigate(ROUTES.HOME);
 
-  const handleMercadoPagoCheckout = useCallback(async () => {
+  const handleCheckout = useCallback(async () => {
     if (items.length === 0) return;
-
     if (!profile) {
-      const returnUrl = encodeURIComponent('/carrinho');
-      navigate(`/login?redirect=${returnUrl}`);
+      navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
       return;
     }
-
     if (!isAddressComplete(profile)) {
       setShowAddressModal(true);
+      return;
+    }
+    const itemPrice = (item: CartItem) => Number(calculateItemPrice(item));
+    const invalidItem = items.find(
+      (item) => !item.name?.trim() || itemPrice(item) <= 0 || item.quantity < 1
+    );
+    if (invalidItem) {
+      showToast('Revise os itens do carrinho: nome e preço devem ser válidos.', 'error');
       return;
     }
 
     setIsCheckoutLoading(true);
     try {
-      // MP Checkout Pro: title e unit_price obrigatórios e positivos (doc oficial).
-      const itemPrice = (item: CartItem) => Number(calculateItemPrice(item));
-      const invalidItem = items.find(
-        (item) => !item.name?.trim() || itemPrice(item) <= 0 || item.quantity < 1
-      );
-      if (invalidItem) {
-        showToast('Revise os itens do carrinho: nome e preço devem ser válidos.', 'error');
-        setIsCheckoutLoading(false);
-        return;
-      }
-
-      const mpItems = items.map((item) => {
-        const unitPrice = itemPrice(item);
-        return {
-          id: String(item.id),
-          title: (item.name?.trim() || 'Item').slice(0, 256),
-          description: (item.category ?? '').toString().slice(0, 256),
-          category_id: 'others',
-          quantity: Math.max(1, Math.floor(item.quantity)),
-          unit_price: unitPrice,
-        };
-      });
-
+      const mpItems = items.map((item) => ({
+        id: String(item.id),
+        title: (item.name?.trim() || 'Item').slice(0, 256),
+        description: (item.category ?? '').toString().slice(0, 256),
+        category_id: 'others',
+        quantity: Math.max(1, Math.floor(item.quantity)),
+        unit_price: itemPrice(item),
+      }));
       if (selectedShipping && shippingCost > 0) {
         mpItems.push({
           id: 'frete',
@@ -111,72 +101,65 @@ const Cart: React.FC<CartProps> = ({
         });
       }
 
+      const order = {
+        subtotal: cartSubtotal,
+        shipping_cost: shippingCost,
+        total: grandTotal,
+        shipping_method: selectedShipping?.service ?? null,
+        shipping_address: profile
+          ? {
+              street: profile.street ?? null,
+              number: profile.number ?? null,
+              neighborhood: profile.neighborhood ?? null,
+              city: profile.city ?? null,
+              state: profile.state ?? null,
+              zip_code: profile.zip_code || initialZip || null,
+            }
+          : null,
+      };
+
       const payer = {
-        email: profile.email || '',
-        name: profile.name?.split(' ')[0] || '',
-        surname: profile.name?.split(' ').slice(1).join(' ') || '',
+        email: profile.email ?? '',
+        name: profile.name?.split(' ')[0] ?? '',
+        surname: profile.name?.split(' ').slice(1).join(' ') ?? '',
         phone: profile.phone ? { number: profile.phone } : undefined,
         address: {
           zip_code: profile.zip_code || initialZip || '',
-          street_name: profile.street || '',
-          street_number: profile.number || '',
-          neighborhood: profile.neighborhood || '',
-          city: profile.city || '',
-          federal_unit: profile.state || '',
+          street_name: profile.street ?? '',
+          street_number: profile.number ?? '',
+          neighborhood: profile.neighborhood ?? '',
+          city: profile.city ?? '',
+          federal_unit: profile.state ?? '',
         },
       };
 
-      const siteUrl = window.location.origin;
-
-      // Criar pedido na BD para o webhook MP gravar o pagamento (payments.order_id = uuid)
-      const shippingAddress = profile
-        ? {
-            street: profile.street,
-            number: profile.number,
-            neighborhood: profile.neighborhood,
-            city: profile.city,
-            state: profile.state,
-            zip_code: profile.zip_code || initialZip,
-          }
-        : null;
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          cliente_id: profile.id,
-          status: 'aguardando_pagamento',
-          subtotal: cartSubtotal,
-          shipping_cost: shippingCost,
-          total: grandTotal,
-          shipping_method: selectedShipping?.service ?? null,
-          shipping_address: shippingAddress,
-          payment_method: 'mercado_pago',
-        })
-        .select('id')
-        .single();
-
-      if (orderError || !orderData?.id) {
-        throw new Error(orderError?.message ?? 'Erro ao criar pedido.');
-      }
-      const orderId = orderData.id;
-
-      const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
-        body: { order_id: orderId, items: mpItems, payer, siteUrl },
+      const { data, error } = await supabase.functions.invoke('checkout', {
+        body: { order, items: mpItems, payer, back_url_base: window.location.origin },
       });
 
-
-      if (error) throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
+      if (error) {
+        const status = (error as { status?: number }).status;
+        if (status === 401) {
+          await signOut();
+          showToast('Sessão expirada. Faça login novamente.', 'error');
+          navigate('/login?redirect=/carrinho');
+          setIsCheckoutLoading(false);
+          return;
+        }
+        throw new Error((error as { message?: string }).message ?? 'Erro ao comunicar com o pagamento.');
+      }
 
       if (data?.checkout_url) {
         window.location.href = data.checkout_url;
-      } else {
-        throw new Error('URL de checkout não gerada.');
+        return;
       }
-    } catch (err: any) {
-      console.error('Checkout MP Error:', err);
-      showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');
+      showToast('Erro ao iniciar pagamento. Tente novamente.', 'error');
+    } catch {
+      showToast('Erro ao iniciar pagamento. Tente novamente.', 'error');
+    } finally {
       setIsCheckoutLoading(false);
     }
-  }, [items, profile, selectedShipping, shippingCost, initialZip, showToast, navigate]);
+  }, [items, profile, selectedShipping, shippingCost, cartSubtotal, grandTotal, initialZip, showToast, navigate, signOut]);
 
   if (items.length === 0) {
     return (
@@ -297,7 +280,6 @@ const Cart: React.FC<CartProps> = ({
               await refreshProfile();
               showToast('Endereço salvo!', 'success');
               setShowAddressModal(false);
-              handleMercadoPagoCheckout();
             }}
           />
         )}
@@ -319,10 +301,9 @@ const Cart: React.FC<CartProps> = ({
           </div>
 
           <button
-            onClick={handleMercadoPagoCheckout}
+            onClick={handleCheckout}
             disabled={isCheckoutLoading || isProcessing}
-            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'
-              }`}
+            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'}`}
           >
             {isCheckoutLoading ? (
               <Loader2 className="animate-spin" size={22} />

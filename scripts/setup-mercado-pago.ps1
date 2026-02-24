@@ -1,73 +1,59 @@
-# Setup Mercado Pago: tabela payments, deploy das Edge Functions e secrets.
-# Requisitos:
-#   1) npx supabase login   (uma vez)
-#   2) .env com MERCADO_PAGO_ACCESS_TOKEN preenchido (Access Token de teste em Suas integrações > Credenciais de teste)
+# Setup Mercado Pago - Deploy das Edge Functions e secrets
+# Pré-requisitos: npx supabase login; ficheiro .env na raiz com MERCADO_PAGO_ACCESS_TOKEN (e opcionalmente MERCADO_PAGO_WEBHOOK_SECRET)
 
 $ErrorActionPreference = "Stop"
-$ProjectRef = "bzicdqrbqykypzesxayw"
-$Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path "$Root\.env")) {
-    Write-Error ".env nao encontrado em $Root. Crie e adicione MERCADO_PAGO_ACCESS_TOKEN (e opcional MERCADO_PAGO_WEBHOOK_SECRET)."
+$root = Split-Path -Parent $PSScriptRoot
+$envPath = Join-Path $root ".env"
+
+if (-not (Test-Path $envPath)) {
+    Write-Error "Ficheiro .env não encontrado em $root. Crie um .env com MERCADO_PAGO_ACCESS_TOKEN (e opcionalmente MERCADO_PAGO_WEBHOOK_SECRET)."
 }
 
-Write-Host "0/4 Verificando login Supabase..." -ForegroundColor Cyan
-Push-Location $Root
-$loginOk = $false
-try { npx supabase functions list --project-ref $ProjectRef 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { $loginOk = $true } } catch {}
-if (-not $loginOk) {
+$content = Get-Content $envPath -Raw
+if ($content -notmatch "MERCADO_PAGO_ACCESS_TOKEN\s*=") {
+    Write-Error ".env deve conter MERCADO_PAGO_ACCESS_TOKEN=..."
+}
+
+$projectRef = ""
+if ($content -match "VITE_SUPABASE_URL=https://([a-z0-9]+)\.supabase\.co") {
+    $projectRef = $Matches[1]
+}
+if (-not $projectRef) {
+    Write-Error "VITE_SUPABASE_URL no .env deve ser https://<PROJECT_REF>.supabase.co para usar deploy sem supabase link."
+}
+
+$projectArg = "--project-ref", $projectRef
+
+Push-Location $root
+
+try {
+    Write-Host "Deploy da função checkout (com JWT)..."
+    npx supabase functions deploy checkout @projectArg
+    if ($LASTEXITCODE -ne 0) { throw "Deploy checkout falhou." }
+
+    Write-Host "Deploy da função mercado-pago-webhook (sem JWT)..."
+    npx supabase functions deploy mercado-pago-webhook --no-verify-jwt @projectArg
+    if ($LASTEXITCODE -ne 0) { throw "Deploy mercado-pago-webhook falhou." }
+
+    $tokenLine = Get-Content $envPath | Where-Object { $_ -match "^\s*MERCADO_PAGO_ACCESS_TOKEN\s*=" } | Select-Object -First 1
+    $token = ($tokenLine -replace "^\s*MERCADO_PAGO_ACCESS_TOKEN\s*=\s*", "").Trim().Trim('"').Trim("'")
+    if (-not $token) {
+        Write-Error "MERCADO_PAGO_ACCESS_TOKEN está vazio no .env."
+    }
+    npx supabase secrets set "MERCADO_PAGO_ACCESS_TOKEN=$token" @projectArg
+    if ($LASTEXITCODE -ne 0) { throw "supabase secrets set MERCADO_PAGO_ACCESS_TOKEN falhou." }
+
+    $secretLine = Get-Content $envPath | Where-Object { $_ -match "^\s*MERCADO_PAGO_WEBHOOK_SECRET\s*=" } | Select-Object -First 1
+    if ($secretLine) {
+        $secret = ($secretLine -replace "^\s*MERCADO_PAGO_WEBHOOK_SECRET\s*=\s*", "").Trim().Trim('"').Trim("'")
+        if ($secret) {
+            npx supabase secrets set "MERCADO_PAGO_WEBHOOK_SECRET=$secret" @projectArg
+            if ($LASTEXITCODE -ne 0) { Write-Warning "supabase secrets set MERCADO_PAGO_WEBHOOK_SECRET falhou." }
+        }
+    }
+
+    Write-Host "Setup concluído. Funções checkout e mercado-pago-webhook em deploy; secrets configurados."
+}
+finally {
     Pop-Location
-    Write-Host "Execute primeiro: npx supabase login" -ForegroundColor Red
-    throw "Supabase: access token nao fornecido. Rode 'npx supabase login' e execute este script de novo."
 }
-Pop-Location
-
-# Carregar .env (linhas KEY=VALUE, sem aspas)
-$envVars = @{}
-Get-Content "$Root\.env" -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
-        $envVars[$matches[1].Trim()] = $matches[2].Trim()
-    }
-}
-
-$accessToken = $envVars["MERCADO_PAGO_ACCESS_TOKEN"]
-if (-not $accessToken) {
-    Write-Error "MERCADO_PAGO_ACCESS_TOKEN nao definido no .env. Adicione o Access Token de teste do Mercado Pago (Suas integracoes > Credenciais de teste)."
-}
-
-Write-Host "1/4 Aplicando migracao (tabela payments)..." -ForegroundColor Cyan
-Push-Location $Root
-try {
-    npx supabase db push 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "AVISO: db push falhou (rode 'npx supabase link --project-ref bzicdqrbqykypzesxayw' uma vez com a senha do DB)." -ForegroundColor Yellow
-        Write-Host "Ou execute o SQL em supabase/migrations/20250224000000_create_payments_table.sql no Dashboard > SQL Editor." -ForegroundColor Yellow
-    }
-} finally { Pop-Location }
-
-Write-Host "2/4 Deploy mercado-pago-create-preference..." -ForegroundColor Cyan
-Push-Location $Root
-try {
-    npx supabase functions deploy mercado-pago-create-preference --project-ref $ProjectRef 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "Deploy create-preference falhou" }
-} finally { Pop-Location }
-
-Write-Host "3/4 Deploy mercado-pago-webhook..." -ForegroundColor Cyan
-Push-Location $Root
-try {
-    npx supabase functions deploy mercado-pago-webhook --project-ref $ProjectRef --no-verify-jwt 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "Deploy webhook falhou" }
-} finally { Pop-Location }
-
-Write-Host "4/4 Definindo secrets no Supabase..." -ForegroundColor Cyan
-Push-Location $Root
-try {
-    npx supabase secrets set MERCADO_PAGO_ACCESS_TOKEN="$accessToken" --project-ref $ProjectRef
-    if ($LASTEXITCODE -ne 0) { throw "Secrets set MERCADO_PAGO_ACCESS_TOKEN falhou" }
-    $webhookSecret = $envVars["MERCADO_PAGO_WEBHOOK_SECRET"]
-    if ($webhookSecret) {
-        npx supabase secrets set MERCADO_PAGO_WEBHOOK_SECRET="$webhookSecret" --project-ref $ProjectRef
-        if ($LASTEXITCODE -ne 0) { Write-Host "AVISO: MERCADO_PAGO_WEBHOOK_SECRET nao foi definido." -ForegroundColor Yellow }
-    }
-} finally { Pop-Location }
-
-Write-Host "Concluido. Tabela payments, funcoes e secrets configurados." -ForegroundColor Green

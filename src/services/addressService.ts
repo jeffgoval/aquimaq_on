@@ -47,8 +47,8 @@ export const fetchAddressByCEP = async (cep: string): Promise<AddressData | null
         const data: ViacepResponse = await res.json();
         if (data.erro) throw new Error('CEP not found');
         return toAddressData(data);
-    } catch (viaErr) {
-        if (import.meta.env?.DEV) console.warn('ViaCEP falhou, tentando BrasilAPI:', viaErr);
+    } catch {
+        // ViaCEP falhou (timeout, CORS, rede); fallback BrasilAPI abaixo
     }
 
     // 2) Fallback BrasilAPI
@@ -66,7 +66,7 @@ export const fetchAddressByCEP = async (cep: string): Promise<AddressData | null
             state: data.state ?? '',
         };
     } catch (error) {
-        console.error('Busca CEP (ViaCEP + BrasilAPI) falhou:', error);
+        if (import.meta.env?.DEV) console.warn('Busca CEP falhou (ViaCEP + BrasilAPI):', error);
         return null;
     }
 };

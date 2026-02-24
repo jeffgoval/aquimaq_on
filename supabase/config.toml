@@ -1,3 +1,12 @@
+[functions.checkout]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/checkout/index.ts"
+
+[functions.mercado-pago-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mercado-pago-webhook/index.ts"
 
 [functions.melhor-envios-quote]
 enabled = true

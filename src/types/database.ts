@@ -74,11 +74,12 @@ export interface ProductRow {
   updated_at: string | null;
 }
 
-export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'in_process' | 'cancelled';
+export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded' | 'cancelled' | 'in_process' | 'charged_back';
 
 export interface PaymentRow {
   id: string;
   order_id: string;
+  external_reference: string | null;
   external_id: string | null;
   status: PaymentStatus;
   amount: number | null;
