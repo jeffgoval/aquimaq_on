@@ -23,12 +23,13 @@ const LoginPage: React.FC = () => {
 
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type');
+  const redirectPath = searchParams.get('redirect') || ROUTES.HOME;
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(redirectPath, { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, redirectPath]);
 
   useEffect(() => {
     if (!tokenHash) return;
@@ -45,10 +46,10 @@ const LoginPage: React.FC = () => {
           setError(err.message);
         } else {
           window.history.replaceState({}, document.title, ROUTES.LOGIN);
-          window.location.replace(ROUTES.HOME);
+          window.location.replace(redirectPath);
         }
       });
-  }, [tokenHash, type]);
+  }, [tokenHash, type, redirectPath]);
 
   const resetForm = () => {
     setError(null);
@@ -72,7 +73,7 @@ const LoginPage: React.FC = () => {
       setError(err.message);
       return;
     }
-    navigate(ROUTES.HOME, { replace: true });
+    navigate(redirectPath, { replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -103,7 +104,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     if (data.session) {
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(redirectPath, { replace: true });
       return;
     }
     setSuccessMessage('Conta criada. Verifique seu e-mail para confirmar o cadastro.');

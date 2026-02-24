@@ -60,6 +60,12 @@ const Cart: React.FC<CartProps> = ({
   const handleMercadoPagoCheckout = async () => {
     if (items.length === 0) return;
 
+    if (!profile) {
+      showToast('Por favor, faça login ou cadastre-se para finalizar a compra.', 'info');
+      navigate('/login?redirect=/carrinho');
+      return;
+    }
+
     setIsCheckoutLoading(true);
     try {
       // 1. Map items to MP expected format
