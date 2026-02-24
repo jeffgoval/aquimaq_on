@@ -126,12 +126,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                             onDragOver={(e) => handleImageDragOver(e, index)}
                             onDragEnd={handleImageDragEnd}
                             className={`
-                                relative aspect-square rounded-lg overflow-hidden bg-stone-100 group cursor-move
+                                relative aspect-square rounded-lg overflow-hidden bg-white group cursor-move border border-stone-100
                                 ${index === 0 ? 'ring-2 ring-stone-400' : ''}
                                 ${draggedIndex === index ? 'opacity-50' : ''}
                             `}
                         >
-                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            <img src={url} alt="" className="w-full h-full object-contain" />
 
                             {/* Overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1">
@@ -198,7 +198,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                             </>
                         ) : (
                             <>
-                                <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-stone-400">
+                                <div className="w-10 h-10 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-stone-400">
                                     <Upload size={20} />
                                 </div>
                                 <div>

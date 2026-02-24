@@ -16,6 +16,7 @@ import {
     MessageCircle
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/constants/routes';
 
 export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'ANALYTICS' | 'KNOWLEDGE' | 'CHAT';
@@ -64,6 +65,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const { settings } = useStore();
+    const { isAdmin } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const activeView: AdminView = useMemo(() => {
@@ -76,7 +78,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         return 'DASHBOARD';
     }, [pathname, propActiveView]);
 
-    const navItems: NavItem[] = [
+    const navItems: NavItem[] = ([
         { id: 'DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
         { id: 'ANALYTICS', label: 'Analytics', icon: <BarChart size={18} /> },
         { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} /> },
@@ -86,7 +88,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'KNOWLEDGE', label: 'Base de Conhecimento', icon: <BookOpen size={18} /> },
         { id: 'CHAT', label: 'Chat', icon: <MessageCircle size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
-    ];
+    ] as NavItem[]).filter(item => {
+        if (!isAdmin && ['USERS', 'SETTINGS', 'ANALYTICS', 'KNOWLEDGE', 'CHAT'].includes(item.id)) return false;
+        return true;
+    });
 
     const handleNavClick = (view: AdminView) => {
         if (onNavigate) {

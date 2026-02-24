@@ -11,25 +11,17 @@ import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { ROUTES } from '@/constants/routes';
 
 const getAvatarInitials = (user: SupabaseUser): string => {
-  const name = (user.user_metadata?.full_name ?? user.user_metadata?.name) as string | undefined;
-  if (name && name.trim()) {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  }
-  const email = user.email ?? '';
-  const local = email.split('@')[0] || '?';
-  return local.slice(0, 2).toUpperCase() || '?';
+    const name = (user.user_metadata?.full_name ?? user.user_metadata?.name) as string | undefined;
+    if (name && name.trim()) {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        return name.slice(0, 2).toUpperCase();
+    }
+    const email = user.email ?? '';
+    const local = email.split('@')[0] || '?';
+    return local.slice(0, 2).toUpperCase() || '?';
 };
 
-const getRole = (user: SupabaseUser): string => {
-  return (user.app_metadata?.role as string) ?? (user.user_metadata?.role as string) ?? 'user';
-};
-
-const isAdmin = (user: SupabaseUser): boolean => {
-  const role = getRole(user);
-  return role === 'admin' || role === 'super_admin';
-};
 
 interface HeaderProps {
     cartItemCount: number;
@@ -49,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({
     onCategoryChange
 }) => {
     const { settings } = useStore();
-    const { user, loading: authLoading, signOut } = useAuth();
+    const { user, loading: authLoading, signOut, isAdmin, isGerente } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -189,9 +181,9 @@ const Header: React.FC<HeaderProps> = ({
                                             >
                                                 <div className="px-3 py-2 border-b border-slate-100">
                                                     <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
-                                                    <p className="text-xs text-slate-500">{isAdmin(user) ? 'Administrador' : 'Cliente'}</p>
+                                                    <p className="text-xs text-slate-500">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : 'Cliente'}</p>
                                                 </div>
-                                                {isAdmin(user) && (
+                                                {(isAdmin || isGerente) && (
                                                     <Link
                                                         to={ROUTES.ADMIN}
                                                         onClick={() => { setIsUserMenuOpen(false); }}
@@ -314,11 +306,11 @@ const Header: React.FC<HeaderProps> = ({
                                             )}
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-slate-900 text-sm font-medium truncate">{user.email}</p>
-                                                <p className="text-slate-500 text-xs">{isAdmin(user) ? 'Administrador' : 'Cliente'}</p>
+                                                <p className="text-slate-500 text-xs">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : 'Cliente'}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-0.5">
-                                            {isAdmin(user) && (
+                                            {(isAdmin || isGerente) && (
                                                 <Link
                                                     to={ROUTES.ADMIN}
                                                     onClick={() => setIsMobileMenuOpen(false)}

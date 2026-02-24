@@ -40,7 +40,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
 
   if (!images || images.length === 0) {
     return (
-      <div className="w-full h-80 bg-gray-100 flex items-center justify-center text-gray-400">
+      <div className="w-full h-80 bg-white flex items-center justify-center text-gray-400">
         Sem Imagem
       </div>
     );
@@ -65,7 +65,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
 
       {/* Thumbnails Strip */}
       {images.length > 1 && (
-        <div className="flex overflow-x-auto gap-2 p-4 bg-gray-50 scrollbar-hide">
+        <div className="flex overflow-x-auto gap-2 p-4 bg-white scrollbar-hide">
           {images.map((img, idx) => (
             <button
               key={idx}

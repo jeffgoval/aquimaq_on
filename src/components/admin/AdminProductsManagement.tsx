@@ -56,7 +56,7 @@ const AdminProductsManagement: React.FC = () => {
                 description: p.description,
                 technicalSpecs: p.technical_specs,
                 price: p.price,
-                category: p.category,
+                category: p.category as ProductCategory,
                 imageUrl: p.image_url,
                 gallery: p.gallery || [],
                 stock: p.stock,
@@ -206,10 +206,10 @@ const AdminProductsManagement: React.FC = () => {
                                                         <img
                                                             src={product.imageUrl}
                                                             alt=""
-                                                            className="w-10 h-10 rounded-lg object-cover bg-stone-100"
+                                                            className="w-10 h-10 rounded-lg object-contain bg-white"
                                                         />
                                                     ) : (
-                                                        <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-stone-400">
+                                                        <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-stone-400 border border-stone-100">
                                                             <Package size={16} />
                                                         </div>
                                                     )}

@@ -40,13 +40,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
 
       <Link
         to={ROUTES.PRODUCT(product.id)}
-        className="h-48 w-full bg-gray-100 overflow-hidden cursor-pointer relative block"
+        className="h-48 w-full bg-white overflow-hidden cursor-pointer relative block"
         aria-label={`Ver detalhes de ${product.name}`}
       >
         <Image
           src={product.imageUrl}
           alt={product.name}
-          className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-500"
         />
 
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">

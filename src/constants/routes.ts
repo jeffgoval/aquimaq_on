@@ -19,6 +19,14 @@ export const ROUTES = {
   WORK_WITH_US: '/trabalhe-conosco',
   FAQ: '/faq',
   ADMIN: '/admin',
+  ADMIN_ORDERS: '/admin/pedidos',
+  ADMIN_PRODUCTS: '/admin/produtos',
+  ADMIN_BANNERS: '/admin/banners',
+  ADMIN_USERS: '/admin/usuarios',
+  ADMIN_SETTINGS: '/admin/configuracoes',
+  ADMIN_ANALYTICS: '/admin/analytics',
+  ADMIN_KNOWLEDGE: '/admin/conhecimento',
+  ADMIN_CHAT: '/admin/chat',
   ACCOUNT: '/conta',
 } as const;
 
@@ -36,4 +44,13 @@ export const ROUTE_PATHS = {
   PAYMENT_SUCCESS: 'pagamento/sucesso',
   PAYMENT_FAILURE: 'pagamento/falha',
   PAYMENT_PENDING: 'pagamento/pendente',
+  ADMIN: 'admin',
+  ADMIN_ORDERS: 'pedidos',
+  ADMIN_PRODUCTS: 'produtos',
+  ADMIN_BANNERS: 'banners',
+  ADMIN_USERS: 'usuarios',
+  ADMIN_SETTINGS: 'configuracoes',
+  ADMIN_ANALYTICS: 'analytics',
+  ADMIN_KNOWLEDGE: 'conhecimento',
+  ADMIN_CHAT: 'chat',
 } as const;

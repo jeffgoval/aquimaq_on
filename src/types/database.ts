@@ -4,6 +4,18 @@
 
 import type { CartItem } from '@/types';
 
+export type UserRole = 'cliente' | 'admin' | 'vendedor' | 'gerente';
+
+export interface ProfileRow {
+  id: string;
+  email: string | null;
+  name: string | null;
+  role: UserRole;
+  avatar_url: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type Json =
   | string
   | number
@@ -128,6 +140,12 @@ export interface Database {
       };
       payments: {
         Row: PaymentRow;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      profiles: {
+        Row: ProfileRow;
         Insert: any;
         Update: any;
         Relationships: [];

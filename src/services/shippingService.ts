@@ -27,6 +27,7 @@ const FUNCTIONS_URL = `${ENV.VITE_SUPABASE_URL}/functions/v1`;
 const HEADERS = {
   'Content-Type': 'application/json',
   apikey: ENV.VITE_SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${ENV.VITE_SUPABASE_ANON_KEY}`,
 };
 
 /**
