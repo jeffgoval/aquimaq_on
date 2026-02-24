@@ -12,6 +12,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
   isGerente: boolean;
   hasRole: (roles: UserRole[]) => boolean;
@@ -90,9 +91,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState({ user: null, session: null, profile: null, loading: false });
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const updatedProfile = await fetchProfile(session.user.id);
+    setState(prev => ({ ...prev, profile: updatedProfile }));
+  }, [fetchProfile]);
+
   const value: AuthContextValue = {
     ...state,
     signOut,
+    refreshProfile,
     isAdmin: state.profile?.role === 'admin',
     isGerente: state.profile?.role === 'gerente',
     hasRole: (roles: UserRole[]) => roles.includes(state.profile?.role || 'cliente'),

@@ -46,7 +46,7 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
@@ -247,8 +247,10 @@ const Cart: React.FC<CartProps> = ({
                 showToast('Erro ao salvar endereço. Tente novamente.', 'error');
                 throw error;
               }
-              setShowAddressModal(false);
+              // Refresh the in-memory profile so isAddressComplete works correctly
+              await refreshProfile();
               showToast('Endereço salvo!', 'success');
+              setShowAddressModal(false);
               handleMercadoPagoCheckout();
             }}
           />
