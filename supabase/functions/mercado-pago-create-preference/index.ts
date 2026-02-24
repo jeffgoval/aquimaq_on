@@ -27,16 +27,10 @@ serve(async (req) => {
         // Create Preference
         const response = await preference.create({
             body: {
-                items: items || [
-                    {
-                        id: order_id,
-                        title: `Pedido #${order_id.slice(0, 8)}`,
-                        quantity: 1,
-                        unit_price: 100.0, // Placeholder, usually you'd fetch this from DB using order_id
-                    },
-                ],
+                items: items,
                 payer: payer || {},
                 external_reference: order_id,
+                statement_descriptor: "AQUIMAQ",
                 back_urls: {
                     success: `${req.headers.get("origin")}/pagamento/sucesso`,
                     failure: `${req.headers.get("origin")}/pagamento/falha`,

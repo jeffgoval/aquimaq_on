@@ -10,6 +10,8 @@ import { ROUTES } from '@/constants/routes';
 import { useToast } from '@/contexts/ToastContext';
 import { ENV } from '@/config/env';
 import { useStore } from '@/contexts/StoreContext';
+import { supabase } from '@/services/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CartProps {
   items: CartItem[];
@@ -42,7 +44,10 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
+  const { profile } = useAuth();
+  const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   const handleImageError = useCallback((itemId: string) => {
     setImageErrors(prev => new Set(prev).add(itemId));
@@ -52,12 +57,70 @@ const Cart: React.FC<CartProps> = ({
     navigate(ROUTES.HOME);
   };
 
-  const whatsappNumber = settings?.phone?.replace(/\D/g, '') ?? '';
+  const handleMercadoPagoCheckout = async () => {
+    if (items.length === 0) return;
 
-  const handleWhatsAppCheckout = () => {
-    const itemsList = items.map(item => `- ${item.name} (${item.quantity}x)`).join('\n');
-    const message = `Olá! Gostaria de finalizar o pedido:\n\n${itemsList}\n\nSubtotal: ${formatCurrency(cartSubtotal)}\nFrete: ${selectedShipping ? formatCurrency(shippingCost) : 'A combinar'}\nTotal: ${formatCurrency(grandTotal)}`;
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    setIsCheckoutLoading(true);
+    try {
+      // 1. Map items to MP expected format
+      const mpItems = items.map(item => ({
+        id: item.id,
+        title: item.name,
+        description: item.category as string,
+        category_id: item.category as string,
+        quantity: item.quantity,
+        unit_price: calculateItemPrice(item),
+      }));
+
+      // 2. Add shipping as an item if a shipping option is selected and has price > 0
+      if (selectedShipping && shippingCost > 0) {
+        mpItems.push({
+          id: 'frete',
+          title: 'Frete',
+          description: `Serviço: ${selectedShipping.service} (${selectedShipping.carrier})`,
+          category_id: 'shipping',
+          quantity: 1,
+          unit_price: shippingCost,
+        });
+      }
+
+      // 3. Mount Payer object with user profile info
+      const payer = profile ? {
+        email: profile.email || '',
+        name: profile.name?.split(' ')[0] || '',
+        surname: profile.name?.split(' ').slice(1).join(' ') || '',
+        // We only have zip initially unless profile has a full address structure mapped
+        address: initialZip ? { zip_code: initialZip } : undefined,
+      } : {};
+
+      // 4. Generate order ID reference
+      const order_id = `ORDER_${Date.now()}`;
+
+      // 5. Invoke Edge Function
+      const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
+        body: {
+          order_id,
+          items: mpItems,
+          payer,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
+      }
+
+      if (data?.checkout_url) {
+        // Redirect to Mercado Pago Checkout Pro
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('URL de checkout não gerada.');
+      }
+    } catch (err: any) {
+      console.error('Checkout MP Error:', err);
+      showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');
+    } finally {
+      setIsCheckoutLoading(false);
+    }
   };
 
   // Empty state
@@ -162,13 +225,19 @@ const Cart: React.FC<CartProps> = ({
           </div>
 
           <button
-            onClick={handleWhatsAppCheckout}
-            className="w-full bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors shadow flex items-center justify-center gap-2"
+            onClick={handleMercadoPagoCheckout}
+            disabled={isCheckoutLoading}
+            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'
+              }`}
           >
-            <MessageCircle size={22} />
-            Finalizar via WhatsApp
+            {isCheckoutLoading ? (
+              <Loader2 className="animate-spin" size={22} />
+            ) : (
+              <ShoppingCart size={22} />
+            )}
+            Pagar com Mercado Pago
           </button>
-          <p className="text-xs text-center text-gray-500 mt-4">Faremos o fechamento do seu pedido via WhatsApp.</p>
+          <p className="text-xs text-center text-gray-500 mt-4">Você será redirecionado para o ambiente seguro do Mercado Pago.</p>
         </div>
       </div>
     </div>
