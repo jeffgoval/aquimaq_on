@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle, Loader2 } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff, Loader2 } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';

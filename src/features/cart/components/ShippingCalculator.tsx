@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Truck, MapPin, Loader2, Store, MessageCircle } from 'lucide-react';
+import { Truck, MapPin, Loader2, Store } from 'lucide-react';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
 import { maskCEP } from '@/utils/masks';
@@ -148,21 +148,8 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
       </form>
 
       {error && (
-        <div className="mb-3 space-y-2">
+        <div className="mb-3">
           <p className="text-amber-800 text-xs">{error}</p>
-          {whatsappNumber && (
-            <a
-              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                `Olá! Gostaria de cotar frete para o CEP ${cep.replace(/\D/g, '')}. Podem me ajudar?`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 font-medium"
-            >
-              <MessageCircle size={16} />
-              Calcular frete via WhatsApp
-            </a>
-          )}
         </div>
       )}
 
