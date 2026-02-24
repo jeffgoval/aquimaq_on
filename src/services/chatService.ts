@@ -3,7 +3,6 @@ import type { ChatConversationRow, ChatMessageRow } from '@/types/database';
 import type { ChatConversation, ChatMessage } from '@/types';
 import { ENV } from '@/config/env';
 
-const FUNCTIONS_URL = `${ENV.VITE_SUPABASE_URL}/functions/v1`;
 
 function mapConversation(row: ChatConversationRow): ChatConversation {
   return {
@@ -29,43 +28,20 @@ function mapMessage(row: ChatMessageRow): ChatMessage {
   };
 }
 
-const HEADERS = {
-  'Content-Type': 'application/json',
-  apikey: ENV.VITE_SUPABASE_ANON_KEY,
-};
-
-/** Cria uma nova conversa (simplificado para guest). */
-export const createConversation = async (subject?: string): Promise<ChatConversation> => {
-  const { data, error } = await supabase
-    .from('chat_conversations')
-    .insert({
-      customer_id: 'guest_user',
-      status: 'active',
-      channel: 'web',
-      subject: subject ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return mapConversation(data as ChatConversationRow);
-};
-
 /** Envia mensagem e obtém resposta da IA. */
 export const sendMessage = async (
   conversationId: string,
   content: string
 ): Promise<{ reply: string }> => {
-  const res = await fetch(`${FUNCTIONS_URL}/ai-chat`, {
-    method: 'POST',
-    headers: HEADERS,
-    body: JSON.stringify({ conversation_id: conversationId, message: content }),
+  const { data, error } = await supabase.functions.invoke('ai-chat', {
+    body: { conversation_id: conversationId, message: content },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? 'Erro ao enviar mensagem');
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao enviar mensagem');
   }
-  return res.json() as Promise<{ reply: string }>;
+
+  return data as { reply: string };
 };
 
 /** Lista conversas. */

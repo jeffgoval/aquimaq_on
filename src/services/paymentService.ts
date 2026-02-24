@@ -2,28 +2,20 @@ import { supabase } from '@/services/supabase';
 import type { PaymentRow, PaymentStatus } from '@/types/database';
 import { ENV } from '@/config/env';
 
-const FUNCTIONS_URL = `${ENV.VITE_SUPABASE_URL}/functions/v1`;
-
-const HEADERS = {
-  'Content-Type': 'application/json',
-  apikey: ENV.VITE_SUPABASE_ANON_KEY,
-};
-
 export const createCheckoutPreference = async (
   orderId: string,
   items?: any[],
   payer?: any
 ): Promise<{ id: string; checkout_url: string }> => {
-  const res = await fetch(`${FUNCTIONS_URL}/mercado-pago-create-preference`, {
-    method: 'POST',
-    headers: HEADERS,
-    body: JSON.stringify({ order_id: orderId, items, payer }),
+  const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
+    body: { order_id: orderId, items, payer },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? 'Erro ao criar checkout');
+
+  if (error) {
+    throw new Error(error.message || 'Erro ao criar checkout');
   }
-  return res.json() as Promise<{ id: string; checkout_url: string }>;
+
+  return data as { id: string; checkout_url: string };
 };
 
 export const getPaymentByOrderId = async (orderId: string): Promise<PaymentRow | null> => {

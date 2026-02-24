@@ -22,13 +22,7 @@ const PICKUP_OPTION: ShippingOption = {
   estimatedDays: 0,
 };
 
-const FUNCTIONS_URL = `${ENV.VITE_SUPABASE_URL}/functions/v1`;
-
-const HEADERS = {
-  'Content-Type': 'application/json',
-  apikey: ENV.VITE_SUPABASE_ANON_KEY,
-  Authorization: `Bearer ${ENV.VITE_SUPABASE_ANON_KEY}`,
-};
+import { supabase } from '@/services/supabase';
 
 /**
  * Calcula opções de frete: chama Edge Function Melhor Envios e mantém sempre Retirada no Balcão.
@@ -65,13 +59,15 @@ export const calculateShipping = async (
           : [{ weight: 1, width: 16, height: 2, length: 11, quantity: 1 }],
     };
 
-    const res = await fetch(`${FUNCTIONS_URL}/melhor-envios-quote`, {
-      method: 'POST',
-      headers: HEADERS,
-      body: JSON.stringify(payload),
+    const { data: responseData, error: functionError } = await supabase.functions.invoke('melhor-envios-quote', {
+      body: payload
     });
 
-    const data = (await res.json()) as { options?: ShippingOption[]; error?: string };
+    if (functionError) {
+      throw functionError;
+    }
+
+    const data = responseData as { options?: ShippingOption[]; error?: string };
 
     if (data.options?.length) {
       data.options.forEach((opt) => {
