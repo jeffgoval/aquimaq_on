@@ -187,11 +187,7 @@ const Cart: React.FC<CartProps> = ({
                 </button>
               )}
             </>
-          ) : (
-            <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4 text-xs">
-              DEBUG: Chave do Mercado Pago não encontrada. Valor atual: {String(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY)}
-            </div>
-          )}
+          ) : null}
 
           <button
             onClick={handleWhatsAppCheckout}
