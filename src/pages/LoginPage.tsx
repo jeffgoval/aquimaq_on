@@ -104,6 +104,11 @@ const LoginPage: React.FC = () => {
       return;
     }
     if (data.session) {
+      // Ensure profile exists immediately — don't rely solely on the DB trigger
+      await supabase.from('profiles').upsert(
+        { id: data.user!.id, email: data.user!.email, name, role: 'cliente' } as any,
+        { onConflict: 'id' }
+      );
       navigate(redirectPath, { replace: true });
       return;
     }
