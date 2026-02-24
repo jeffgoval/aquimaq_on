@@ -166,7 +166,7 @@ const Cart: React.FC<CartProps> = ({
             <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2"><span>Total</span><span className="text-agro-700">{formatCurrency(grandTotal)}</span></div>
           </div>
 
-          {ENV.VITE_MERCADO_PAGO_PUBLIC_KEY && ENV.VITE_MERCADO_PAGO_PUBLIC_KEY.startsWith('APP_USR') && ENV.VITE_MERCADO_PAGO_PUBLIC_KEY !== 'APP_USR-00000000-0000-0000-0000-000000000000' ? (
+          {ENV.VITE_MERCADO_PAGO_PUBLIC_KEY ? (
             <>
               {preferenceId ? (
                 <div className="mb-3">
@@ -187,7 +187,11 @@ const Cart: React.FC<CartProps> = ({
                 </button>
               )}
             </>
-          ) : null}
+          ) : (
+            <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4 text-xs">
+              DEBUG: Chave do Mercado Pago não encontrada. Valor atual: {String(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY)}
+            </div>
+          )}
 
           <button
             onClick={handleWhatsAppCheckout}
