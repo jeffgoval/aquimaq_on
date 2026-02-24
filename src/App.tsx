@@ -7,7 +7,7 @@ import { useToast } from './contexts/ToastContext';
 import { initMercadoPago } from '@mercadopago/sdk-react';
 import { ENV } from './config/env';
 
-initMercadoPago(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY);
+
 
 import MainLayout from './layouts/MainLayout';
 import HomePage from '@/features/catalog/pages/HomePage';
@@ -103,6 +103,16 @@ function AdminRoutes() {
 
 function AppContent() {
     const { toasts, hideToast } = useToast();
+
+    useEffect(() => {
+        if (ENV.VITE_MERCADO_PAGO_PUBLIC_KEY && ENV.VITE_MERCADO_PAGO_PUBLIC_KEY.startsWith('APP_USR')) {
+            try {
+                initMercadoPago(ENV.VITE_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
+            } catch (e) {
+                console.error('Failed to initialize MercadoPago SDK:', e);
+            }
+        }
+    }, []);
 
     return (
         <BrowserRouter>
