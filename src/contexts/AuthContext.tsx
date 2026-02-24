@@ -27,20 +27,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading: true,
   });
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const fetchProfile = useCallback(async (userId: string, retries = 5) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) throw error;
-      return data as ProfileRow;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      return null;
+        if (error) {
+          if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
+            // Wait and retry if profile is not yet created by trigger
+            if (i < retries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+              continue;
+            }
+          }
+          throw error;
+        }
+        return data as ProfileRow;
+      } catch (error) {
+        console.error(`Error fetching profile (attempt ${i + 1}):`, error);
+        if (i === retries - 1) return null;
+      }
     }
+    return null;
   }, []);
 
   const updateFromSession = useCallback(async (session: Session | null) => {
