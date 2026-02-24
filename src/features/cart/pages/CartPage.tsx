@@ -38,16 +38,19 @@ const CartPage: React.FC = () => {
             }));
 
             const response = await createCheckoutPreference(orderId, mpItems);
-            setPreferenceId(response.id);
+
+            if (response && response.checkout_url) {
+                // Redirect user directly to Mercado Pago
+                window.location.href = response.checkout_url;
+            } else {
+                throw new Error('Nenhuma URL de checkout retornada');
+            }
         } catch (error) {
             console.error('Checkout error:', error);
             showToast('Erro ao iniciar pagamento. Tente novamente.', 'error');
-        } finally {
             setIsProcessing(false);
         }
     };
-
-    const [preferenceId, setPreferenceId] = useState<string | null>(null);
 
     return (
         <Cart
@@ -61,7 +64,6 @@ const CartPage: React.FC = () => {
             onSelectShipping={setSelectedShipping}
             onZipValid={setShippingZip}
             onCheckout={handleCheckout}
-            preferenceId={preferenceId}
             initialZip={shippingZip}
             isProcessing={isProcessing}
         />

@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle, CreditCard, Loader2 } from 'lucide-react';
-import { Wallet } from '@mercadopago/sdk-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
@@ -26,7 +25,6 @@ interface CartProps {
   onBackToCatalog?: () => void;
   initialZip?: string;
   isProcessing?: boolean;
-  preferenceId?: string | null;
 }
 
 const Cart: React.FC<CartProps> = ({
@@ -42,8 +40,7 @@ const Cart: React.FC<CartProps> = ({
   onCheckout,
   onBackToCatalog,
   initialZip,
-  isProcessing = false,
-  preferenceId
+  isProcessing = false
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
@@ -167,26 +164,18 @@ const Cart: React.FC<CartProps> = ({
           </div>
 
           {ENV.VITE_MERCADO_PAGO_PUBLIC_KEY ? (
-            <>
-              {preferenceId ? (
-                <div className="mb-3">
-                  <Wallet initialization={{ preferenceId }} />
-                </div>
+            <button
+              onClick={onCheckout}
+              disabled={isProcessing}
+              className="w-full bg-agro-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-agro-700 transition-colors shadow flex items-center justify-center gap-2 mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <Loader2 className="animate-spin" size={22} />
               ) : (
-                <button
-                  onClick={onCheckout}
-                  disabled={isProcessing}
-                  className="w-full bg-agro-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-agro-700 transition-colors shadow flex items-center justify-center gap-2 mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="animate-spin" size={22} />
-                  ) : (
-                    <CreditCard size={22} />
-                  )}
-                  Pagar com Mercado Pago
-                </button>
+                <CreditCard size={22} />
               )}
-            </>
+              Pagar com Mercado Pago
+            </button>
           ) : null}
 
           <button
