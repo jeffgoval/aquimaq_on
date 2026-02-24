@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart, ChevronLeft, Trash2, ImageOff, MessageCircle, Loader2 } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
@@ -43,11 +43,14 @@ const Cart: React.FC<CartProps> = ({
   isProcessing = false
 }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { settings } = useStore();
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+
+  const isAutoCheckoutAttempted = React.useRef(false);
 
   const handleImageError = useCallback((itemId: string) => {
     setImageErrors(prev => new Set(prev).add(itemId));
@@ -57,12 +60,14 @@ const Cart: React.FC<CartProps> = ({
     navigate(ROUTES.HOME);
   };
 
-  const handleMercadoPagoCheckout = async () => {
+  const handleMercadoPagoCheckout = useCallback(async () => {
     if (items.length === 0) return;
 
     if (!profile) {
       showToast('Por favor, faça login ou cadastre-se para finalizar a compra.', 'info');
-      navigate('/login?redirect=/carrinho');
+      // Encode the redirect with a checkout flag to return and process automatically
+      const returnUrl = encodeURIComponent('/carrinho?checkout=true');
+      navigate(`/login?redirect=${returnUrl}`);
       return;
     }
 
@@ -127,7 +132,19 @@ const Cart: React.FC<CartProps> = ({
     } finally {
       setIsCheckoutLoading(false);
     }
-  };
+  }, [items, profile, selectedShipping, shippingCost, initialZip, showToast, navigate]);
+
+  // Intent handling: if ?checkout=true is in URL, auto-trigger checkout when ready
+  React.useEffect(() => {
+    if (searchParams.get('checkout') === 'true' && !authLoading && profile && items.length > 0 && !isAutoCheckoutAttempted.current) {
+      isAutoCheckoutAttempted.current = true;
+      // Delay slightly to allow context/localStorage sync to settle
+      const timer = setTimeout(() => {
+        handleMercadoPagoCheckout();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, authLoading, profile, items.length, handleMercadoPagoCheckout]);
 
   // Empty state
   if (items.length === 0) {
