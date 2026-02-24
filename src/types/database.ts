@@ -83,6 +83,7 @@ export interface PaymentRow {
   status: PaymentStatus;
   amount: number | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface ChatConversationRow {

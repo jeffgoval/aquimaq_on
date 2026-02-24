@@ -18,7 +18,34 @@ serve(async (req) => {
             throw new Error("MERCADO_PAGO_ACCESS_TOKEN is not set");
         }
 
-        const { order_id, items, payer } = await req.json();
+        const body = await req.json();
+        const { order_id, items, payer, siteUrl: siteUrlFromBody } = body;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error("items é obrigatório e deve ser um array não vazio");
+        }
+        if (!order_id || typeof order_id !== "string") {
+            throw new Error("order_id (uuid do pedido) é obrigatório");
+        }
+
+        const origin = req.headers.get("origin");
+        const baseUrl = origin ?? siteUrlFromBody ?? "";
+        const back_urls = {
+            success: `${baseUrl}/pagamento/sucesso`,
+            failure: `${baseUrl}/pagamento/falha`,
+            pending: `${baseUrl}/pagamento/pendente`,
+        };
+
+        // #region agent log
+        console.log(JSON.stringify({
+            hypothesisId: "H1-H2",
+            origin,
+            siteUrlFromBody: siteUrlFromBody ?? null,
+            back_urls,
+            itemsCount: items?.length,
+            order_id,
+        }));
+        // #endregion
 
         // Initialize Mercado Pago
         const client = new MercadoPagoConfig({ accessToken });
@@ -29,27 +56,34 @@ serve(async (req) => {
             body: {
                 items: items,
                 payer: payer || {},
-                external_reference: order_id,
+                external_reference: String(order_id),
                 statement_descriptor: "AQUIMAQ",
-                back_urls: {
-                    success: `${req.headers.get("origin")}/pagamento/sucesso`,
-                    failure: `${req.headers.get("origin")}/pagamento/falha`,
-                    pending: `${req.headers.get("origin")}/pagamento/pendente`,
-                },
+                back_urls,
                 auto_return: "approved",
                 notification_url: `https://bzicdqrbqykypzesxayw.supabase.co/functions/v1/mercado-pago-webhook`,
             },
         });
 
+        // Em modo teste (credenciais de teste), a API devolve sandbox_init_point; use-o para o redirect.
+        const checkoutUrl = response.sandbox_init_point ?? response.init_point;
+        if (!checkoutUrl) {
+            throw new Error("Mercado Pago não devolveu URL de checkout (init_point nem sandbox_init_point). Verifique credenciais (teste vs produção).");
+        }
+
         return new Response(JSON.stringify({
             id: response.id,
-            checkout_url: response.init_point
+            checkout_url: checkoutUrl,
+            debug: { origin, siteUrlFromBody: siteUrlFromBody ?? null, back_urls },
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
         });
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        // #region agent log
+        console.log(JSON.stringify({ hypothesisId: "H2", error: msg }));
+        // #endregion
+        return new Response(JSON.stringify({ error: msg }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
         });

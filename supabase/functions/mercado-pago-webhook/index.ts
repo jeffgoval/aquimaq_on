@@ -64,21 +64,34 @@ serve(async (req) => {
 
         // 3. Fetch Payment Details from Mercado Pago
         const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
-        const client = new MercadoPagoConfig({ accessToken: accessToken! });
+        if (!accessToken) {
+            console.error("MERCADO_PAGO_ACCESS_TOKEN is not set");
+            return new Response("Server configuration error", { status: 500 });
+        }
+        const client = new MercadoPagoConfig({ accessToken });
         const paymentClient = new Payment(client);
 
         const payment = await paymentClient.get({ id: dataId });
 
-        // 4. Update Database
+        // 4. Update Database (schema existente: order_id uuid FK orders, external_reference unique = id MP)
+        const mpPaymentId = payment.id?.toString() ?? "";
+        const orderIdUuid = payment.external_reference ?? "";
+        if (!mpPaymentId) {
+            console.error("Payment sem id:", dataId);
+            return new Response("OK", { status: 200 });
+        }
+        const validStatuses = ["pending", "approved", "rejected", "refunded", "cancelled", "in_process", "charged_back"];
+        const status = payment.status && validStatuses.includes(payment.status) ? payment.status : "pending";
         const { error } = await supabase
             .from("payments")
             .upsert({
-                external_id: payment.id?.toString(),
-                order_id: payment.external_reference,
-                status: payment.status,
-                amount: payment.transaction_amount,
+                order_id: orderIdUuid,
+                external_id: mpPaymentId,
+                external_reference: mpPaymentId,
+                status,
+                amount: payment.transaction_amount ?? null,
                 updated_at: new Date().toISOString(),
-            }, { onConflict: "external_id" });
+            }, { onConflict: "external_reference" });
 
         if (error) {
             console.error("Database error:", error);
@@ -86,8 +99,9 @@ serve(async (req) => {
         }
 
         return new Response("OK", { status: 200 });
-    } catch (error) {
-        console.error("Webhook processing error:", error.message);
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error("Webhook processing error:", msg);
         return new Response("Internal Server Error", { status: 500 });
     }
 });

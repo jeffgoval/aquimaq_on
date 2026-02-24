@@ -77,23 +77,37 @@ const Cart: React.FC<CartProps> = ({
 
     setIsCheckoutLoading(true);
     try {
-      const mpItems = items.map(item => ({
-        id: item.id,
-        title: item.name,
-        description: item.category as string,
-        category_id: item.category as string,
-        quantity: item.quantity,
-        unit_price: calculateItemPrice(item),
-      }));
+      // MP Checkout Pro: title e unit_price obrigatórios e positivos (doc oficial).
+      const itemPrice = (item: CartItem) => Number(calculateItemPrice(item));
+      const invalidItem = items.find(
+        (item) => !item.name?.trim() || itemPrice(item) <= 0 || item.quantity < 1
+      );
+      if (invalidItem) {
+        showToast('Revise os itens do carrinho: nome e preço devem ser válidos.', 'error');
+        setIsCheckoutLoading(false);
+        return;
+      }
+
+      const mpItems = items.map((item) => {
+        const unitPrice = itemPrice(item);
+        return {
+          id: String(item.id),
+          title: (item.name?.trim() || 'Item').slice(0, 256),
+          description: (item.category ?? '').toString().slice(0, 256),
+          category_id: 'others',
+          quantity: Math.max(1, Math.floor(item.quantity)),
+          unit_price: unitPrice,
+        };
+      });
 
       if (selectedShipping && shippingCost > 0) {
         mpItems.push({
           id: 'frete',
           title: 'Frete',
-          description: `Serviço: ${selectedShipping.service} (${selectedShipping.carrier})`,
-          category_id: 'shipping',
+          description: `Serviço: ${selectedShipping.service} (${selectedShipping.carrier})`.slice(0, 256),
+          category_id: 'services',
           quantity: 1,
-          unit_price: shippingCost,
+          unit_price: Number(shippingCost),
         });
       }
 
@@ -112,11 +126,43 @@ const Cart: React.FC<CartProps> = ({
         },
       };
 
-      const order_id = `ORDER_${Date.now()}`;
+      const siteUrl = window.location.origin;
+
+      // Criar pedido na BD para o webhook MP gravar o pagamento (payments.order_id = uuid)
+      const shippingAddress = profile
+        ? {
+            street: profile.street,
+            number: profile.number,
+            neighborhood: profile.neighborhood,
+            city: profile.city,
+            state: profile.state,
+            zip_code: profile.zip_code || initialZip,
+          }
+        : null;
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          cliente_id: profile.id,
+          status: 'aguardando_pagamento',
+          subtotal: cartSubtotal,
+          shipping_cost: shippingCost,
+          total: grandTotal,
+          shipping_method: selectedShipping?.service ?? null,
+          shipping_address: shippingAddress,
+          payment_method: 'mercado_pago',
+        })
+        .select('id')
+        .single();
+
+      if (orderError || !orderData?.id) {
+        throw new Error(orderError?.message ?? 'Erro ao criar pedido.');
+      }
+      const orderId = orderData.id;
 
       const { data, error } = await supabase.functions.invoke('mercado-pago-create-preference', {
-        body: { order_id, items: mpItems, payer, siteUrl: window.location.origin },
+        body: { order_id: orderId, items: mpItems, payer, siteUrl },
       });
+
 
       if (error) throw new Error(error.message || 'Erro ao comunicar com Mercado Pago.');
 
