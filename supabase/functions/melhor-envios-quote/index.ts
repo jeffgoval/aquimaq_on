@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ options: shippingOptions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
 
   } catch (error) {

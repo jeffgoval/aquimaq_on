@@ -60,7 +60,10 @@ export const calculateShipping = async (
     };
 
     const { data: responseData, error: functionError } = await supabase.functions.invoke('melhor-envios-quote', {
-      body: payload
+      body: payload,
+      headers: {
+        Authorization: 'Bearer ',
+      }
     });
 
     if (functionError) {
