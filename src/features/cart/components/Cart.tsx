@@ -139,12 +139,21 @@ const Cart: React.FC<CartProps> = ({
         },
       };
 
+      // Refresh session before invoking to ensure the JWT is not stale
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('checkout', {
         body: { order, items: mpItems, payer, back_url_base: window.location.origin },
       });
 
       if (error) {
-        const status = (error as { status?: number }).status;
+        // FunctionsHttpError exposes status on .context.status, not .status directly
+        const status = (error as { context?: { status?: number } }).context?.status
+          ?? (error as { status?: number }).status;
         if (status === 401) {
           await signOut();
           showToast('Sessão expirada. Faça login novamente.', 'error');
