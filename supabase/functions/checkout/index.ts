@@ -74,20 +74,29 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl) {
     return new Response(JSON.stringify({ error: "Server configuration error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  // verify_jwt=true already validated the signature at infrastructure level.
+  // Decode the payload directly to get the user id — avoids an extra getUser() round-trip
+  // and correctly rejects anon/service-role tokens that have no "sub" claim.
+  let userId: string | null = null;
+  try {
+    const token = authHeader.replace(/^Bearer /, "");
+    const payloadB64 = token.split(".")[1];
+    const payload = JSON.parse(atob(payloadB64)) as Record<string, unknown>;
+    const role = payload.role as string | undefined;
+    if (role === "anon" || role === "service_role") throw new Error("not a user token");
+    userId = (payload.sub as string) ?? null;
+  } catch {
+    // malformed JWT or non-user token
+  }
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user?.id) {
+  if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -133,7 +142,7 @@ Deno.serve(async (req) => {
   const { data: orderRow, error: orderError } = await supabaseAdmin
     .from("orders")
     .insert({
-      cliente_id: user.id,
+      cliente_id: userId,
       status: "aguardando_pagamento",
       subtotal: payload.order.subtotal,
       shipping_cost: payload.order.shipping_cost,

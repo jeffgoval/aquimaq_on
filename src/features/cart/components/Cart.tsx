@@ -46,7 +46,7 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useStore();
-  const { profile, refreshProfile, signOut } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
@@ -139,7 +139,7 @@ const Cart: React.FC<CartProps> = ({
         },
       };
 
-      // Refresh session before invoking to ensure the JWT is not stale
+      // Garantir sessão fresca e passar o token explicitamente para o invoke
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
@@ -148,6 +148,7 @@ const Cart: React.FC<CartProps> = ({
 
       const { data, error } = await supabase.functions.invoke('checkout', {
         body: { order, items: mpItems, payer, back_url_base: window.location.origin },
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
       });
 
       if (error) {
@@ -155,9 +156,8 @@ const Cart: React.FC<CartProps> = ({
         const status = (error as { context?: { status?: number } }).context?.status
           ?? (error as { status?: number }).status;
         if (status === 401) {
-          await signOut();
           showToast('Sessão expirada. Faça login novamente.', 'error');
-          navigate('/login?redirect=/carrinho');
+          navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
           setIsCheckoutLoading(false);
           return;
         }
@@ -174,7 +174,7 @@ const Cart: React.FC<CartProps> = ({
     } finally {
       setIsCheckoutLoading(false);
     }
-  }, [items, profile, selectedShipping, shippingCost, cartSubtotal, grandTotal, initialZip, showToast, navigate, signOut]);
+  }, [items, profile, selectedShipping, shippingCost, cartSubtotal, grandTotal, initialZip, showToast, navigate]);
 
   if (items.length === 0) {
     return (
