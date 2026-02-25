@@ -10,6 +10,8 @@ export { default as CartPage } from './pages/CartPage';
 
 // Services
 export { checkStockAvailability } from './services/orderService';
+export { fetchOrders } from '@/services/orderService';
 
 // Schemas
 export { CartItemSchema, CartItemsSchema } from './schemas/cartSchema';
+

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, Trash2, ImageOff } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff, Loader2, LogIn } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
@@ -25,6 +25,7 @@ interface CartProps {
   onSelectShipping: (option: ShippingOption | null) => void;
   onZipValid?: (rawZip: string) => void;
   onBackToCatalog?: () => void;
+  onCheckout?: () => void;
   initialZip?: string;
   isProcessing?: boolean;
 }
@@ -40,6 +41,7 @@ const Cart: React.FC<CartProps> = ({
   onSelectShipping,
   onZipValid,
   onBackToCatalog,
+  onCheckout,
   initialZip,
   isProcessing = false
 }) => {
@@ -195,6 +197,50 @@ const Cart: React.FC<CartProps> = ({
             <div className="flex justify-between items-center text-sm text-gray-600"><span>Subtotal</span><span>{formatCurrency(cartSubtotal)}</span></div>
             <div className="flex justify-between items-center text-sm text-gray-600"><span>Frete</span><span>{selectedShipping ? (selectedShipping.price === 0 ? 'Grátis' : formatCurrency(shippingCost)) : '--'}</span></div>
             <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2"><span>Total</span><span className="text-agro-700">{formatCurrency(grandTotal)}</span></div>
+          </div>
+
+          {/* Checkout Button */}
+          <div className="pt-4 border-t border-gray-200 space-y-3">
+            {!profile ? (
+              <button
+                onClick={() => navigate(ROUTES.LOGIN)}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-agro-600 text-white font-semibold rounded-lg hover:bg-agro-700 transition-colors"
+              >
+                <LogIn size={20} />
+                Fazer login para finalizar
+              </button>
+            ) : !isAddressComplete(profile) ? (
+              <>
+                <p className="text-sm text-amber-600 text-center">
+                  Complete seu endereço de entrega para finalizar a compra.
+                </p>
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="w-full px-6 py-3 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  Completar endereço
+                </button>
+              </>
+            ) : !selectedShipping ? (
+              <p className="text-sm text-amber-600 text-center">
+                Selecione uma opção de frete acima para finalizar.
+              </p>
+            ) : (
+              <button
+                onClick={onCheckout}
+                disabled={isProcessing}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-agro-600 text-white font-bold text-lg rounded-lg hover:bg-agro-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin" size={22} />
+                    Processando...
+                  </>
+                ) : (
+                  'Finalizar Compra'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
