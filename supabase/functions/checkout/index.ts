@@ -25,7 +25,6 @@ interface MPItem {
     id?: string;
     title: string;
     description?: string;
-    category_id?: string;
     quantity: number;
     unit_price: number;
     currency_id?: string;
@@ -34,7 +33,6 @@ interface MPItem {
 interface CheckoutBody {
     order: OrderPayload;
     items: MPItem[];
-    payer: Record<string, unknown>;
     back_url_base: string;
 }
 
@@ -49,13 +47,11 @@ function parseBody(body: unknown): CheckoutBody | null {
         typeof order.shipping_cost !== "number" ||
         typeof order.total !== "number"
     ) return null;
-    if (!b.payer || typeof b.payer !== "object") return null;
     if (typeof b.back_url_base !== "string" || !b.back_url_base.trim()) return null;
     const base = (b.back_url_base as string).trim().replace(/\/$/, "");
     return {
         order,
         items: b.items as MPItem[],
-        payer: b.payer as Record<string, unknown>,
         back_url_base: base,
     };
 }
@@ -65,55 +61,38 @@ Deno.serve(async (req) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    if (!supabaseUrl) {
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) {
         return new Response(JSON.stringify({ error: "Server configuration error" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
 
-    let userId: string | null = null;
-    try {
-        const token = authHeader.replace(/^Bearer /, "");
-        const payloadB64 = token.split(".")[1];
-        const payload = JSON.parse(atob(payloadB64)) as Record<string, unknown>;
-        const role = payload.role as string | undefined;
-        if (role === "anon" || role === "service_role") throw new Error("not a user token");
-        userId = (payload.sub as string) ?? null;
-    } catch {
-        // malformed JWT or non-user token
-    }
-
-    if (!userId) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Authenticate user via the Authorization header (verify_jwt=false, auth handled here)
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+        return new Response(JSON.stringify({ error: "Você precisa estar logado para finalizar a compra." }), {
+            status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
 
     let body: unknown;
-    try {
-        body = await req.json();
-    } catch {
+    try { body = await req.json(); }
+    catch {
         return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
 
     const payload = parseBody(body);
     if (!payload) {
         return new Response(
-            JSON.stringify({ error: "Body must include order, items (non-empty array), payer, and back_url_base" }),
+            JSON.stringify({ error: "Body must include order, items, and back_url_base" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
@@ -121,26 +100,24 @@ Deno.serve(async (req) => {
     const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!accessToken) {
         return new Response(JSON.stringify({ error: "Payment provider not configured" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
 
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!serviceRoleKey) {
         return new Response(JSON.stringify({ error: "Server configuration error" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Create the order
+    // 1. Create order in Supabase
     const { data: orderRow, error: orderError } = await supabaseAdmin
         .from("orders")
         .insert({
-            cliente_id: userId,
+            cliente_id: user.id,
             status: "aguardando_pagamento",
             subtotal: payload.order.subtotal,
             shipping_cost: payload.order.shipping_cost,
@@ -153,31 +130,27 @@ Deno.serve(async (req) => {
         .single();
 
     if (orderError || !orderRow?.id) {
-        console.error("Order creation error:", orderError?.message);
         return new Response(
             JSON.stringify({ error: orderError?.message ?? "Failed to create order" }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
 
-    // 2. Insert order_items
-    const orderItems = payload.items.map((item) => ({
-        order_id: orderRow.id,
-        product_id: item.id ?? null,
-        product_name: item.title,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-    }));
-
-    const { error: itemsError } = await supabaseAdmin
-        .from("order_items")
-        .insert(orderItems);
-
-    if (itemsError) {
-        console.error("Order items insertion error:", itemsError.message);
+    // 2. Insert order_items (exclude the shipping pseudo-item)
+    const orderItems = payload.items
+        .filter((item) => item.id !== "shipping")
+        .map((item) => ({
+            order_id: orderRow.id,
+            product_id: item.id ?? null,
+            product_name: item.title,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+        }));
+    if (orderItems.length > 0) {
+        await supabaseAdmin.from("order_items").insert(orderItems);
     }
 
-    // 3. Create MP preference
+    // 3. Create Mercado Pago preference
     const backUrls = {
         success: `${payload.back_url_base}/pagamento/sucesso`,
         failure: `${payload.back_url_base}/pagamento/falha`,
@@ -198,25 +171,26 @@ Deno.serve(async (req) => {
         mpResponse = await preference.create({
             body: {
                 items: itemsWithCurrency,
-                payer: payload.payer,
                 external_reference: orderRow.id,
                 statement_descriptor: "AQUIMAQ",
                 back_urls: backUrls,
-                auto_return: "approved",
                 notification_url: webhookUrl,
+                // payer omitted — avoids "uma das partes é de teste" sandbox error
+                // auto_return omitted — requires public HTTPS URLs
             },
         });
-    } catch (err) {
-        console.error("MP preference creation error:", err);
+    } catch (err: any) {
+        const errorDetails = err?.cause ?? err?.message ?? JSON.stringify(err);
         return new Response(
-            JSON.stringify({ error: err instanceof Error ? err.message : "Failed to create payment preference" }),
+            JSON.stringify({ error: "Failed to create payment preference", details: errorDetails }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
 
-    const checkoutUrl = mpResponse.sandbox_init_point ?? mpResponse.init_point;
+    // Use init_point (production checkout) — avoids ERR_TOO_MANY_REDIRECTS
+    // that occurs with sandbox_init_point in browsers with conflicting sessions.
+    const checkoutUrl = mpResponse.init_point ?? mpResponse.sandbox_init_point;
     if (!checkoutUrl) {
-        console.error("MP did not return checkout URL. Response:", JSON.stringify(mpResponse));
         return new Response(
             JSON.stringify({ error: "Payment provider did not return checkout URL" }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
