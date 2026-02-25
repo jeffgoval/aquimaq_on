@@ -9,16 +9,19 @@ const corsHeaders = {
 };
 
 interface CartItem {
+  id?: string;
   weight: number;
   width: number;
   height: number;
   length: number;
   quantity: number;
+  insurance_value?: number;
 }
 
 interface QuoteRequest {
   destination_cep: string;
   items: CartItem[];
+  insurance_value?: number;
 }
 
 // Handler for the Edge Function
@@ -58,15 +61,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Map payload items to the formato expected by Melhor Envio
-    // API requires arrays of products with string dimensions
-    const volumes = items.map((item) => ({
+    // Map payload items to format expected by Melhor Envio API
+    // Official spec: products[].id is required
+    const volumes = items.map((item, idx) => ({
+      id: item.id ?? String(idx + 1),  // required by API spec
       weight: item.weight,
       width: item.width,
       height: item.height,
       length: item.length,
       quantity: item.quantity,
     }));
+
+    // Total insurance value (sum of product values for correct rate calculation)
+    const totalInsuranceValue = payload.insurance_value ?? 0;
 
     const calculatePayload = {
       from: {
@@ -76,6 +83,11 @@ Deno.serve(async (req) => {
         postal_code: destination_cep,
       },
       products: volumes,
+      options: {
+        insurance_value: totalInsuranceValue,
+        receipt: false,
+        own_hand: false,
+      },
     };
 
     console.log(`Calculating shipping from ${CEP_ORIGEM} to ${destination_cep}`);
@@ -86,7 +98,8 @@ Deno.serve(async (req) => {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": `Bearer ${MELHOR_ENVIO_TOKEN}`,
-        "User-Agent": "Aplicação AquaMaq (jeff.goval@gmail.com)"
+        // User-Agent is required by Melhor Envio API (docs.melhorenvio.com.br)
+        "User-Agent": "Aquimaq E-commerce (jeff.goval@gmail.com)",
       },
       body: JSON.stringify(calculatePayload),
     });
