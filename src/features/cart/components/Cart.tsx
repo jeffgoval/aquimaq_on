@@ -89,6 +89,7 @@ const Cart: React.FC<CartProps> = ({
         category_id: 'others',
         quantity: Math.max(1, Math.floor(item.quantity)),
         unit_price: itemPrice(item),
+        currency_id: 'BRL',
       }));
       if (selectedShipping && shippingCost > 0) {
         mpItems.push({
@@ -98,6 +99,7 @@ const Cart: React.FC<CartProps> = ({
           category_id: 'services',
           quantity: 1,
           unit_price: Number(shippingCost),
+          currency_id: 'BRL',
         });
       }
 
@@ -122,6 +124,10 @@ const Cart: React.FC<CartProps> = ({
         email: profile.email ?? '',
         name: profile.name?.split(' ')[0] ?? '',
         surname: profile.name?.split(' ').slice(1).join(' ') ?? '',
+        identification: {
+          type: 'CPF',
+          number: '',
+        },
         phone: profile.phone ? { number: profile.phone } : undefined,
         address: {
           zip_code: profile.zip_code || initialZip || '',

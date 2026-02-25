@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { MercadoPagoConfig, Payment } from "npm:mercadopago@2.2.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { MercadoPagoConfig, Payment } from "npm:mercadopago@2";
 
 const VALID_STATUSES = [
   "pending",
@@ -19,10 +18,19 @@ function mapStatus(status: string | undefined): (typeof VALID_STATUSES)[number] 
   return "pending";
 }
 
-serve(async (req) => {
-  const url = new URL(req.url);
-  const dataId = url.searchParams.get("data.id");
-  const type = url.searchParams.get("type");
+Deno.serve(async (req) => {
+  // MP sends webhook notifications as JSON body (current format)
+  // Legacy IPN used query params — this function handles the modern webhook format
+  let body: Record<string, unknown> = {};
+  try {
+    body = await req.json();
+  } catch {
+    // If body parsing fails, return 200 to avoid MP retries for malformed requests
+    return new Response("OK", { status: 200 });
+  }
+
+  const dataId = (body?.data as Record<string, unknown>)?.id as string | undefined;
+  const type = body?.type as string | undefined;
 
   if (type !== "payment" || !dataId) {
     return new Response("OK", { status: 200 });
@@ -43,6 +51,7 @@ serve(async (req) => {
       if (k === "ts") ts = v ?? "";
       if (k === "v1") hash = v ?? "";
     }
+    // Template uses data.id from the JSON body, not query params
     const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
     const key = await crypto.subtle.importKey(
       "raw",

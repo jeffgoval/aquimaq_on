@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { MercadoPagoConfig, Preference } from "npm:mercadopago@2.2.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { MercadoPagoConfig, Preference } from "npm:mercadopago@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +28,7 @@ interface MPItem {
   category_id?: string;
   quantity: number;
   unit_price: number;
+  currency_id?: string;
 }
 
 interface CheckoutBody {
@@ -60,7 +60,7 @@ function parseBody(body: unknown): CheckoutBody | null {
   };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -162,11 +162,17 @@ serve(async (req) => {
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
+  // Ensure all items have currency_id: "BRL" (required by MP for Brazil)
+  const itemsWithCurrency = payload.items.map((item) => ({
+    ...item,
+    currency_id: "BRL",
+  }));
+
   let mpResponse: { id?: string; init_point?: string; sandbox_init_point?: string };
   try {
     mpResponse = await preference.create({
       body: {
-        items: payload.items,
+        items: itemsWithCurrency,
         payer: payload.payer,
         external_reference: orderRow.id,
         statement_descriptor: "AQUIMAQ",
@@ -182,7 +188,8 @@ serve(async (req) => {
     );
   }
 
-  const checkoutUrl = mpResponse.sandbox_init_point ?? mpResponse.init_point;
+  // Use init_point for production; sandbox_init_point only as fallback
+  const checkoutUrl = mpResponse.init_point ?? mpResponse.sandbox_init_point;
   if (!checkoutUrl) {
     return new Response(
       JSON.stringify({ error: "Payment provider did not return checkout URL" }),
