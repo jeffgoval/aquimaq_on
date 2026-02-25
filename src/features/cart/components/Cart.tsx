@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, Trash2, ImageOff, Loader2 } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, Trash2, ImageOff } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
@@ -8,7 +8,6 @@ import ShippingCalculator from './ShippingCalculator';
 import CartProgress from './CartProgress';
 import { ROUTES } from '@/constants/routes';
 import { useToast } from '@/contexts/ToastContext';
-import { ENV } from '@/config/env';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,7 +48,6 @@ const Cart: React.FC<CartProps> = ({
   const { profile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const isAddressComplete = (p: ProfileRow | null) =>
@@ -60,121 +58,6 @@ const Cart: React.FC<CartProps> = ({
   }, []);
 
   const handleBackToCatalog = () => navigate(ROUTES.HOME);
-
-  const handleCheckout = useCallback(async () => {
-    if (items.length === 0) return;
-    if (!profile) {
-      navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
-      return;
-    }
-    if (!isAddressComplete(profile)) {
-      setShowAddressModal(true);
-      return;
-    }
-    const itemPrice = (item: CartItem) => Number(calculateItemPrice(item));
-    const invalidItem = items.find(
-      (item) => !item.name?.trim() || itemPrice(item) <= 0 || item.quantity < 1
-    );
-    if (invalidItem) {
-      showToast('Revise os itens do carrinho: nome e preço devem ser válidos.', 'error');
-      return;
-    }
-
-    setIsCheckoutLoading(true);
-    try {
-      const mpItems = items.map((item) => ({
-        id: String(item.id),
-        title: (item.name?.trim() || 'Item').slice(0, 256),
-        description: (item.category ?? '').toString().slice(0, 256),
-        category_id: 'others',
-        quantity: Math.max(1, Math.floor(item.quantity)),
-        unit_price: itemPrice(item),
-        currency_id: 'BRL',
-      }));
-      if (selectedShipping && shippingCost > 0) {
-        mpItems.push({
-          id: 'frete',
-          title: 'Frete',
-          description: `Serviço: ${selectedShipping.service} (${selectedShipping.carrier})`.slice(0, 256),
-          category_id: 'services',
-          quantity: 1,
-          unit_price: Number(shippingCost),
-          currency_id: 'BRL',
-        });
-      }
-
-      const order = {
-        subtotal: cartSubtotal,
-        shipping_cost: shippingCost,
-        total: grandTotal,
-        shipping_method: selectedShipping?.service ?? null,
-        shipping_address: profile
-          ? {
-              street: profile.street ?? null,
-              number: profile.number ?? null,
-              neighborhood: profile.neighborhood ?? null,
-              city: profile.city ?? null,
-              state: profile.state ?? null,
-              zip_code: profile.zip_code || initialZip || null,
-            }
-          : null,
-      };
-
-      const payer = {
-        email: profile.email ?? '',
-        name: profile.name?.split(' ')[0] ?? '',
-        surname: profile.name?.split(' ').slice(1).join(' ') ?? '',
-        identification: {
-          type: 'CPF',
-          number: '',
-        },
-        phone: profile.phone ? { number: profile.phone } : undefined,
-        address: {
-          zip_code: profile.zip_code || initialZip || '',
-          street_name: profile.street ?? '',
-          street_number: profile.number ?? '',
-          neighborhood: profile.neighborhood ?? '',
-          city: profile.city ?? '',
-          federal_unit: profile.state ?? '',
-        },
-      };
-
-      // Garantir sessão fresca e passar o token explicitamente para o invoke
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('checkout', {
-        body: { order, items: mpItems, payer, back_url_base: window.location.origin },
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
-      });
-
-      if (error) {
-        // FunctionsHttpError exposes status on .context.status, not .status directly
-        const status = (error as { context?: { status?: number } }).context?.status
-          ?? (error as { status?: number }).status;
-        if (status === 401) {
-          showToast('Sessão expirada. Faça login novamente.', 'error');
-          navigate(`/login?redirect=${encodeURIComponent('/carrinho')}`);
-          setIsCheckoutLoading(false);
-          return;
-        }
-        throw new Error((error as { message?: string }).message ?? 'Erro ao comunicar com o pagamento.');
-      }
-
-      if (data?.checkout_url) {
-        window.location.href = data.checkout_url;
-        return;
-      }
-      showToast('Erro ao iniciar pagamento. Tente novamente.', 'error');
-    } catch {
-      showToast('Erro ao iniciar pagamento. Tente novamente.', 'error');
-    } finally {
-      setIsCheckoutLoading(false);
-    }
-  }, [items, profile, selectedShipping, shippingCost, cartSubtotal, grandTotal, initialZip, showToast, navigate]);
 
   if (items.length === 0) {
     return (
@@ -291,7 +174,6 @@ const Cart: React.FC<CartProps> = ({
                 showToast('Erro ao salvar endereço. Tente novamente.', 'error');
                 throw error;
               }
-              // Refresh the in-memory profile so isAddressComplete works correctly
               await refreshProfile();
               showToast('Endereço salvo!', 'success');
               setShowAddressModal(false);
@@ -309,25 +191,11 @@ const Cart: React.FC<CartProps> = ({
             onZipValid={onZipValid}
           />
 
-          <div className="space-y-3 mb-6 pt-4 border-t border-gray-200">
+          <div className="space-y-3 pt-4 border-t border-gray-200">
             <div className="flex justify-between items-center text-sm text-gray-600"><span>Subtotal</span><span>{formatCurrency(cartSubtotal)}</span></div>
             <div className="flex justify-between items-center text-sm text-gray-600"><span>Frete</span><span>{selectedShipping ? (selectedShipping.price === 0 ? 'Grátis' : formatCurrency(shippingCost)) : '--'}</span></div>
             <div className="flex justify-between items-center text-lg font-bold text-gray-900 pt-2"><span>Total</span><span className="text-agro-700">{formatCurrency(grandTotal)}</span></div>
           </div>
-
-          <button
-            onClick={handleCheckout}
-            disabled={isCheckoutLoading || isProcessing}
-            className={`w-full text-white py-4 rounded-lg font-bold text-lg transition-colors shadow flex items-center justify-center gap-2 ${isCheckoutLoading || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#009EE3] hover:bg-[#0089C5]'}`}
-          >
-            {isCheckoutLoading ? (
-              <Loader2 className="animate-spin" size={22} />
-            ) : (
-              <ShoppingCart size={22} />
-            )}
-            {isCheckoutLoading ? 'Aguarde...' : 'Pagar com Mercado Pago'}
-          </button>
-          <p className="text-xs text-center text-gray-500 mt-4">Você será redirecionado para o ambiente seguro do Mercado Pago.</p>
         </div>
       </div>
     </div>
