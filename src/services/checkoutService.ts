@@ -69,10 +69,8 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
       },
     },
     items,
-    payer: {
-      email: profile.email ?? undefined,
-      name: profile.name ?? undefined,
-    },
+    // payer omitted — sending real email with test seller credentials causes
+    // "Uma das partes é de teste" error in the MP sandbox
     back_url_base: window.location.origin,
   };
 
