@@ -91,6 +91,8 @@ export interface ChatConversationRow {
   customer_id: string;
   status: string;
   subject: string | null;
+  assigned_agent: string | null;
+  channel: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -99,6 +101,7 @@ export interface ChatMessageRow {
   id: string;
   conversation_id: string;
   sender_type: string;
+  sender_id: string | null;
   content: string;
   created_at: string;
 }
@@ -137,14 +140,14 @@ export interface Database {
       };
       chat_conversations: {
         Row: ChatConversationRow;
-        Insert: any;
-        Update: any;
+        Insert: Omit<ChatConversationRow, 'id' | 'created_at' | 'updated_at'> & { id?: string, created_at?: string, updated_at?: string };
+        Update: Partial<ChatConversationRow>;
         Relationships: [];
       };
       chat_messages: {
         Row: ChatMessageRow;
-        Insert: any;
-        Update: any;
+        Insert: Omit<ChatMessageRow, 'id' | 'created_at'> & { id?: string, created_at?: string };
+        Update: Partial<ChatMessageRow>;
         Relationships: [];
       };
       payments: {
@@ -155,22 +158,44 @@ export interface Database {
       };
       profiles: {
         Row: ProfileRow;
-        Insert: any;
-        Update: any;
+        Insert: Omit<ProfileRow, 'id'> & { id?: string };
+        Update: Partial<ProfileRow>;
+        Relationships: [];
+      };
+      orders: {
+        Row: any;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
         Relationships: [];
       };
     };
-    Views: {
-      [_ in never]: never
+  };
+  Views: {
+    [key: string]: any;
+  };
+  Functions: {
+    get_sales_summary: {
+      Args: Record<string, any>;
+      Returns: any;
     };
-    Functions: {
-      [_ in never]: never
+    get_daily_sales: {
+      Args: Record<string, any>;
+      Returns: any;
     };
-    Enums: {
-      [_ in never]: never
+    get_product_ranking: {
+      Args: Record<string, any>;
+      Returns: any;
     };
-    CompositeTypes: {
-      [_ in never]: never
+    update_user_role: {
+      Args: Record<string, any>;
+      Returns: any;
     };
+    [key: string]: any;
+  };
+  Enums: {
+    [key: string]: any;
+  };
+  CompositeTypes: {
+    [key: string]: any;
   };
 }

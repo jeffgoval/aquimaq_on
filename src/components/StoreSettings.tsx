@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, MessageCircle, Instagram, Facebook, Youtube } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
@@ -14,6 +14,8 @@ interface StoreConfig {
     storeName: string;
     cnpj: string;
     phone: string;
+    email: string;
+    whatsapp: string;
     address: {
         zip: string;
         street: string;
@@ -22,6 +24,11 @@ interface StoreConfig {
         district: string;
         city: string;
         state: string;
+    };
+    socialMedia: {
+        instagram: string;
+        facebook: string;
+        youtube: string;
     };
     logoUrl?: string;
 }
@@ -32,6 +39,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         storeName: '',
         cnpj: '',
         phone: '',
+        email: '',
+        whatsapp: '',
         address: {
             zip: '',
             street: '',
@@ -40,6 +49,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             district: '',
             city: '',
             state: ''
+        },
+        socialMedia: {
+            instagram: '',
+            facebook: '',
+            youtube: ''
         },
         logoUrl: ''
     });
@@ -51,6 +65,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 storeName: settings.storeName,
                 cnpj: maskDocument(settings.cnpj || ''),
                 phone: maskPhone(settings.phone || ''),
+                email: settings.email || '',
+                whatsapp: maskPhone(settings.whatsapp || ''),
                 address: {
                     zip: maskCEP(settings.address.zip || ''),
                     street: settings.address.street || '',
@@ -59,6 +75,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     district: settings.address.district || '',
                     city: settings.address.city || '',
                     state: settings.address.state || ''
+                },
+                socialMedia: {
+                    instagram: settings.socialMedia?.instagram || '',
+                    facebook: settings.socialMedia?.facebook || '',
+                    youtube: settings.socialMedia?.youtube || ''
                 },
                 logoUrl: settings.logoUrl || ''
             });
@@ -73,7 +94,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         const { name, value } = e.target;
         let formattedValue = value;
 
-        if (name === 'phone') formattedValue = maskPhone(value);
+        if (name === 'phone' || name === 'whatsapp') formattedValue = maskPhone(value);
         if (name === 'cnpj') formattedValue = maskDocument(value);
 
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
@@ -150,6 +171,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             storeName: formData.storeName,
             cnpj: formData.cnpj.replace(/\D/g, ''),
             phone: formData.phone.replace(/\D/g, ''),
+            email: formData.email,
+            whatsapp: formData.whatsapp.replace(/\D/g, ''),
             address: {
                 zip: formData.address.zip.replace(/\D/g, ''),
                 street: formData.address.street,
@@ -159,6 +182,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 city: formData.address.city,
                 state: formData.address.state
             },
+            socialMedia: formData.socialMedia,
             logoUrl: formData.logoUrl || undefined
         });
 
@@ -275,6 +299,79 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 maxLength={15}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">WhatsApp</label>
+                                        <div className="relative">
+                                            <MessageCircle className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                name="whatsapp"
+                                                value={formData.whatsapp}
+                                                onChange={handleChange}
+                                                maxLength={15}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 lg:col-span-2">
+                                        <label className="text-sm font-semibold text-gray-700">E-mail</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Redes Sociais */}
+                            <section className="space-y-6">
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Redes Sociais</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Instagram</label>
+                                        <div className="relative">
+                                            <Instagram className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={formData.socialMedia.instagram}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, instagram: e.target.value } }))}
+                                                placeholder="https://instagram.com/..."
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Facebook</label>
+                                        <div className="relative">
+                                            <Facebook className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={formData.socialMedia.facebook}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, facebook: e.target.value } }))}
+                                                placeholder="https://facebook.com/..."
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">YouTube</label>
+                                        <div className="relative">
+                                            <Youtube className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={formData.socialMedia.youtube}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, youtube: e.target.value } }))}
+                                                placeholder="https://youtube.com/..."
                                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                             />
                                         </div>

@@ -12,8 +12,12 @@ import {
     RefreshCw,
     X
 } from 'lucide-react';
-import { getOrdersAdmin, updateOrderStatus } from '@/services/adminService';
-import type { OrderAdminRow } from '@/services/adminService';
+import {
+    getOrdersAdmin,
+    updateOrderStatus,
+    updateOrderTracking,
+    type OrderAdminRow
+} from '@/services/adminService';
 import { OrderStatus } from '@/types';
 
 interface PedidoComCliente extends OrderAdminRow {
@@ -49,6 +53,7 @@ const AdminOrdersManagement: React.FC = () => {
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<PedidoComCliente | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
 
     useEffect(() => {
         loadOrders();
@@ -85,11 +90,34 @@ const AdminOrdersManagement: React.FC = () => {
         }
     };
 
+    const handleTrackingSave = async () => {
+        if (!editingTracking) return;
+        try {
+            await updateOrderTracking(editingTracking.id, editingTracking.code);
+            setOrders(prev => prev.map(o =>
+                o.id === editingTracking.id ? { ...o, trackingCode: editingTracking.code } : o
+            ));
+            setMessage({ type: 'success', text: 'Código de rastreio atualizado.' });
+            setTimeout(() => setMessage(null), 2000);
+
+            if (selectedOrder && selectedOrder.id === editingTracking.id) {
+                setSelectedOrder({ ...selectedOrder, trackingCode: editingTracking.code });
+            }
+        } catch (error) {
+            console.error('Error updating tracking:', error);
+            setMessage({ type: 'error', text: 'Erro ao atualizar rastreio.' });
+        } finally {
+            setEditingTracking(null);
+        }
+    };
+
     const filteredOrders = orders.filter(order => {
+        const query = searchQuery.toLowerCase();
         const matchesSearch =
-            order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (order.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (order.clientPhone || '').includes(searchQuery);
+            order.id.toLowerCase().includes(query) ||
+            (order.clientName || '').toLowerCase().includes(query) ||
+            (order.clientPhone || '').includes(searchQuery) ||
+            (order.trackingCode || '').toLowerCase().includes(query);
 
         const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
 
@@ -267,7 +295,14 @@ const AdminOrdersManagement: React.FC = () => {
                                 <X size={18} />
                             </button>
                         </div>
-                        <div className="p-5 space-y-4">
+                        <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+
+                            {/* Address details */}
+                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Truck size={14} /> Endereço de Entrega</h4>
+                                <p className="text-stone-600 text-[13px]">{selectedOrder.clientAddress}</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4 text-[13px]">
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Cliente</p>
@@ -294,12 +329,45 @@ const AdminOrdersManagement: React.FC = () => {
                                     <p className="text-stone-700">{selectedOrder.shippingMethod || 'N/A'}</p>
                                 </div>
                             </div>
-                            {selectedOrder.trackingCode && (
-                                <div className="bg-stone-50 p-3 rounded-lg">
-                                    <p className="text-stone-500 text-[11px] uppercase tracking-wide mb-0.5">Rastreio</p>
-                                    <p className="font-mono text-stone-700 text-[13px]">{selectedOrder.trackingCode}</p>
+
+                            {/* Tracking code Editor */}
+                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Package size={14} /> Código de Rastreio</h4>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={editingTracking?.id === selectedOrder.id ? editingTracking.code : (selectedOrder.trackingCode || '')}
+                                        onChange={e => setEditingTracking({ id: selectedOrder.id, code: e.target.value })}
+                                        placeholder="Ex: BR123456789BR"
+                                        className="flex-1 px-3 py-2 border border-stone-200 bg-white rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                    />
+                                    <button
+                                        onClick={handleTrackingSave}
+                                        disabled={!editingTracking || editingTracking.id !== selectedOrder.id || editingTracking.code === selectedOrder.trackingCode}
+                                        className="px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700 disabled:opacity-50"
+                                    >
+                                        Salvar
+                                    </button>
                                 </div>
-                            )}
+                            </div>
+
+                            {/* Items list */}
+                            <div>
+                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-3 flex items-center gap-2"><ShoppingBag size={14} /> Itens do Pedido</h4>
+                                <div className="space-y-3 bg-white border border-stone-100 rounded-xl p-4">
+                                    {selectedOrder.items && selectedOrder.items.length > 0 ? selectedOrder.items.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center pb-3 border-b border-stone-100 last:border-0 last:pb-0">
+                                            <div>
+                                                <p className="text-[13px] text-stone-700 font-medium">{item.productName}</p>
+                                                <p className="text-[12px] text-stone-500 mt-0.5">{item.quantity}x {formatCurrency(item.unitPrice)}</p>
+                                            </div>
+                                            <p className="text-[13px] font-medium text-stone-800">{formatCurrency(item.quantity * item.unitPrice)}</p>
+                                        </div>
+                                    )) : (
+                                        <p className="text-stone-500 text-[13px] text-center py-2">Nenhum item encontrado.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

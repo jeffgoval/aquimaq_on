@@ -37,6 +37,9 @@ const AdminBannerManagement: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+    const [draggedBannerId, setDraggedBannerId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
     const [formData, setFormData] = useState({
         title: '',
         subtitle: '',
@@ -124,8 +127,8 @@ const AdminBannerManagement: React.FC = () => {
             cta_link: formData.cta_link || null,
             color_gradient: formData.color_gradient,
             is_active: formData.is_active,
-            starts_at: formData.starts_at ? new Date(formData.starts_at).toISOString() : null,
-            ends_at: formData.ends_at ? new Date(formData.ends_at).toISOString() : null,
+            starts_at: formData.starts_at ? new Date(formData.starts_at + 'T12:00:00Z').toISOString() : null,
+            ends_at: formData.ends_at ? new Date(formData.ends_at + 'T12:00:00Z').toISOString() : null,
             position: editingBanner?.position ?? banners.length,
         };
 
@@ -147,16 +150,62 @@ const AdminBannerManagement: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir este banner?')) return;
+    const handleDelete = (id: string) => {
+        setDeletingId(id);
+    };
 
+    const confirmDelete = async () => {
+        if (!deletingId) return;
         try {
-            await deleteBanner(id);
+            await deleteBanner(deletingId);
             setMessage({ type: 'success', text: 'Banner excluído.' });
             loadBanners();
         } catch (error) {
             console.error('Error deleting banner:', error);
             setMessage({ type: 'error', text: 'Erro ao excluir banner.' });
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    // Drag and Drop handlers
+    const handleDragStart = (e: React.DragEvent, id: string) => {
+        setDraggedBannerId(id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetId: string) => {
+        e.preventDefault();
+        if (!draggedBannerId || draggedBannerId === targetId) return;
+
+        const sourceIndex = banners.findIndex(b => b.id === draggedBannerId);
+        const targetIndex = banners.findIndex(b => b.id === targetId);
+
+        if (sourceIndex === -1 || targetIndex === -1) return;
+
+        const newBanners = [...banners];
+        const [movedBanner] = newBanners.splice(sourceIndex, 1);
+        newBanners.splice(targetIndex, 0, movedBanner);
+
+        // Update local state optimistic
+        const updatedBanners = newBanners.map((b, index) => ({ ...b, position: index }));
+        setBanners(updatedBanners);
+        setDraggedBannerId(null);
+
+        try {
+            // Update backend
+            await Promise.all(updatedBanners.map(b => updateBanner(b.id, { position: b.position })));
+            setMessage({ type: 'success', text: 'Ordem atualizada!' });
+            setTimeout(() => setMessage(null), 2000);
+        } catch (error) {
+            console.error('Error updating order:', error);
+            setMessage({ type: 'error', text: 'Erro ao reordenar banners.' });
+            loadBanners(); // revert in case of error
         }
     };
 
@@ -329,7 +378,7 @@ const AdminBannerManagement: React.FC = () => {
                     {formData.image_url && (
                         <div className="bg-white rounded-xl border border-stone-100 p-5">
                             <h2 className="text-[14px] font-medium text-stone-700 mb-4">Preview</h2>
-                            <div className="relative h-40 rounded-lg overflow-hidden">
+                            <div className="relative aspect-[4/1] md:aspect-[21/9] rounded-lg overflow-hidden">
                                 <img src={formData.image_url} alt="" className="w-full h-full object-cover" />
                                 <div className={`absolute inset-0 bg-gradient-to-r ${formData.color_gradient} opacity-80`}></div>
                                 <div className="absolute inset-0 flex items-center p-6">
@@ -414,10 +463,15 @@ const AdminBannerManagement: React.FC = () => {
                     {banners.map((banner) => (
                         <div
                             key={banner.id}
-                            className={`bg-white rounded-xl border border-stone-100 p-4 flex items-center gap-4 ${!banner.is_active ? 'opacity-60' : ''}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, banner.id)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, banner.id)}
+                            className={`bg-white rounded-xl border p-4 flex items-center gap-4 transition-all ${!banner.is_active ? 'opacity-60' : ''
+                                } ${draggedBannerId === banner.id ? 'opacity-50 border-dashed border-stone-400' : 'border-stone-100'} cursor-move`}
                         >
                             {/* Drag Handle */}
-                            <div className="text-stone-300 cursor-move">
+                            <div className="text-stone-300">
                                 <GripVertical size={20} />
                             </div>
 
@@ -483,9 +537,34 @@ const AdminBannerManagement: React.FC = () => {
                     ))}
                 </div>
             )}
+
+            {/* Delete Modal */}
+            {deletingId && (
+                <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
+                        <h3 className="text-lg font-semibold text-stone-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-stone-500 mb-6 font-medium text-[14px]">
+                            Tem certeza que deseja excluir este banner? Essa ação não pode ser desfeita.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setDeletingId(null)}
+                                className="px-4 py-2 font-medium text-[13px] text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 font-medium text-[13px] text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                            >
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default AdminBannerManagement;
-

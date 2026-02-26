@@ -48,11 +48,41 @@ export const sendMessage = async (
 export const getConversations = async (): Promise<ChatConversation[]> => {
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('*')
+    .select('*, profiles:customer_id(name, email)')
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => mapConversation(row as ChatConversationRow));
+
+  return (data ?? []).map((row: any) => ({
+    ...mapConversation(row as ChatConversationRow),
+    customerName: row.profiles?.name || row.profiles?.email || 'Cliente',
+  }));
+};
+
+/** Envia mensagem como atendente humano. */
+export const sendAdminMessage = async (
+  conversationId: string,
+  adminId: string,
+  content: string
+): Promise<void> => {
+  const { error } = await supabase.from('chat_messages').insert({
+    conversation_id: conversationId,
+    sender_type: 'human_agent',
+    sender_id: adminId,
+    content,
+  });
+
+  if (error) throw new Error(error.message);
+
+  // Atualiza a conversa para indicar que o humano respondeu
+  await supabase
+    .from('chat_conversations')
+    .update({
+      status: 'active',
+      assigned_agent: adminId,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', conversationId);
 };
 
 /** Lista mensagens de uma conversa. */

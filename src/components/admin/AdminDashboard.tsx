@@ -100,17 +100,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     });
     const [recentOrders, setRecentOrders] = useState<RecentOrderProps[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [restoreStockLoading, setRestoreStockLoading] = useState(false);
     const [restoreStockMessage, setRestoreStockMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
         let mounted = true;
         const timeoutId = setTimeout(() => {
-            if (mounted) {
-                console.warn('AdminDashboard load timeout');
+            if (mounted && loading) {
+                setError('A conexão está lenta. Algumas informações podem não carregar.');
                 setLoading(false);
             }
-        }, 10000);
+        }, 8000);
 
         const load = async () => {
             try {
@@ -118,9 +119,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 if (mounted) {
                     setStats(nextStats);
                     setRecentOrders(nextRecent);
+                    setError(null);
                 }
             } catch (e) {
-                console.error('AdminDashboard load:', e);
+                if (mounted) {
+                    console.error('AdminDashboard load:', e);
+                    setError('Não foi possível carregar os dados do painel.');
+                }
             } finally {
                 if (mounted) {
                     setLoading(false);
@@ -138,8 +143,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     if (loading) {
         return (
             <div className="space-y-6 max-w-6xl mx-auto">
-                <h1 className="text-xl font-semibold text-stone-800">Dashboard</h1>
-                <p className="text-stone-400 text-[13px] mt-0.5">Carregando...</p>
+                <div>
+                    <h1 className="text-xl font-semibold text-stone-800">Dashboard</h1>
+                    <p className="text-stone-400 text-[13px] mt-0.5">Carregando dados...</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="bg-white rounded-xl p-5 border border-stone-100 h-[104px]">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-3 pt-1">
+                                    <div className="w-20 h-3 bg-stone-100 rounded"></div>
+                                    <div className="w-24 h-6 bg-stone-100 rounded"></div>
+                                </div>
+                                <div className="w-10 h-10 rounded-lg bg-stone-50"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-pulse">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-white border border-stone-100 rounded-xl p-4 h-[74px] flex gap-3 items-center">
+                            <div className="w-10 h-10 rounded-lg bg-stone-50"></div>
+                            <div className="space-y-2 flex-1">
+                                <div className="w-24 h-3 bg-stone-100 rounded"></div>
+                                <div className="w-32 h-2.5 bg-stone-50 rounded"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="bg-white rounded-xl border border-stone-100 h-[300px] animate-pulse">
+                    <div className="px-5 py-4 border-b border-stone-50">
+                        <div className="w-32 h-4 bg-stone-100 rounded"></div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -147,9 +183,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Page Header */}
-            <div>
-                <h1 className="text-xl font-semibold text-stone-800">Dashboard</h1>
-                <p className="text-stone-400 text-[13px] mt-0.5">Visão geral do seu negócio</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold text-stone-800 flex items-center gap-2">
+                        <LayoutDashboard className="text-stone-400" size={24} />
+                        Dashboard
+                    </h1>
+                    <p className="text-stone-400 text-[13px] mt-0.5">Visão geral do seu negócio</p>
+                </div>
+                {error && (
+                    <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg flex items-center gap-2 relative">
+                        <span>{error}</span>
+                        <div className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></div>
+                        <div className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                    </div>
+                )}
             </div>
 
             {/* Stats Grid */}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -18,6 +18,8 @@ import {
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/constants/routes';
+import { LogOut } from 'lucide-react';
+import packageJson from '../../../package.json';
 
 export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'ANALYTICS' | 'KNOWLEDGE' | 'CHAT';
 
@@ -65,8 +67,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const { settings } = useStore();
-    const { isAdmin } = useAuth();
+    const { isAdmin, signOut } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsSidebarOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, []);
 
     const activeView: AdminView = useMemo(() => {
         if (propActiveView) return propActiveView;
@@ -184,9 +196,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     </button>
                 </nav>
 
-                {/* Footer Info */}
-                <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-stone-100">
-                    <p className="text-xs text-stone-400 mt-4 text-center">v1.1.0</p>
+                <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-stone-100 bg-white space-y-2">
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            await signOut();
+                            navigate(ROUTES.LOGIN);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-stone-500 hover:bg-stone-50 hover:text-red-600 transition-colors duration-150"
+                    >
+                        <LogOut size={16} />
+                        <span>Sair do sistema</span>
+                    </button>
+                    <p className="text-xs text-stone-400 text-center">v{packageJson.version}</p>
                 </div>
             </aside>
 

@@ -11,6 +11,7 @@ import {
     EyeOff
 } from 'lucide-react';
 import { getProductsAdmin } from '@/services/productService';
+import { supabase } from '@/services/supabase';
 import { Product, ProductCategory } from '@/types';
 import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
@@ -40,6 +41,7 @@ const AdminProductsManagement: React.FC = () => {
     // Editor state
     const [editingProductId, setEditingProductId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [savedScroll, setSavedScroll] = useState(0);
 
     useEffect(() => {
         loadProducts();
@@ -76,11 +78,13 @@ const AdminProductsManagement: React.FC = () => {
         }
     };
 
-    const filteredProducts = products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-        return matchesSearch && matchesCategory;
-    });
+    const filteredProducts = React.useMemo(() => {
+        return products.filter(product => {
+            const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+    }, [products, searchQuery, categoryFilter]);
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -92,9 +96,29 @@ const AdminProductsManagement: React.FC = () => {
         return { label: 'OK', color: 'text-emerald-600 bg-emerald-50' };
     };
 
+    const handleToggleActive = async (id: string, currentStatus: boolean, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            const { error } = await (supabase.from('products') as any).update({ is_active: !currentStatus }).eq('id', id);
+            if (error) throw error;
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
+            setMessage({ type: 'success', text: `Produto ${currentStatus ? 'desativado' : 'ativado'}.` });
+            setTimeout(() => setMessage(null), 2000);
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Erro ao alterar status do produto.' });
+        }
+    };
+
+    const handleEditorOpen = (id?: string) => {
+        setSavedScroll(window.scrollY);
+        if (id) setEditingProductId(id);
+        else setIsCreating(true);
+    };
+
     const handleEditorClose = () => {
         setEditingProductId(null);
         setIsCreating(false);
+        setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 0);
     };
 
     const handleEditorSave = () => {
@@ -126,7 +150,7 @@ const AdminProductsManagement: React.FC = () => {
                     </p>
                 </div>
                 <button
-                    onClick={() => setIsCreating(true)}
+                    onClick={() => handleEditorOpen()}
                     className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700 transition-colors"
                 >
                     <Plus size={16} />
@@ -199,14 +223,14 @@ const AdminProductsManagement: React.FC = () => {
                                     const stockStatus = getStockStatus(product.stock);
 
                                     return (
-                                        <tr key={product.id} className="hover:bg-stone-25">
+                                        <tr key={product.id} className="hover:bg-stone-25 group">
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     {product.imageUrl ? (
                                                         <img
                                                             src={product.imageUrl}
                                                             alt=""
-                                                            className="w-10 h-10 rounded-lg object-contain bg-white"
+                                                            className={`w-10 h-10 rounded-lg object-contain bg-white transition-opacity ${!product.is_active ? 'opacity-50 grayscale' : ''}`}
                                                         />
                                                     ) : (
                                                         <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-stone-400 border border-stone-100">
@@ -214,14 +238,18 @@ const AdminProductsManagement: React.FC = () => {
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <span className="text-[13px] text-stone-700 font-medium block">
+                                                        <span className={`text-[13px] font-medium block ${!product.is_active ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
                                                             {product.name}
                                                         </span>
-                                                        {!product.is_active && (
-                                                            <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
-                                                                <EyeOff size={10} /> Inativo
-                                                            </span>
-                                                        )}
+                                                        <button
+                                                            onClick={(e) => handleToggleActive(product.id, !!product.is_active, e)}
+                                                            className={`mt-0.5 text-[10px] flex items-center gap-1 font-medium px-1.5 py-0.5 rounded transition-colors
+                                                                ${product.is_active ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'text-stone-500 bg-stone-100 hover:bg-stone-200'}
+                                                            `}
+                                                        >
+                                                            {product.is_active ? <Eye size={10} /> : <EyeOff size={10} />}
+                                                            {product.is_active ? 'Ativo' : 'Inativo'}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </td>
@@ -259,7 +287,7 @@ const AdminProductsManagement: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <button
-                                                    onClick={() => setEditingProductId(product.id)}
+                                                    onClick={() => handleEditorOpen(product.id)}
                                                     className="inline-flex items-center gap-1 px-2.5 py-1 text-stone-500 hover:text-stone-700 hover:bg-stone-50 rounded-lg text-[12px] font-medium transition-colors"
                                                     aria-label="Editar produto"
                                                 >

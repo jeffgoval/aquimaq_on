@@ -100,7 +100,13 @@ export interface OrderAdminRow {
   clientId: string;
   clientName: string;
   clientPhone: string;
-  items: never[];
+  clientAddress: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
   subtotal: number;
   shippingCost: number;
   shippingMethod: string | null;
@@ -115,27 +121,50 @@ export interface OrderAdminRow {
 export const getOrdersAdmin = async (): Promise<OrderAdminRow[]> => {
   const { data, error } = await supabase
     .from('orders')
-    .select('*')
+    .select(`
+      *,
+      profiles:cliente_id(name, email, phone, street, number, complement, neighborhood, city, state, zip_code),
+      order_items(product_id, product_name, quantity, unit_price)
+    `)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  type Row = (typeof data)[number];
-  return (data ?? []).map((order: Row) => ({
-    id: order.id,
-    clientId: order.cliente_id ?? '',
-    clientName: order.cliente_id ?? 'Cliente',
-    clientPhone: '',
-    items: [],
-    subtotal: order.subtotal,
-    shippingCost: order.shipping_cost,
-    shippingMethod: order.shipping_method ?? null,
-    total: order.total,
-    status: order.status,
-    createdAt: order.created_at,
-    paymentMethod: order.payment_method,
-    trackingCode: order.tracking_code,
-  }));
+  type ProfileRow = {
+    name?: string; email?: string; phone?: string;
+    street?: string; number?: string; complement?: string;
+    neighborhood?: string; city?: string; state?: string; zip_code?: string;
+  };
+
+  return (data ?? []).map((order: any) => {
+    const p = order.profiles as ProfileRow | undefined;
+    const addressParts = [
+      p?.street, p?.number, p?.complement, p?.neighborhood,
+      p?.city, p?.state ? `-${p.state}` : '', p?.zip_code
+    ].filter(Boolean).join(' ');
+
+    return {
+      id: order.id,
+      clientId: order.cliente_id ?? '',
+      clientName: p?.name || p?.email || order.cliente_id || 'Cliente',
+      clientPhone: p?.phone || '',
+      clientAddress: addressParts || 'Endereço não informado',
+      items: (order.order_items || []).map((item: any) => ({
+        productId: item.product_id ?? '',
+        productName: item.product_name ?? 'Produto',
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+      })),
+      subtotal: order.subtotal,
+      shippingCost: order.shipping_cost,
+      shippingMethod: order.shipping_method ?? null,
+      total: order.total,
+      status: order.status,
+      createdAt: order.created_at,
+      paymentMethod: order.payment_method,
+      trackingCode: order.tracking_code,
+    };
+  });
 };
 
 /** Atualiza status de um pedido. */
@@ -143,9 +172,19 @@ export const updateOrderStatus = async (
   orderId: string,
   status: string
 ): Promise<void> => {
-  const { error } = await supabase
-    .from('orders')
+  const { error } = await (supabase.from('orders') as any)
     .update({ status })
+    .eq('id', orderId);
+  if (error) throw error;
+};
+
+/** Atualiza código de rastreio de um pedido. */
+export const updateOrderTracking = async (
+  orderId: string,
+  trackingCode: string
+): Promise<void> => {
+  const { error } = await (supabase.from('orders') as any)
+    .update({ tracking_code: trackingCode })
     .eq('id', orderId);
   if (error) throw error;
 };
@@ -178,7 +217,7 @@ export interface ProductRank {
 export const getSalesSummary = async (
   periodDays: number
 ): Promise<SalesSummary | null> => {
-  const { data } = await supabase.rpc('get_sales_summary', {
+  const { data } = await (supabase as any).rpc('get_sales_summary', {
     period_days: periodDays,
   });
   return data as SalesSummary | null;
@@ -188,7 +227,7 @@ export const getSalesSummary = async (
 export const getDailySales = async (
   periodDays: number
 ): Promise<DailySale[]> => {
-  const { data } = await supabase.rpc('get_daily_sales', {
+  const { data } = await (supabase as any).rpc('get_daily_sales', {
     period_days: periodDays,
   });
   return (data as DailySale[]) ?? [];
@@ -198,7 +237,7 @@ export const getDailySales = async (
 export const getProductRanking = async (
   maxResults: number = 10
 ): Promise<ProductRank[]> => {
-  const { data } = await supabase.rpc('get_product_ranking', {
+  const { data } = await (supabase as any).rpc('get_product_ranking', {
     max_results: maxResults,
   });
   return (data as ProductRank[]) ?? [];
@@ -207,5 +246,33 @@ export const getProductRanking = async (
 /** Restaura estoque de pedidos não pagos (RPC). */
 export const restoreStockFromUnpaidOrders = async (): Promise<void> => {
   const { error } = await supabase.rpc('restore_stock_from_unpaid_orders');
+  if (error) throw error;
+};
+
+export interface AdminUserRow {
+  id: string;
+  email: string | null;
+  name: string | null;
+  role: string;
+  created_at: string | null;
+}
+
+/** Retorna a lista de usuários para painel admin. */
+export const getUsersAdmin = async (): Promise<AdminUserRow[]> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, name, role, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as AdminUserRow[];
+};
+
+/** Atualiza a permissão (role) de um usuário. */
+export const updateUserRole = async (userId: string, role: string): Promise<void> => {
+  const { error } = await (supabase.from('profiles') as any)
+    .update({ role })
+    .eq('id', userId);
+
   if (error) throw error;
 };

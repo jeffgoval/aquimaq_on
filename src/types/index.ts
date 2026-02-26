@@ -116,6 +116,7 @@ export interface ChatMessage {
 export interface ChatConversation {
   id: string;
   customerId: string;
+  customerName?: string;
   assignedAgent: string | null;
   status: ChatStatus;
   channel: string | null;
