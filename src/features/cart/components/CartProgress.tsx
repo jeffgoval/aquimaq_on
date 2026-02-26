@@ -1,5 +1,6 @@
 import React from 'react';
 import { CartItem } from '@/types';
+import { Award } from 'lucide-react';
 
 interface CartProgressProps {
     items: CartItem[];
@@ -40,7 +41,7 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
         return (
             <div className="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-100 mb-4 animate-in slide-in-from-top-2">
                 <p className="text-emerald-700 font-bold text-center flex items-center justify-center gap-2">
-                    🎉 Parabéns! Você garantiu preços de atacado nos seus itens!
+                    <Award size={18} /> Parabéns! Você garantiu preços de atacado nos seus itens!
                 </p>
                 <p className="text-emerald-600 text-xs text-center mt-1">
                     O desconto foi aplicado automaticamente no subtotal.
