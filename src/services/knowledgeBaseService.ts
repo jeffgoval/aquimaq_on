@@ -25,32 +25,6 @@ function mapRow(row: AIKnowledgeBaseRow): KBEntry {
   };
 }
 
-import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-/** Extrai texto de um PDF no browser usando pdfjs-dist. */
-async function extractPdfText(file: File): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
-
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-
-  let fullText = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .filter((item) => 'str' in item)
-      .map((item) => (item as any).str as string)
-      .join(' ');
-    if (pageText.trim()) {
-      fullText += `[Página ${i}]\n${pageText}\n\n`;
-    }
-  }
-
-  return fullText.trim();
-}
-
 /** Faz upload de um ficheiro para o bucket e regista na base de conhecimento. */
 export const uploadDocument = async (
   file: File,
@@ -67,34 +41,17 @@ export const uploadDocument = async (
     contentType: file.type,
     upsert: false,
   });
-
   if (uploadError) throw new Error(uploadError.message);
 
-  let content: string;
-  if (file.type === 'application/pdf') {
-    const extractedText = await extractPdfText(file);
-    content = extractedText || `[PDF sem texto extraível: ${file.name}]`;
-  } else {
-    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    content = `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`;
-  }
+  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-  const { data: inserted, error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
+  const { error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: metadata.source_type ?? 'manual',
     title: metadata.title ?? file.name,
-    content,
+    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`,
     chunk_index: 0,
-  }).select('id').single();
-
-  if (insertError || !inserted) {
-    throw new Error('Falha ao registrar documento no banco: ' + insertError?.message);
-  }
-
-  supabase.functions.invoke('rag-indexer', {
-    body: { docId: inserted.id }
-  }).catch(err => {
-    console.error('Erro ao chamar a indexação RAG:', err);
   });
+  if (insertError) throw new Error(insertError.message);
 };
 
 /** Lista entradas da base de conhecimento. */
