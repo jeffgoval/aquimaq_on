@@ -25,19 +25,44 @@ function mapRow(row: AIKnowledgeBaseRow): KBEntry {
   };
 }
 
+/** Extrai texto de um PDF no browser usando pdfjs-dist (lazy-loaded). */
+async function extractPdfText(file: File): Promise<string> {
+  // Dynamic import: pdfjs-dist é carregado só quando necessário (admin KB section)
+  const pdfjsLib = await import('pdfjs-dist');
+  // Worker via CDN para não complicar o build do Vite
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .filter((item) => 'str' in item)
+      .map((item) => (item as any).str as string)
+      .join(' ');
+    if (pageText.trim()) {
+      fullText += `[Página ${i}]\n${pageText}\n\n`;
+    }
+  }
+
+  return fullText.trim();
+}
+
 /** Faz upload de um ficheiro para o bucket e regista na base de conhecimento. */
 export const uploadDocument = async (
   file: File,
   metadata: { title?: string; source_type?: string } = {}
 ): Promise<void> => {
   const BUCKET = 'knowledge-base';
-  // Sanitize filename: remove accents and replace spaces/special chars with underscores
   const sanitizedName = file.name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // remove accent marks
-    .replace(/[^a-zA-Z0-9._-]/g, '_'); // replace invalid chars with _
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `public/${Date.now()}-${sanitizedName}`;
-
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -46,11 +71,21 @@ export const uploadDocument = async (
 
   if (uploadError) throw new Error(uploadError.message);
 
-  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  // PDFs: extrai texto no browser (evita incompatibilidade de libs PDF no runtime Deno)
+  // Outros arquivos: guarda referência de URL
+  let content: string;
+  if (file.type === 'application/pdf') {
+    const extractedText = await extractPdfText(file);
+    content = extractedText || `[PDF sem texto extraível: ${file.name}]`;
+  } else {
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    content = `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`;
+  }
+
   const { data: inserted, error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: metadata.source_type ?? 'manual',
     title: metadata.title ?? file.name,
-    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`,
+    content,
     chunk_index: 0,
   }).select('id').single();
 
@@ -58,11 +93,11 @@ export const uploadDocument = async (
     throw new Error('Falha ao registrar documento no banco: ' + insertError?.message);
   }
 
-  // Chamar a Edge Function de forma assíncrona (nao espera terminar pra nao travar o UI)
+  // Chama o indexador para chunking + embedding (não precisa mais fazer parse de PDF)
   supabase.functions.invoke('rag-indexer', {
     body: { docId: inserted.id }
   }).catch(err => {
-    console.error("Erro ao chamar a indexação RAG:", err);
+    console.error('Erro ao chamar a indexação RAG:', err);
   });
 };
 

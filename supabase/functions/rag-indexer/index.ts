@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { extractText } from 'https://esm.sh/unpdf@0.11.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,10 +32,15 @@ Deno.serve(async (req) => {
       throw new Error(`Document not found: ${docError?.message}`);
     }
 
-    if (!docInfo.content.includes('URL:')) {
-      return new Response(JSON.stringify({ message: 'Document does not have a valid URL format for processing' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Text is pre-extracted by the browser (PDF parsing happens client-side via pdfjs-dist).
+    // Non-PDF files store a URL reference — skip them here.
+    const fullText = docInfo.content?.trim() ?? '';
+
+    if (!fullText || fullText.startsWith('[Ficheiro:') || fullText.length < 20) {
+      return new Response(
+        JSON.stringify({ message: 'No indexable text content — skipping.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // 2. Get AI Settings
@@ -53,34 +57,7 @@ Deno.serve(async (req) => {
       throw new Error(`Unsupported AI Provider: ${aiSettings.provider}`);
     }
 
-    // Extract the URL
-    const urlMatch = docInfo.content.match(/URL:\s*(https?:\/\/[^\s]+)/);
-    if (!urlMatch || !urlMatch[1]) {
-      throw new Error('Could not extract valid URL from document content.');
-    }
-    const fileUrl = urlMatch[1];
-
-    // 3. Download the PDF
-    const pdfResponse = await fetch(fileUrl);
-    if (!pdfResponse.ok) throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`);
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-
-    // 4. Parse PDF Text using unpdf (worker-free, edge-compatible)
-    const { text: pages } = await extractText(new Uint8Array(pdfBuffer), { mergePages: false });
-
-    let fullText = '';
-    for (let i = 0; i < pages.length; i++) {
-      const pageText = pages[i]?.trim();
-      if (pageText) {
-        fullText += `[Página ${i + 1}]\n${pageText}\n\n`;
-      }
-    }
-
-    if (!fullText.trim()) {
-      throw new Error('No text could be extracted from the PDF.');
-    }
-
-    // 5. Chunk the text
+    // 3. Chunk the text
     const chunks: string[] = [];
     const chunkSize = 1500;
     const overlap = 200;
@@ -103,7 +80,7 @@ Deno.serve(async (req) => {
       currentIndex = end - overlap;
     }
 
-    // 6. Generate Embeddings & Save to DB
+    // 4. Generate Embeddings & Save to DB
     const apiKey = aiSettings.api_key;
     const model = aiSettings.model || OPENAI_EMBEDDING_MODEL;
 
