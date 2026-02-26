@@ -50,7 +50,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
     <div className="flex flex-col h-full">
       {/* Main Image Stage */}
       <div
-        className="w-full h-80 md:h-[400px] bg-white border-b border-gray-100 flex items-center justify-center overflow-hidden p-4 relative group cursor-zoom-in"
+        className="w-full h-[400px] md:h-[520px] bg-white border-b border-gray-100 flex items-center justify-center overflow-hidden p-6 relative group cursor-zoom-in"
         onClick={() => setIsLightboxOpen(true)}
       >
         <Image

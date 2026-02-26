@@ -61,10 +61,6 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
         {/* Lista de Comentários */}
         <div className="md:w-2/3 space-y-8">
-          <div className="bg-gray-50 p-4 rounded-lg text-center text-sm text-gray-600">
-            O sistema de avaliações está temporariamente indisponível.
-          </div>
-
           <div className="space-y-6">
             {loading ? (
               <p className="text-center text-gray-500">Carregando avaliações...</p>
