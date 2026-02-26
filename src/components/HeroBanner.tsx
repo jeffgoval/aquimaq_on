@@ -1,65 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ROUTES } from '@/constants/routes';
+import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { getActiveBanners } from '@/services/bannerService';
+import { useStore } from '@/contexts/StoreContext';
+
+const SLIDE_INTERVAL_MS = 5000;
+
+const HeroBannerSkeleton: React.FC = () => (
+    <div className="relative bg-gray-200 animate-pulse h-[400px] md:h-[480px]" aria-hidden />
+);
 
 const HeroBanner: React.FC = () => {
+    const { settings } = useStore();
     const [banners, setBanners] = useState<Awaited<ReturnType<typeof getActiveBanners>>>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
+    const isPausedRef = useRef(false);
+    const touchStartXRef = useRef<number | null>(null);
 
     useEffect(() => {
-        const loadBanners = async () => {
-            try {
-                const data = await getActiveBanners();
-                if (data?.length) setBanners(data);
-            } catch (err) {
-                console.error('Error loading banners:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadBanners();
+        getActiveBanners()
+            .then((data) => { if (data?.length) setBanners(data); })
+            .catch((err) => console.error('Error loading banners:', err))
+            .finally(() => setLoading(false));
     }, []);
 
-    // Auto-advance slides
+    // Auto-advance slides — pauses when isPausedRef is true
     useEffect(() => {
         if (banners.length <= 1) return;
-
         const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % banners.length);
-        }, 5000);
-
+            if (!isPausedRef.current) {
+                setCurrentSlide((prev) => (prev + 1) % banners.length);
+            }
+        }, SLIDE_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [banners.length]);
 
-    const goToSlide = (index: number) => {
-        setCurrentSlide(index);
+    const goToSlide = (index: number) => setCurrentSlide(index);
+    const goToPrev = useCallback(() => setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length), [banners.length]);
+    const goToNext = useCallback(() => setCurrentSlide((prev) => (prev + 1) % banners.length), [banners.length]);
+
+    // Touch swipe handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartXRef.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartXRef.current === null) return;
+        const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            diff > 0 ? goToNext() : goToPrev();
+        }
+        touchStartXRef.current = null;
     };
 
-    const goToPrev = () => {
-        setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
-    };
+    const whatsappNumber = (settings?.whatsapp || settings?.phone || '').replace(/\D/g, '');
+    const whatsappHref = whatsappNumber
+        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá, vim pelo site e gostaria de falar com um consultor!')}`
+        : null;
 
-    const goToNext = () => {
-        setCurrentSlide((prev) => (prev + 1) % banners.length);
-    };
-
-    if (!loading && banners.length === 0) return null;
+    if (loading) return <HeroBannerSkeleton />;
+    if (banners.length === 0) return null;
 
     return (
-        <div className="relative bg-gray-100 group">
-            <div className="max-w-[1920px] mx-auto relative overflow-hidden h-[400px] md:h-[480px]">
-
+        <div
+            className="relative bg-gray-100 group"
+            onMouseEnter={() => { isPausedRef.current = true; }}
+            onMouseLeave={() => { isPausedRef.current = false; }}
+        >
+            <div
+                className="max-w-[1920px] mx-auto relative overflow-hidden h-[400px] md:h-[480px]"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+            >
                 {/* Slides */}
                 {banners.map((slide, index) => (
                     <div
                         key={slide.id}
-                        className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                            }`}
+                        className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                        aria-hidden={index !== currentSlide}
                     >
-                        {/* Background Image (original: background-image) */}
+                        {/* Background */}
                         <div className="absolute inset-0">
                             <div
                                 className="w-full h-full bg-cover bg-center bg-no-repeat"
@@ -67,22 +87,18 @@ const HeroBanner: React.FC = () => {
                                 role="img"
                                 aria-label={slide.title}
                             />
-                            {/* Gradient Overlay — original hero */}
                             <div className={`absolute inset-0 bg-gradient-to-r ${slide.color_gradient || 'from-agro-900 to-agro-800'} opacity-90 md:opacity-80 mix-blend-multiply`} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                         </div>
 
-                        {/* Content Container */}
+                        {/* Content */}
                         <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
                             <div className="max-w-xl text-white py-12">
-                                <span className="inline-block py-1 px-3 rounded-md bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-bold uppercase tracking-wider mb-6 animate-fade-in">
-                                    Destaque da Semana
-                                </span>
-                                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 shadow-sm">
+                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 shadow-sm">
                                     {slide.title}
-                                </h1>
+                                </h2>
                                 {slide.subtitle && (
-                                    <p className="text-lg md:text-xl text-gray-100 mb-8 font-medium leading-relaxed max-w-lg shadow-sm">
+                                    <p className="text-lg md:text-xl text-gray-100 mb-8 font-medium leading-relaxed max-w-lg">
                                         {slide.subtitle}
                                     </p>
                                 )}
@@ -91,7 +107,7 @@ const HeroBanner: React.FC = () => {
                                         slide.cta_link ? (
                                             <Link
                                                 to={slide.cta_link}
-                                                className="px-8 py-3.5 bg-agro-500 hover:bg-agro-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-600/30 transition-all transform hover:-translate-y-1 flex items-center inline-flex"
+                                                className="px-8 py-3.5 bg-agro-500 hover:bg-agro-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-600/30 transition-all transform hover:-translate-y-1 inline-flex items-center"
                                             >
                                                 {slide.cta_text}
                                                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -103,12 +119,17 @@ const HeroBanner: React.FC = () => {
                                             </button>
                                         )
                                     )}
-                                    <Link
-                                        to={`${ROUTES.HOME}#contato`}
-                                        className="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-900 font-bold text-lg rounded-lg shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center"
-                                    >
-                                        Falar com Consultor
-                                    </Link>
+                                    {whatsappHref && (
+                                        <a
+                                            href={whatsappHref}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-900 font-bold text-lg rounded-lg shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center gap-2"
+                                        >
+                                            <MessageCircle size={20} />
+                                            Falar com Consultor
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -120,13 +141,15 @@ const HeroBanner: React.FC = () => {
                     <>
                         <button
                             onClick={goToPrev}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-colors hidden md:block"
+                            aria-label="Slide anterior"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-colors hidden md:flex items-center justify-center"
                         >
                             <ChevronLeft size={32} />
                         </button>
                         <button
                             onClick={goToNext}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-colors hidden md:block"
+                            aria-label="Próximo slide"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-colors hidden md:flex items-center justify-center"
                         >
                             <ChevronRight size={32} />
                         </button>
@@ -134,75 +157,21 @@ const HeroBanner: React.FC = () => {
                 )}
 
                 {/* Dots */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
-                    {banners.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => goToSlide(index)}
-                            className={`h-2 rounded-full transition-all ${index === currentSlide
-                                ? 'w-8 bg-white'
-                                : 'w-2 bg-white/50 hover:bg-white'
-                                }`}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Quick Benefits Bar */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start space-x-3">
-                            <div className="bg-agro-50 p-2 rounded-full text-agro-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-sm text-gray-900">Compra Segura</p>
-                                <p className="text-xs text-gray-500">Certificada</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start space-x-3">
-                            <div className="bg-agro-50 p-2 rounded-full text-agro-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-sm text-gray-900">Frete Grátis</p>
-                                <p className="text-xs text-gray-500">Consulte região</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start space-x-3">
-                            <div className="bg-agro-50 p-2 rounded-full text-agro-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-sm text-gray-900">Parcele Sem Juros</p>
-                                <p className="text-xs text-gray-500">Até 12x no cartão</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center md:justify-start space-x-3">
-                            <div className="bg-agro-50 p-2 rounded-full text-agro-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-sm text-gray-900">Suporte Técnico</p>
-                                <p className="text-xs text-gray-500">Engenheiros Agrônomos</p>
-                            </div>
-                        </div>
+                {banners.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+                        {banners.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => goToSlide(index)}
+                                aria-label={`Ir para slide ${index + 1}`}
+                                className={`h-2 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white'}`}
+                            />
+                        ))}
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
 };
 
 export default HeroBanner;
-
