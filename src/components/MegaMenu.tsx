@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
-import { ChevronRight, MousePointer2, Lightbulb, ArrowRight } from 'lucide-react';
+import { ChevronRight, MousePointer2, Lightbulb, ArrowRight, Beef, FlaskConical, Wrench, Wheat, Cog, ShieldCheck } from 'lucide-react';
 import { MEGA_MENU_CATEGORIES } from '@/constants/megaMenuCategories';
 
 interface MegaMenuProps {
     onCategoryClick?: (categorySlug: string) => void;
 }
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+    'nutricao-animal':         <Beef size={18} />,
+    'defensivos-agricolas':    <FlaskConical size={18} />,
+    'ferramentas-equipamentos': <Wrench size={18} />,
+    'sementes-mudas':          <Wheat size={18} />,
+    'pecas-reposicao':         <Cog size={18} />,
+    'epi-seguranca':           <ShieldCheck size={18} />,
+};
 
 const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
     const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -35,10 +44,12 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
                                     }`}
                             >
                                 <span className="flex items-center gap-3">
-                                    <span className="text-2xl">{category.icon}</span>
+                                    <span className={`shrink-0 ${hoveredCategory === category.id ? 'text-agro-600' : 'text-slate-400'}`}>
+                                        {CATEGORY_ICONS[category.id]}
+                                    </span>
                                     <span className="text-sm">{category.name}</span>
                                 </span>
-                                <ChevronRight className="w-4 h-4 text-slate-400" />
+                                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                             </button>
                         ))}
                     </div>
@@ -50,8 +61,8 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
                                 {MEGA_MENU_CATEGORIES.find((cat) => cat.id === hoveredCategory) && (
                                     <div>
                                         <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <span className="text-3xl">
-                                                {MEGA_MENU_CATEGORIES.find((cat) => cat.id === hoveredCategory)?.icon}
+                                            <span className="text-agro-600">
+                                                {CATEGORY_ICONS[hoveredCategory]}
                                             </span>
                                             {MEGA_MENU_CATEGORIES.find((cat) => cat.id === hoveredCategory)?.name}
                                         </h3>
@@ -84,10 +95,12 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
                     </div>
                 </div>
 
-                {/* Bottom Banner - Optional */}
+                {/* Bottom Banner */}
                 <div className="border-t border-slate-200 bg-gradient-to-r from-agro-50 to-agro-100 px-6 py-3">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600 font-medium"><Lightbulb size={18} className="inline-block mr-1.5 text-amber-500 align-middle" /> <strong>Dica:</strong> Não encontrou o que procura? Use nossa busca inteligente acima!
+                        <span className="text-slate-600 font-medium">
+                            <Lightbulb size={18} className="inline-block mr-1.5 text-amber-500 align-middle" />
+                            <strong>Dica:</strong> Não encontrou o que procura? Use nossa busca acima!
                         </span>
                         <button className="text-agro-700 font-bold hover:text-agro-800 transition-colors">
                             Ver Todos <ArrowRight size={16} className="inline ml-0.5 align-middle" />
@@ -100,4 +113,3 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
 };
 
 export default MegaMenu;
-

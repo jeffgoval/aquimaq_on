@@ -22,6 +22,14 @@ const getAvatarInitials = (user: SupabaseUser): string => {
     return local.slice(0, 2).toUpperCase() || '?';
 };
 
+const NAV_CATEGORIES: { label: string; value: ProductCategory }[] = [
+    { label: 'Nutrição Animal',     value: ProductCategory.NUTRITION },
+    { label: 'Defensivos Agrícolas', value: ProductCategory.DEFENSIVES },
+    { label: 'Sementes',            value: ProductCategory.SEEDS },
+    { label: 'Equipamentos',        value: ProductCategory.EQUIPMENT },
+    { label: 'Peças de Reposição',  value: ProductCategory.PARTS },
+    { label: 'EPI e Segurança',     value: ProductCategory.PPE },
+];
 
 interface HeaderProps {
     cartItemCount: number;
@@ -90,47 +98,59 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     const isActive = (path: string) => location.pathname === path;
+    const isHomeActive = selectedCategory === 'ALL' && location.pathname === ROUTES.HOME && !searchQuery;
 
     return (
-        <header role="banner" className="flex flex-col w-full shadow-md z-50 relative font-sans">
+        <header role="banner" className="flex flex-col w-full shadow-md sticky top-0 z-50 font-sans">
             {/* 1. TOP BAR */}
             <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 hidden md:block border-b border-slate-800">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex space-x-6">
                         <span className="flex items-center">
-                            <Truck size={14} className="mr-2 text-agro-500" />
+                            <Truck size={14} className="mr-2 text-agro-500 shrink-0" />
                             Frete Grátis para todo Brasil em compras acima de R$ 299
                         </span>
                         <span className="flex items-center">
-                            <ShieldCheck size={14} className="mr-2 text-agro-500" />
+                            <ShieldCheck size={14} className="mr-2 text-agro-500 shrink-0" />
                             Garantia de 12 meses em toda a linha
                         </span>
                     </div>
                     <div className="flex space-x-6">
-                        <span className="flex items-center">
-                            <Phone size={14} className="mr-2 text-agro-500" />
-                            Central de Vendas: {settings?.phone ? maskPhone(settings.phone) : '(00) 00000-0000'}
-                        </span>
+                        {settings?.phone ? (
+                            <a
+                                href={`tel:${settings.phone.replace(/\D/g, '')}`}
+                                className="flex items-center hover:text-white transition-colors"
+                            >
+                                <Phone size={14} className="mr-2 text-agro-500 shrink-0" />
+                                Central de Vendas: {maskPhone(settings.phone)}
+                            </a>
+                        ) : (
+                            <span className="flex items-center">
+                                <Phone size={14} className="mr-2 text-agro-500 shrink-0" />
+                                Central de Vendas: (00) 00000-0000
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* 2. MAIN HEADER */}
-            <div className="bg-white py-4 md:py-6 relative z-20">
+            <div className="bg-white py-4 md:py-5 relative z-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between gap-4 md:gap-8">
                         <button
                             className="p-2 -ml-2 text-slate-600 md:hidden hover:bg-slate-100 rounded-lg"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
                         >
                             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
 
-                        <div className="flex items-center cursor-pointer group" onClick={handleLogoClick}>
+                        <div className="flex items-center cursor-pointer group shrink-0" onClick={handleLogoClick}>
                             {settings?.logoUrl ? (
-                                <img src={settings.logoUrl} alt="Logo" className="w-12 h-12 md:w-16 md:h-16 object-contain mr-2 md:mr-3 rounded-xl" />
+                                <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain mr-2 md:mr-3 rounded-xl" />
                             ) : (
-                                <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-agro-500 to-agro-700 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg mr-2 md:mr-3">A</div>
+                                <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-agro-500 to-agro-700 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg mr-2 md:mr-3">A</div>
                             )}
                             <span className="text-xl md:text-2xl font-bold text-slate-900">{settings?.storeName || 'Aquimaq'}</span>
                         </div>
@@ -140,16 +160,19 @@ const Header: React.FC<HeaderProps> = ({
                             <input
                                 type="text"
                                 className="w-full bg-slate-50 rounded-full pl-11 pr-4 py-3 border-2 border-transparent focus:border-agro-500 focus:bg-white focus:outline-none transition-all"
-                                placeholder="O que você procura hoje?"
+                                placeholder="Buscar por produto, marca ou cultura..."
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange(e.target.value)}
                             />
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            <button className="p-2 text-slate-500 md:hidden" onClick={() => setIsSearchOpen(true)}>
+                        <div className="flex items-center gap-1">
+                            {/* Mobile: search icon */}
+                            <button className="p-2 text-slate-500 md:hidden" onClick={() => setIsSearchOpen(true)} aria-label="Buscar">
                                 <Search size={22} />
                             </button>
+
+                            {/* User area */}
                             {!authLoading && (
                                 user ? (
                                     <div className="hidden md:block relative" ref={userMenuRef}>
@@ -237,16 +260,28 @@ const Header: React.FC<HeaderProps> = ({
                                 ) : (
                                     <Link
                                         to={ROUTES.LOGIN}
-                                        className={`p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.LOGIN) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
-                                        title="Entrar"
+                                        className={`hidden md:flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all ${isActive(ROUTES.LOGIN) ? 'text-agro-600 bg-agro-50' : 'text-slate-600 hover:bg-agro-50 hover:text-agro-700'}`}
                                     >
-                                        <LogIn size={22} />
+                                        <LogIn size={17} />
+                                        Entrar
                                     </Link>
                                 )
                             )}
+
+                            {/* Wishlist icon — desktop */}
+                            <Link
+                                to={ROUTES.WISHLIST}
+                                className={`hidden md:flex p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.WISHLIST) ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-400'}`}
+                                aria-label="Favoritos"
+                            >
+                                <Heart size={21} className={isActive(ROUTES.WISHLIST) ? 'fill-red-500' : ''} />
+                            </Link>
+
+                            {/* Cart */}
                             <Link
                                 to={ROUTES.CART}
                                 className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
+                                aria-label="Carrinho"
                             >
                                 <ShoppingCart size={22} />
                                 {cartItemCount > 0 && (
@@ -263,20 +298,34 @@ const Header: React.FC<HeaderProps> = ({
             {/* 3. CATEGORY NAVIGATION */}
             <div className="hidden md:block bg-slate-900 text-white shadow-inner">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex items-center space-x-1 justify-between text-sm font-medium h-12">
-                        <button onClick={() => handleLogoClick()} className="flex items-center px-4 h-full text-slate-300 hover:text-white">
-                            <Store size={18} className="mr-2" />
+                    <nav className="flex items-center space-x-1 text-sm font-medium h-11">
+                        {/* Home */}
+                        <button
+                            onClick={() => handleLogoClick()}
+                            className={`flex items-center px-4 h-full border-b-2 transition-colors ${isHomeActive
+                                ? 'border-agro-500 text-white'
+                                : 'border-transparent text-slate-300 hover:text-white'
+                            }`}
+                        >
+                            <Store size={16} className="mr-1.5" />
                             Início
                         </button>
+
+                        {/* Mega Menu */}
                         <MegaMenu onCategoryClick={(c) => handleCategoryClick(c as ProductCategory)} />
-                        <div className="flex h-full space-x-1">
-                            {Object.values(ProductCategory).slice(0, 6).map((cat) => (
+
+                        {/* Category quick links */}
+                        <div className="flex h-full space-x-0.5 overflow-hidden">
+                            {NAV_CATEGORIES.map((cat) => (
                                 <button
-                                    key={cat}
-                                    onClick={() => handleCategoryClick(cat)}
-                                    className={`px-4 h-full flex items-center border-b-2 transition-colors ${selectedCategory === cat ? 'border-agro-500 text-white' : 'border-transparent text-slate-300 hover:text-white'}`}
+                                    key={cat.value}
+                                    onClick={() => handleCategoryClick(cat.value)}
+                                    className={`px-3 h-full flex items-center border-b-2 transition-colors whitespace-nowrap text-xs ${selectedCategory === cat.value
+                                        ? 'border-agro-500 text-white'
+                                        : 'border-transparent text-slate-300 hover:text-white'
+                                    }`}
                                 >
-                                    {cat}
+                                    {cat.label}
                                 </button>
                             ))}
                         </div>
@@ -290,7 +339,7 @@ const Header: React.FC<HeaderProps> = ({
                     <div ref={mobileMenuRef} className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
                             <span className="text-lg font-bold">Menu</span>
-                            <button onClick={() => setIsMobileMenuOpen(false)}><X size={24} /></button>
+                            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu"><X size={24} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
                             {!authLoading && (
@@ -358,10 +407,10 @@ const Header: React.FC<HeaderProps> = ({
                                     <Link
                                         to={ROUTES.LOGIN}
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex items-center gap-2 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg"
+                                        className="flex items-center gap-2 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium"
                                     >
                                         <LogIn size={18} />
-                                        Entrar
+                                        Entrar na sua conta
                                     </Link>
                                 )
                             )}
@@ -369,7 +418,10 @@ const Header: React.FC<HeaderProps> = ({
                                 <button
                                     key={cat}
                                     onClick={() => handleCategoryClick(cat)}
-                                    className="w-full text-left px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg"
+                                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${selectedCategory === cat
+                                        ? 'text-agro-700 bg-agro-50 font-medium'
+                                        : 'text-slate-600 hover:bg-slate-50'
+                                    }`}
                                 >
                                     {cat}
                                 </button>
@@ -384,14 +436,14 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="md:hidden fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsSearchOpen(false)}>
                     <div ref={searchModalRef} className="fixed top-0 left-0 right-0 bg-white p-4 animate-in slide-in-from-top-5" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
-                            <button onClick={() => setIsSearchOpen(false)}><X size={24} /></button>
+                            <button onClick={() => setIsSearchOpen(false)} aria-label="Fechar busca"><X size={24} /></button>
                             <h2 className="text-lg font-bold">Buscar</h2>
                         </div>
                         <input
                             ref={mobileSearchInputRef}
                             type="text"
-                            className="w-full bg-slate-50 rounded-xl pl-4 pr-10 py-4 border-2 border-slate-200 outline-none"
-                            placeholder="O que procura?"
+                            className="w-full bg-slate-50 rounded-xl pl-4 pr-10 py-4 border-2 border-slate-200 outline-none focus:border-agro-500"
+                            placeholder="Produto, marca ou cultura..."
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
                         />
