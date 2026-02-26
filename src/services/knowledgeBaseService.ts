@@ -31,7 +31,13 @@ export const uploadDocument = async (
   metadata: { title?: string; source_type?: string } = {}
 ): Promise<void> => {
   const BUCKET = 'knowledge-base';
-  const path = `public/${Date.now()}-${file.name}`;
+  // Sanitize filename: remove accents and replace spaces/special chars with underscores
+  const sanitizedName = file.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove accent marks
+    .replace(/[^a-zA-Z0-9._-]/g, '_'); // replace invalid chars with _
+  const path = `public/${Date.now()}-${sanitizedName}`;
+
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -41,11 +47,22 @@ export const uploadDocument = async (
   if (uploadError) throw new Error(uploadError.message);
 
   const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  await supabase.from('ai_knowledge_base').insert({
+  const { data: inserted, error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: metadata.source_type ?? 'manual',
     title: metadata.title ?? file.name,
-    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}. Processado via catálogo público.`,
+    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}. Processando...`,
     chunk_index: 0,
+  }).select('id').single();
+
+  if (insertError || !inserted) {
+    throw new Error('Falha ao registrar documento no banco: ' + insertError?.message);
+  }
+
+  // Chamar a Edge Function de forma assíncrona (nao espera terminar pra nao travar o UI)
+  supabase.functions.invoke('rag-indexer', {
+    body: { docId: inserted.id }
+  }).catch(err => {
+    console.error("Erro ao chamar a indexação RAG:", err);
   });
 };
 
@@ -68,20 +85,22 @@ export const deleteDocument = async (id: string): Promise<void> => {
 
 /** Reindexa um produto. */
 export const reindexProduct = async (productId: string): Promise<void> => {
-  const { data: product, error: productError } = await supabase
+  const { data: product, error: productError } = await (supabase
     .from('products')
     .select('id, name, description, technical_specs')
     .eq('id', productId)
-    .single();
+    .single() as any);
 
   if (productError || !product) throw new Error('Produto não encontrado');
 
-  const content = [product.name, product.description, product.technical_specs].filter(Boolean).join('\n\n');
+  const p = product as { name: string; description: string | null; technical_specs: string | null };
+  const content = [p.name, p.description, p.technical_specs].filter(Boolean).join('\n\n');
+
   if (!content.trim()) return;
 
   await supabase.from('ai_knowledge_base').delete().eq('source_type', 'product').eq('source_id', productId);
 
-  await supabase.from('ai_knowledge_base').insert({
+  await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: 'product',
     source_id: productId,
     title: product.name,

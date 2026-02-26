@@ -13,7 +13,8 @@ import {
     BarChart,
     Store,
     BookOpen,
-    MessageCircle
+    MessageCircle,
+    Cpu
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'ANALYTICS' | 'KNOWLEDGE' | 'CHAT';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'ANALYTICS' | 'KNOWLEDGE' | 'CHAT';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -30,7 +31,7 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_BANNERS]: 'BANNERS',
     [ROUTES.ADMIN_USERS]: 'USERS',
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
-    [ROUTES.ADMIN_ANALYTICS]: 'ANALYTICS',
+    [ROUTES.ADMIN_AI_SETTINGS]: 'AI_SETTINGS',
     [ROUTES.ADMIN_KNOWLEDGE]: 'KNOWLEDGE',
     [ROUTES.ADMIN_CHAT]: 'CHAT',
 };
@@ -42,7 +43,7 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     BANNERS: ROUTES.ADMIN_BANNERS,
     USERS: ROUTES.ADMIN_USERS,
     SETTINGS: ROUTES.ADMIN_SETTINGS,
-    ANALYTICS: ROUTES.ADMIN_ANALYTICS,
+    AI_SETTINGS: ROUTES.ADMIN_AI_SETTINGS,
     KNOWLEDGE: ROUTES.ADMIN_KNOWLEDGE,
     CHAT: ROUTES.ADMIN_CHAT,
 };
@@ -99,9 +100,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
         { id: 'KNOWLEDGE', label: 'Base de Conhecimento', icon: <BookOpen size={18} /> },
         { id: 'CHAT', label: 'Chat', icon: <MessageCircle size={18} /> },
+        { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        if (!isAdmin && ['USERS', 'SETTINGS', 'ANALYTICS', 'KNOWLEDGE', 'CHAT'].includes(item.id)) return false;
+        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'KNOWLEDGE', 'CHAT'].includes(item.id)) return false;
         return true;
     });
 

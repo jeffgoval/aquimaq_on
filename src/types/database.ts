@@ -113,6 +113,16 @@ export interface AIKnowledgeBaseRow {
   title: string | null;
   content: string;
   chunk_index: number | null;
+  embedding?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AISettingsRow {
+  id: string;
+  provider: string;
+  api_key: string;
+  model: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -134,6 +144,12 @@ export interface Database {
       };
       ai_knowledge_base: {
         Row: AIKnowledgeBaseRow;
+        Insert: any;
+        Update: any;
+        Relationships: [];
+      };
+      ai_settings: {
+        Row: AISettingsRow;
         Insert: any;
         Update: any;
         Relationships: [];

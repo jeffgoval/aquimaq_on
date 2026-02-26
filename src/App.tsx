@@ -36,6 +36,7 @@ const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerM
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
 const AdminKnowledgeBase = lazy(() => import('./components/admin/AdminKnowledgeBase'));
 const AdminChatPanel = lazy(() => import('./components/admin/AdminChatPanel'));
+const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 
 const ScrollToTop = () => {
@@ -89,6 +90,11 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_KNOWLEDGE} element={
                     <ProtectedRoute allowedRoles={['admin']}>
                         <AdminKnowledgeBase />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_AI_SETTINGS} element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminAISettings />
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={

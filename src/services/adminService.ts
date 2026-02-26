@@ -276,3 +276,46 @@ export const updateUserRole = async (userId: string, role: string): Promise<void
 
   if (error) throw error;
 };
+
+export interface AISettings {
+  id?: string;
+  provider: string;
+  api_key: string;
+  model: string | null;
+}
+
+/** Obtém as configurações de IA. */
+export const getAISettings = async (): Promise<AISettings | null> => {
+  const { data, error } = await supabase
+    .from('ai_settings')
+    .select('*')
+    .limit(1)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // Ignore row not found
+    throw error;
+  }
+
+  return data as AISettings | null;
+};
+
+/** Salva as configurações de IA. */
+export const saveAISettings = async (settings: Omit<AISettings, 'id'>): Promise<void> => {
+  // Try to get first to see if we update or insert
+  const current = await getAISettings();
+
+  if (current?.id) {
+    const { error } = await (supabase.from('ai_settings') as any)
+      .update({
+        provider: settings.provider,
+        api_key: settings.api_key,
+        model: settings.model
+      })
+      .eq('id', current.id);
+    if (error) throw error;
+  } else {
+    const { error } = await (supabase.from('ai_settings') as any)
+      .insert([settings]);
+    if (error) throw error;
+  }
+};
