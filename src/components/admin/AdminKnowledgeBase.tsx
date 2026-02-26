@@ -8,6 +8,10 @@ import {
 } from '@/services/knowledgeBaseService';
 import { supabase } from '@/services/supabase';
 import { BookOpen, Upload, RefreshCw, Search, Trash2, FileText, Database } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const AdminKnowledgeBase: React.FC = () => {
   const [entries, setEntries] = useState<KBEntry[]>([]);
@@ -87,11 +91,6 @@ const AdminKnowledgeBase: React.FC = () => {
       let extractedText = '';
 
       if (file.type === 'application/pdf') {
-        const pdfjsLib = await import('pdfjs-dist');
-        // Usar o worker local usando a URL padrão do vite
-        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
-
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
