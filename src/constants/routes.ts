@@ -24,10 +24,8 @@ export const ROUTES = {
   ADMIN_BANNERS: '/admin/banners',
   ADMIN_USERS: '/admin/usuarios',
   ADMIN_SETTINGS: '/admin/configuracoes',
-  ADMIN_KNOWLEDGE: '/admin/conhecimento',
   ADMIN_CHAT: '/admin/chat',
   ADMIN_AI_SETTINGS: '/admin/ai-settings',
-  ADMIN_RAG_TEST: '/admin/rag-test',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -52,9 +50,7 @@ export const ROUTE_PATHS = {
   ADMIN_BANNERS: 'banners',
   ADMIN_USERS: 'usuarios',
   ADMIN_SETTINGS: 'configuracoes',
-  ADMIN_KNOWLEDGE: 'conhecimento',
   ADMIN_CHAT: 'chat',
   ADMIN_AI_SETTINGS: 'ai-settings',
-  ADMIN_RAG_TEST: 'rag-test',
   ORDERS: 'meus-pedidos',
 } as const;

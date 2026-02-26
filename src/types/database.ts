@@ -106,18 +106,6 @@ export interface ChatMessageRow {
   created_at: string;
 }
 
-export interface AIKnowledgeBaseRow {
-  id: string;
-  source_type: string;
-  source_id: string | null;
-  title: string | null;
-  content: string;
-  chunk_index: number | null;
-  embedding?: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface AISettingsRow {
   id: string;
   provider: string;
@@ -138,12 +126,6 @@ export interface Database {
       };
       products: {
         Row: ProductRow;
-        Insert: any;
-        Update: any;
-        Relationships: [];
-      };
-      ai_knowledge_base: {
-        Row: AIKnowledgeBaseRow;
         Insert: any;
         Update: any;
         Relationships: [];

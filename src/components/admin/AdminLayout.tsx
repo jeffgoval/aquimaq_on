@@ -12,10 +12,8 @@ import {
     Image,
     BarChart,
     Store,
-    BookOpen,
     MessageCircle,
     Cpu,
-    FlaskConical
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +21,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'RAG_TEST' | 'KNOWLEDGE' | 'CHAT';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'CHAT';
 
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
@@ -34,8 +32,6 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_USERS]: 'USERS',
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
     [ROUTES.ADMIN_AI_SETTINGS]: 'AI_SETTINGS',
-    [ROUTES.ADMIN_RAG_TEST]: 'RAG_TEST',
-    [ROUTES.ADMIN_KNOWLEDGE]: 'KNOWLEDGE',
     [ROUTES.ADMIN_CHAT]: 'CHAT',
 };
 
@@ -47,8 +43,6 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     USERS: ROUTES.ADMIN_USERS,
     SETTINGS: ROUTES.ADMIN_SETTINGS,
     AI_SETTINGS: ROUTES.ADMIN_AI_SETTINGS,
-    RAG_TEST: ROUTES.ADMIN_RAG_TEST,
-    KNOWLEDGE: ROUTES.ADMIN_KNOWLEDGE,
     CHAT: ROUTES.ADMIN_CHAT,
 };
 
@@ -102,13 +96,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
-        { id: 'KNOWLEDGE', label: 'Base de Conhecimento', icon: <BookOpen size={18} /> },
-        { id: 'RAG_TEST', label: 'Testar IA', icon: <FlaskConical size={18} /> },
         { id: 'CHAT', label: 'Chat', icon: <MessageCircle size={18} /> },
         { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'RAG_TEST', 'ANALYTICS', 'KNOWLEDGE', 'CHAT'].includes(item.id)) return false;
+        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT'].includes(item.id)) return false;
         return true;
     });
 
