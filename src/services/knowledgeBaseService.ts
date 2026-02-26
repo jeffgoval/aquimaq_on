@@ -1,5 +1,7 @@
 import { supabase } from '@/services/supabase';
 import type { AIKnowledgeBaseRow } from '@/types/database';
+// Vite resolve este import em build time e serve o worker da versão exata instalada
+import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
 
 export interface KBEntry {
   id: string;
@@ -30,8 +32,7 @@ async function extractPdfText(file: File): Promise<string> {
   // Dynamic import: pdfjs-dist é carregado só quando necessário (admin KB section)
   const pdfjsLib = await import('pdfjs-dist');
   // Worker via CDN para não complicar o build do Vite
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
