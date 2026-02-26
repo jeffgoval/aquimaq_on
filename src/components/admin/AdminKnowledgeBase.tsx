@@ -87,9 +87,10 @@ const AdminKnowledgeBase: React.FC = () => {
       let extractedText = '';
 
       if (file.type === 'application/pdf') {
-        // Load pdfjs dinamically to keep the bundle small
         const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        // Usar o worker local usando a URL padrão do vite
+        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
 
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
