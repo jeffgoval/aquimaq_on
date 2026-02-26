@@ -25,12 +25,12 @@ function mapRow(row: AIKnowledgeBaseRow): KBEntry {
   };
 }
 
+import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
 /** Extrai texto de um PDF no browser usando pdfjs-dist. */
 async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist');
-  // unpkg garante que a versão do worker bate exatamente com a versão instalada
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
