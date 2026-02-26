@@ -43,12 +43,21 @@ const AdminRAGChat: React.FC = () => {
                 .filter(m => !m.error)
                 .map(m => ({ role: m.role, content: m.content }));
 
-            const { data, error } = await supabase.functions.invoke('rag-chat', {
-                body: { question, history }
+            const supabaseUrl = ENV.VITE_SUPABASE_URL;
+            const supabaseKey = ENV.VITE_SUPABASE_ANON_KEY;
+            const res = await fetch(`${supabaseUrl}/functions/v1/rag-chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({ question, history })
             });
-
-            if (error) throw new Error(error.message);
+            const data = await res.json();
+            // A função sempre retorna JSON. Se tiver campo `error`, é um erro.
             if (data?.error) throw new Error(data.error);
+            if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`);
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -116,10 +125,10 @@ const AdminRAGChat: React.FC = () => {
 
                             <div className={`max-w-[75%] space-y-1.5`}>
                                 <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-stone-800 text-white rounded-br-sm'
-                                        : msg.error
-                                            ? 'bg-red-50 border border-red-100 text-red-700 rounded-bl-sm'
-                                            : 'bg-stone-50 border border-stone-100 text-stone-800 rounded-bl-sm'
+                                    ? 'bg-stone-800 text-white rounded-br-sm'
+                                    : msg.error
+                                        ? 'bg-red-50 border border-red-100 text-red-700 rounded-bl-sm'
+                                        : 'bg-stone-50 border border-stone-100 text-stone-800 rounded-bl-sm'
                                     }`}>
                                     <p className="whitespace-pre-wrap">{msg.content}</p>
                                 </div>
