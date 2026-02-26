@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { User, Camera, Bell, MapPin, Pencil, Plus, Loader2 } from 'lucide-react';
+import { User, Camera, Bell, MapPin, Pencil, Plus, Loader2, Package } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { uploadAvatar } from '@/services/imageUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -291,6 +291,21 @@ const AccountPage: React.FC = () => {
                         </div>
                     )}
                 </section>
+
+                {/* ── Meus Pedidos ── */}
+                <Link
+                    to={ROUTES.ORDERS}
+                    className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm hover:border-agro-300 hover:bg-agro-50/40 transition-all group"
+                >
+                    <div className="flex items-center gap-3">
+                        <Package size={18} className="text-agro-600" />
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Meus Pedidos</p>
+                            <p className="text-xs text-slate-400">Histórico e acompanhamento</p>
+                        </div>
+                    </div>
+                    <span className="text-xs font-medium text-agro-600 group-hover:text-agro-700">Ver todos →</span>
+                </Link>
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3">

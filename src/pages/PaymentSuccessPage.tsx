@@ -25,17 +25,20 @@ const PaymentSuccessPage: React.FC = () => {
             <span className="block mt-2 text-sm text-gray-500">Pedido #{orderId.slice(0, 8)}</span>
           )}
         </p>
-        <Link
-          to={ROUTES.HOME}
-          className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
-        >
-          Voltar ao início
-        </Link>
-        <p className="mt-4">
-          <Link to={ROUTES.HOME} className="text-agro-600 hover:text-agro-700 text-sm">
-            Voltar ao início
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            to={ROUTES.ORDERS}
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
+          >
+            Ver meus pedidos
           </Link>
-        </p>
+          <Link
+            to={ROUTES.HOME}
+            className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Continuar comprando
+          </Link>
+        </div>
       </div>
     </>
   );

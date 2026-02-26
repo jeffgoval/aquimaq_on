@@ -28,6 +28,7 @@ export const ROUTES = {
   ADMIN_KNOWLEDGE: '/admin/conhecimento',
   ADMIN_CHAT: '/admin/chat',
   ACCOUNT: '/conta',
+  ORDERS: '/meus-pedidos',
 } as const;
 
 /** Segmentos de path para <Route path="..." /> (sem barra inicial). */
@@ -53,4 +54,5 @@ export const ROUTE_PATHS = {
   ADMIN_ANALYTICS: 'analytics',
   ADMIN_KNOWLEDGE: 'conhecimento',
   ADMIN_CHAT: 'chat',
+  ORDERS: 'meus-pedidos',
 } as const;

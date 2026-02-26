@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, Phone, Truck, ShieldCheck, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, Phone, Truck, ShieldCheck, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
@@ -227,6 +227,15 @@ const Header: React.FC<HeaderProps> = ({
                                                     Minha conta
                                                 </Link>
                                                 <Link
+                                                    to={ROUTES.ORDERS}
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                    role="menuitem"
+                                                >
+                                                    <Package size={16} />
+                                                    Meus pedidos
+                                                </Link>
+                                                <Link
                                                     to={ROUTES.WISHLIST}
                                                     onClick={() => setIsUserMenuOpen(false)}
                                                     className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
@@ -376,6 +385,14 @@ const Header: React.FC<HeaderProps> = ({
                                             >
                                                 <User size={18} />
                                                 Minha conta
+                                            </Link>
+                                            <Link
+                                                to={ROUTES.ORDERS}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                            >
+                                                <Package size={18} />
+                                                Meus pedidos
                                             </Link>
                                             <Link
                                                 to={ROUTES.WISHLIST}

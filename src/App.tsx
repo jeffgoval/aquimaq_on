@@ -16,6 +16,7 @@ import ChatWidget from './components/ChatWidget';
 
 const ProductPage = lazy(() => import('@/features/catalog/pages/ProductPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const OrdersPage = lazy(() => import('./pages/OrdersPage'));
 const PolicyPage = lazy(() => import('./pages/PolicyPage'));
 const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
 
@@ -120,6 +121,7 @@ function AppContent() {
                             <Route path={ROUTE_PATHS.PRODUCT} element={<ProductPage />} />
                             <Route path={ROUTE_PATHS.CART} element={<CartPage />} />
                             <Route path={ROUTE_PATHS.WISHLIST} element={<WishlistPage />} />
+                            <Route path={ROUTE_PATHS.ORDERS} element={<OrdersPage />} />
                             <Route path={ROUTE_PATHS.POLICY_PRIVACY} element={<PolicyPage type="privacidade" />} />
                             <Route path={ROUTE_PATHS.POLICY_DELIVERY} element={<PolicyPage type="entrega" />} />
                             <Route path={ROUTE_PATHS.POLICY_RETURNS} element={<PolicyPage type="trocas" />} />
