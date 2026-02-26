@@ -1,5 +1,5 @@
 import React from 'react';
-import { Filter } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ProductCategory } from '@/types';
 import { SortOption } from '@/hooks/useCatalogProducts';
 import { CatalogMobileFilterBar } from './CatalogMobileFilterBar';
@@ -10,8 +10,16 @@ interface CatalogFilterBarProps {
     searchQuery: string;
     selectedCategory: ProductCategory | 'ALL';
     productCount: number;
-    onOpenFilters?: () => void;
-    showFiltersButton?: boolean;
+    // Inline filters
+    inStock: boolean;
+    onInStockChange: (v: boolean) => void;
+    inSeason: boolean;
+    onInSeasonChange: (v: boolean) => void;
+    showSeasonFilter: boolean;
+    selectedCulture: string | null;
+    onCultureChange: (c: string | null) => void;
+    availableCultures: string[];
+    onClearFilters: () => void;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -34,42 +42,118 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
     searchQuery,
     selectedCategory,
     productCount,
-    onOpenFilters,
-    showFiltersButton = false,
-}) => (
-    <>
-        <CatalogMobileFilterBar sortBy={sortBy} onSortChange={onSortChange} />
-        <div className="hidden lg:flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">
-                {getSectionTitle(searchQuery, selectedCategory)}
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                    ({productCount} produtos)
-                </span>
-            </h2>
-            <div className="flex items-center gap-3">
-                {showFiltersButton && onOpenFilters && (
-                    <button
-                        type="button"
-                        onClick={onOpenFilters}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100"
-                    >
-                        <Filter size={16} />
-                        Filtros
-                    </button>
-                )}
-                <span className="text-sm text-gray-500">Ordenar por:</span>
-                <select
-                    value={sortBy}
-                    onChange={(e) => onSortChange(e.target.value as SortOption)}
-                    className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-agro-500 focus:border-agro-500 block p-2.5 outline-none cursor-pointer hover:bg-white transition-colors"
-                >
-                    {SORT_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
+    inStock,
+    onInStockChange,
+    inSeason,
+    onInSeasonChange,
+    showSeasonFilter,
+    selectedCulture,
+    onCultureChange,
+    availableCultures,
+    onClearFilters,
+}) => {
+    const activeFilterCount = [inStock, inSeason, !!selectedCulture].filter(Boolean).length;
+
+    return (
+        <>
+            {/* Mobile */}
+            <CatalogMobileFilterBar
+                sortBy={sortBy}
+                onSortChange={onSortChange}
+                inStock={inStock}
+                onInStockChange={onInStockChange}
+                inSeason={inSeason}
+                onInSeasonChange={onInSeasonChange}
+                showSeasonFilter={showSeasonFilter}
+                selectedCulture={selectedCulture}
+                onCultureChange={onCultureChange}
+                availableCultures={availableCultures}
+            />
+
+            {/* Desktop */}
+            <div className="hidden lg:block border-b border-gray-100 pb-4 mb-2">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                    {/* Left: title + count */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <h2 className="text-xl font-bold text-gray-800">
+                            {getSectionTitle(searchQuery, selectedCategory)}
+                        </h2>
+                        <span className="text-sm text-gray-400 font-medium">
+                            {productCount} produto{productCount !== 1 ? 's' : ''}
+                        </span>
+                        {activeFilterCount > 0 && (
+                            <button
+                                onClick={onClearFilters}
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition-colors border border-gray-200 hover:border-red-200 px-2 py-1 rounded-full"
+                            >
+                                <X size={11} /> Limpar filtros
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Right: filter chips + sort */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Em Estoque chip */}
+                        <button
+                            onClick={() => onInStockChange(!inStock)}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${inStock
+                                ? 'bg-agro-600 text-white border-agro-600'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300 hover:text-agro-600'
+                                }`}
+                        >
+                            Em Estoque
+                        </button>
+
+                        {/* Na Estação chip */}
+                        {showSeasonFilter && (
+                            <button
+                                onClick={() => onInSeasonChange(!inSeason)}
+                                className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${inSeason
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600'
+                                    }`}
+                            >
+                                🌱 Na Estação
+                            </button>
+                        )}
+
+                        {/* Cultura select */}
+                        {availableCultures.length > 0 && (
+                            <select
+                                value={selectedCulture ?? ''}
+                                onChange={(e) => onCultureChange(e.target.value || null)}
+                                className={`text-xs font-semibold px-3 py-1.5 rounded-full border outline-none cursor-pointer transition-all ${selectedCulture
+                                    ? 'bg-agro-50 text-agro-700 border-agro-300'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300'
+                                    }`}
+                            >
+                                <option value="">Cultura</option>
+                                {availableCultures.map((c) => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+                        {/* Sort */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">Ordenar:</span>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => onSortChange(e.target.value as SortOption)}
+                                className="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-agro-500 focus:border-agro-500 px-3 py-1.5 outline-none cursor-pointer hover:border-agro-300 transition-colors"
+                            >
+                                {SORT_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </>
-);
+        </>
+    );
+};

@@ -104,28 +104,42 @@ const HomePage: React.FC = () => {
             </ErrorBoundary>
 
             {!isLoading && products.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-4 flex justify-center items-center gap-4 bg-gray-50 rounded-b-xl mb-8">
-                    <button
-                        onClick={handlePrevPage}
-                        disabled={page === 1}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-agro-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-                    >
-                        <ChevronLeft size={16} />
-                        Anterior
-                    </button>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-100 pt-6">
+                        <span className="text-sm text-gray-400 order-2 sm:order-1">
+                            Mostrando{' '}
+                            <span className="font-semibold text-gray-600">
+                                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}
+                            </span>
+                            {' '}de{' '}
+                            <span className="font-semibold text-gray-600">{totalCount}</span>
+                            {' '}produtos
+                        </span>
 
-                    <span className="text-sm text-gray-600 font-medium">
-                        Página {page} de {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))}
-                    </span>
+                        <div className="flex items-center gap-2 order-1 sm:order-2">
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={page === 1}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                            >
+                                <ChevronLeft size={15} />
+                                Anterior
+                            </button>
 
-                    <button
-                        onClick={handleNextPage}
-                        disabled={!hasMore}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-agro-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-                    >
-                        Próxima
-                        <ChevronRight size={16} />
-                    </button>
+                            <span className="text-sm text-gray-500 px-2 font-medium">
+                                {page} / {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))}
+                            </span>
+
+                            <button
+                                onClick={handleNextPage}
+                                disabled={!hasMore}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                            >
+                                Próxima
+                                <ChevronRight size={15} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </>

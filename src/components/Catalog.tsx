@@ -81,14 +81,22 @@ const Catalog: React.FC<CatalogProps> = ({
                 />
             )}
 
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6">
                 <CatalogFilterBar
                     sortBy={filters.sortBy}
                     onSortChange={filters.onSortChange}
                     searchQuery={searchQuery}
                     selectedCategory={selectedCategory}
                     productCount={products.length}
-                    showFiltersButton={false}
+                    inStock={filters.inStock}
+                    onInStockChange={filters.onInStockChange}
+                    inSeason={filters.inSeason}
+                    onInSeasonChange={filters.onInSeasonChange}
+                    showSeasonFilter={culturesInSeasonThisMonth.length > 0}
+                    selectedCulture={filters.selectedCulture}
+                    onCultureChange={filters.onCultureChange}
+                    availableCultures={availableCultures}
+                    onClearFilters={filters.clearFilters}
                 />
                 <CatalogGrid
                     products={products}

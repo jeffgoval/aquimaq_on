@@ -13,19 +13,23 @@ interface CatalogGridProps {
     hasActiveFilters: boolean;
 }
 
-const SKELETON_COUNT = 6;
+const SKELETON_COUNT = 8;
 
 const ProductGridSkeleton: React.FC = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {Array.from({ length: SKELETON_COUNT }, (_, n) => (
             <div
                 key={n}
-                className="bg-white rounded-xl border border-gray-100 p-4 h-80 flex flex-col animate-pulse"
+                className="bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col animate-pulse"
             >
-                <div className="w-full h-40 bg-gray-200 rounded-lg mb-4" />
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
-                <div className="mt-auto h-10 bg-gray-200 rounded-lg" />
+                <div className="w-full h-52 bg-gray-200" />
+                <div className="p-4 flex flex-col gap-2">
+                    <div className="h-3 bg-gray-200 rounded w-1/3" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    <div className="mt-2 h-6 bg-gray-200 rounded w-2/5" />
+                    <div className="mt-1 h-9 bg-gray-200 rounded-lg" />
+                </div>
             </div>
         ))}
     </div>
@@ -69,7 +73,7 @@ export const CatalogGrid: React.FC<CatalogGridProps> = ({
     return (
         <div className="w-full">
             {products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
                     {products.map((product) => (
                         <ProductCard
                             key={product.id}
