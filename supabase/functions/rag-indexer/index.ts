@@ -84,8 +84,10 @@ Deno.serve(async (req) => {
     const apiKey = aiSettings.api_key;
     const model = aiSettings.model || OPENAI_EMBEDDING_MODEL;
 
-    // Delete the original placeholder row
-    await supabase.from('ai_knowledge_base').delete().eq('id', docId);
+    // Mark the original placeholder row as processed instead of deleting it
+    await supabase.from('ai_knowledge_base')
+      .update({ chunk_index: -1 })
+      .eq('id', docId);
 
     const insertedChunks = [];
     for (let i = 0; i < chunks.length; i++) {

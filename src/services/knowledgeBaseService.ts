@@ -28,7 +28,7 @@ function mapRow(row: AIKnowledgeBaseRow): KBEntry {
 /** Faz upload de um ficheiro para o bucket e regista na base de conhecimento. */
 export const uploadDocument = async (
   file: File,
-  metadata: { title?: string; source_type?: string } = {}
+  metadata: { title?: string; source_type?: string; extractedText?: string } = {}
 ): Promise<void> => {
   const BUCKET = 'knowledge-base';
   const sanitizedName = file.name
@@ -45,13 +45,21 @@ export const uploadDocument = async (
 
   const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-  const { error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
+  const { error: insertError, data: insertedData } = await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: metadata.source_type ?? 'manual',
     title: metadata.title ?? file.name,
-    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`,
+    content: metadata.extractedText ? metadata.extractedText : `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`,
     chunk_index: 0,
-  });
+  }).select('id').single();
+  
   if (insertError) throw new Error(insertError.message);
+
+  if (insertedData) {
+    // Invoke Edge Function for RAG vectorization asynchronously
+    supabase.functions.invoke('rag-indexer', {
+      body: { docId: insertedData.id },
+    }).catch(console.error);
+  }
 };
 
 /** Lista entradas da base de conhecimento. */

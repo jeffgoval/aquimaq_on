@@ -84,7 +84,27 @@ const AdminKnowledgeBase: React.FC = () => {
     setUploading(true);
     setError(null);
     try {
-      await uploadDocument(file, { title: file.name });
+      let extractedText = '';
+
+      if (file.type === 'application/pdf') {
+        // Load pdfjs dinamically to keep the bundle small
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        extractedText = fullText;
+      }
+
+      await uploadDocument(file, { title: file.name, extractedText });
       await loadEntries();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro no upload do documento');
