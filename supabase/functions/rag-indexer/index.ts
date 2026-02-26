@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as pdfjs from 'https://esm.sh/pdfjs-dist@3.11.174'
+import { extractText } from 'https://esm.sh/unpdf@0.11.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const { data: aiSettings, error: aiError } = await supabase
       .from('ai_settings')
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (aiError || !aiSettings || !aiSettings.api_key) {
       throw new Error('AI Settings (API Key) not configured in the database.');
@@ -65,16 +65,15 @@ Deno.serve(async (req) => {
     if (!pdfResponse.ok) throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`);
     const pdfBuffer = await pdfResponse.arrayBuffer();
 
-    // 4. Parse PDF Text
-    let fullText = '';
-    const loadingTask = pdfjs.getDocument({ data: pdfBuffer });
-    const pdfDocument = await loadingTask.promise;
+    // 4. Parse PDF Text using unpdf (worker-free, edge-compatible)
+    const { text: pages } = await extractText(new Uint8Array(pdfBuffer), { mergePages: false });
 
-    for (let i = 1; i <= pdfDocument.numPages; i++) {
-      const page = await pdfDocument.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += `[Página ${i}]\n${pageText}\n\n`;
+    let fullText = '';
+    for (let i = 0; i < pages.length; i++) {
+      const pageText = pages[i]?.trim();
+      if (pageText) {
+        fullText += `[Página ${i + 1}]\n${pageText}\n\n`;
+      }
     }
 
     if (!fullText.trim()) {
@@ -108,7 +107,7 @@ Deno.serve(async (req) => {
     const apiKey = aiSettings.api_key;
     const model = aiSettings.model || OPENAI_EMBEDDING_MODEL;
 
-    // Delete the original placeholder row 
+    // Delete the original placeholder row
     await supabase.from('ai_knowledge_base').delete().eq('id', docId);
 
     const insertedChunks = [];

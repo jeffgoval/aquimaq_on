@@ -50,7 +50,7 @@ export const uploadDocument = async (
   const { data: inserted, error: insertError } = await (supabase.from('ai_knowledge_base') as any).insert({
     source_type: metadata.source_type ?? 'manual',
     title: metadata.title ?? file.name,
-    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}. Processando...`,
+    content: `[Ficheiro: ${file.name}] URL: ${urlData.publicUrl}`,
     chunk_index: 0,
   }).select('id').single();
 
