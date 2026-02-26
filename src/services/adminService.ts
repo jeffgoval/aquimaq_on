@@ -289,15 +289,12 @@ export const getAISettings = async (): Promise<AISettings | null> => {
   const { data, error } = await supabase
     .from('ai_settings')
     .select('*')
-    .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') { // Ignore row not found
-    throw error;
-  }
-
+  if (error) throw error;
   return data as AISettings | null;
 };
+
 
 /** Salva as configurações de IA. */
 export const saveAISettings = async (settings: Omit<AISettings, 'id'>): Promise<void> => {
