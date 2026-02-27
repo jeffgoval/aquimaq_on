@@ -28,6 +28,28 @@ function mapMessage(row: ChatMessageRow): ChatMessage {
   };
 }
 
+/** Cria uma nova conversa (cliente deve estar autenticado). */
+export const createConversation = async (
+  subject?: string
+): Promise<ChatConversation> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+
+  const { data, error } = await supabase
+    .from('chat_conversations')
+    .insert({
+      customer_id: user.id,
+      status: 'waiting_human',
+      subject: subject ?? null,
+      channel: 'web',
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapConversation(data as ChatConversationRow);
+};
+
 /** Envia mensagem e obtém resposta da IA. */
 export const sendMessage = async (
   conversationId: string,

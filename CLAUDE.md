@@ -24,9 +24,14 @@ npx supabase functions deploy checkout --no-verify-jwt
 npx supabase functions deploy mercado-pago-webhook --no-verify-jwt
 npx supabase functions deploy melhor-envios-quote
 npx supabase functions deploy melhor-envios-webhook --no-verify-jwt
+npx supabase functions deploy ai-chat   # Chat RAG (ai_settings + ai_knowledge_base)
 
 npx supabase link --project-ref <ref>
 npx supabase db push   # apply migrations
+
+# Ingestão RAG: popular ai_knowledge_base com chunks ~1000 chars
+# Requer .env: VITE_SUPABASE_URL (ou SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
+npm run ingest -- <caminho-arquivo> [titulo] [sourceType]
 ```
 
 ## Environment Variables
@@ -44,6 +49,8 @@ Edge Functions secrets (configured in Supabase Project Settings):
 - `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `MELHOR_ENVIOS_TOKEN`, `MELHOR_ENVIOS_FROM_CEP`
+
+For `ai-chat`: API key is stored in `ai_settings` (admin); optionally set `OPENAI_API_KEY` for local ingest script.
 
 ## Architecture
 
@@ -84,6 +91,7 @@ Edge Functions secrets (configured in Supabase Project Settings):
 | `mercado-pago-webhook` | `verify_jwt=false` | Validates HMAC, updates `payments` and `orders.status` |
 | `melhor-envios-quote` | `verify_jwt=true` | Fetches shipping quotes from Melhor Envios API |
 | `melhor-envios-webhook` | `verify_jwt=false` | Handles Melhor Envios shipping events |
+| `ai-chat` | `verify_jwt=true` | RAG: embedding da pergunta, busca em `ai_knowledge_base`, resposta com memória (histórico) |
 
 ### Database (Supabase Postgres)
 

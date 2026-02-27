@@ -74,25 +74,9 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
       setError(null);
       try {
         const { reply } = await sendMessageService(conversationId, content.trim());
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `temp-${Date.now()}`,
-            conversationId,
-            senderType: 'customer',
-            senderId: null,
-            content: content.trim(),
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: `temp-ai-${Date.now()}`,
-            conversationId,
-            senderType: 'ai_agent',
-            senderId: null,
-            content: reply,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
+        // Como a Edge Function (ou o back-end via service role) insere a mensagem do
+        // usuário e da IA no banco, e nós temos um `subscribeToMessages` ouvindo as mudanças,
+        // não precisamos simular as mensagens localmente (reduz bugs de desidratação).
         return reply;
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Erro ao enviar mensagem');
@@ -129,7 +113,7 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
 
   useEffect(() => {
     if (autoCreate && !conversationId && conversations.length === 0 && !loading) {
-      createConversationHandler().catch(() => {});
+      createConversationHandler().catch(() => { });
     }
   }, [autoCreate, conversationId, conversations.length, loading, createConversationHandler]);
 
