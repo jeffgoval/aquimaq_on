@@ -49,7 +49,8 @@ const Header: React.FC<HeaderProps> = ({
     onCategoryChange
 }) => {
     const { settings } = useStore();
-    const { user, loading: authLoading, signOut, isAdmin, isGerente } = useAuth();
+    const { user, loading: authLoading, signOut, isAdmin, isGerente, hasRole } = useAuth();
+    const isVendedor = hasRole(['vendedor']);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -204,9 +205,9 @@ const Header: React.FC<HeaderProps> = ({
                                             >
                                                 <div className="px-3 py-2 border-b border-slate-100">
                                                     <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
-                                                    <p className="text-xs text-slate-500">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : 'Cliente'}</p>
+                                                    <p className="text-xs text-slate-500">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : isVendedor ? 'Vendedor' : 'Cliente'}</p>
                                                 </div>
-                                                {(isAdmin || isGerente) && (
+                                                {(isAdmin || isGerente || isVendedor) && (
                                                     <Link
                                                         to={ROUTES.ADMIN}
                                                         onClick={() => { setIsUserMenuOpen(false); }}
@@ -214,7 +215,7 @@ const Header: React.FC<HeaderProps> = ({
                                                         role="menuitem"
                                                     >
                                                         <LayoutDashboard size={16} />
-                                                        Painel Admin
+                                                        {isVendedor ? 'Meu Painel' : 'Painel Admin'}
                                                     </Link>
                                                 )}
                                                 <Link
@@ -364,11 +365,11 @@ const Header: React.FC<HeaderProps> = ({
                                             )}
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-slate-900 text-sm font-medium truncate">{user.email}</p>
-                                                <p className="text-slate-500 text-xs">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : 'Cliente'}</p>
+                                                <p className="text-slate-500 text-xs">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : isVendedor ? 'Vendedor' : 'Cliente'}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-0.5">
-                                            {(isAdmin || isGerente) && (
+                                            {(isAdmin || isGerente || isVendedor) && (
                                                 <Link
                                                     to={ROUTES.ADMIN}
                                                     onClick={() => setIsMobileMenuOpen(false)}

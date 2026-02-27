@@ -12,8 +12,9 @@ ALTER TABLE orders
 
 CREATE INDEX IF NOT EXISTS idx_orders_vendedor_id ON orders(vendedor_id);
 
--- RLS: vendedor pode SELECT apenas seus próprios produtos
-CREATE POLICY IF NOT EXISTS "vendedor_select_own_products"
+-- RLS: vendedor pode SELECT apenas seus próprios produtos (ou produtos sem vendedor)
+DROP POLICY IF EXISTS "vendedor_select_own_products" ON products;
+CREATE POLICY "vendedor_select_own_products"
   ON products FOR SELECT
   TO authenticated
   USING (
@@ -23,7 +24,8 @@ CREATE POLICY IF NOT EXISTS "vendedor_select_own_products"
   );
 
 -- RLS: vendedor pode INSERT apenas seus próprios produtos
-CREATE POLICY IF NOT EXISTS "vendedor_insert_own_products"
+DROP POLICY IF EXISTS "vendedor_insert_own_products" ON products;
+CREATE POLICY "vendedor_insert_own_products"
   ON products FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -32,7 +34,8 @@ CREATE POLICY IF NOT EXISTS "vendedor_insert_own_products"
   );
 
 -- RLS: vendedor pode UPDATE apenas seus próprios produtos
-CREATE POLICY IF NOT EXISTS "vendedor_update_own_products"
+DROP POLICY IF EXISTS "vendedor_update_own_products" ON products;
+CREATE POLICY "vendedor_update_own_products"
   ON products FOR UPDATE
   TO authenticated
   USING (
@@ -41,7 +44,8 @@ CREATE POLICY IF NOT EXISTS "vendedor_update_own_products"
   );
 
 -- RLS: vendedor pode SELECT apenas seus próprios pedidos
-CREATE POLICY IF NOT EXISTS "vendedor_select_own_orders"
+DROP POLICY IF EXISTS "vendedor_select_own_orders" ON orders;
+CREATE POLICY "vendedor_select_own_orders"
   ON orders FOR SELECT
   TO authenticated
   USING (
@@ -51,7 +55,8 @@ CREATE POLICY IF NOT EXISTS "vendedor_select_own_orders"
   );
 
 -- RLS: vendedor pode UPDATE status/rastreio dos seus pedidos
-CREATE POLICY IF NOT EXISTS "vendedor_update_own_orders"
+DROP POLICY IF EXISTS "vendedor_update_own_orders" ON orders;
+CREATE POLICY "vendedor_update_own_orders"
   ON orders FOR UPDATE
   TO authenticated
   USING (

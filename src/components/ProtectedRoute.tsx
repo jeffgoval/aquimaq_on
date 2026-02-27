@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/database';
@@ -10,10 +10,26 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-    const { user, profile, loading } = useAuth();
+    const { user, profile, loading, refreshProfile } = useAuth();
     const location = useLocation();
+    const [refreshing, setRefreshing] = useState(false);
+    const [didRefresh, setDidRefresh] = useState(false);
 
-    if (loading) {
+    const hasAccess = !allowedRoles || (!!profile && allowedRoles.includes(profile.role));
+
+    // If user is logged in but role doesn't match, try refreshing profile once.
+    // This handles the case where an admin just changed the user's role externally.
+    useEffect(() => {
+        if (!loading && user && !hasAccess && !didRefresh && !refreshing) {
+            setRefreshing(true);
+            refreshProfile().finally(() => {
+                setRefreshing(false);
+                setDidRefresh(true);
+            });
+        }
+    }, [loading, user, hasAccess, didRefresh, refreshing, refreshProfile]);
+
+    if (loading || refreshing) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
                 <div className="w-10 h-10 border-2 border-agro-200 border-t-agro-600 rounded-full animate-spin" aria-hidden />
@@ -22,15 +38,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         );
     }
 
-    // Not logged in
     if (!user) {
         return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
     }
 
-    // Role check if required
-    if (allowedRoles && (!profile || !allowedRoles.includes(profile.role))) {
-        // If user is logged in but doesn't have the role, redirect to home or a specific unauthorized page
-        // For now, redirect to HOME
+    if (!hasAccess) {
         return <Navigate to={ROUTES.HOME} replace />;
     }
 

@@ -9,7 +9,7 @@ type AuthMode = 'login' | 'signup' | 'forgot';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
   const [fullName, setFullName] = useState('');
@@ -26,10 +26,15 @@ const LoginPage: React.FC = () => {
   const redirectPath = searchParams.get('redirect') || ROUTES.HOME;
 
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate(redirectPath, { replace: true });
+    if (!authLoading && user && profile) {
+      const role = profile.role;
+      if ((role === 'admin' || role === 'gerente' || role === 'vendedor') && redirectPath === ROUTES.HOME) {
+        navigate(ROUTES.ADMIN, { replace: true });
+      } else {
+        navigate(redirectPath, { replace: true });
+      }
     }
-  }, [authLoading, user, navigate, redirectPath]);
+  }, [authLoading, user, profile, navigate, redirectPath]);
 
   useEffect(() => {
     if (!tokenHash) return;
@@ -64,7 +69,7 @@ const LoginPage: React.FC = () => {
     if (!email.trim() || !password) return;
     setLoading(true);
     setError(null);
-    const { error: err } = await supabase.auth.signInWithPassword({
+    const { data, error: err } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -72,6 +77,19 @@ const LoginPage: React.FC = () => {
     if (err) {
       setError(err.message);
       return;
+    }
+    // Redirect staff roles directly to admin panel
+    if (data.user) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      const role = (prof as { role?: string } | null)?.role;
+      if (role === 'admin' || role === 'gerente' || role === 'vendedor') {
+        navigate(ROUTES.ADMIN, { replace: true });
+        return;
+      }
     }
     navigate(redirectPath, { replace: true });
   };

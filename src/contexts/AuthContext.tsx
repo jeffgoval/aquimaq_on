@@ -81,6 +81,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, [updateFromSession]);
 
+  // Re-fetch profile when role changes externally (e.g. admin changes role in Supabase Dashboard).
+  // Uses visibilitychange (instant when user switches back to tab) + 60s interval as fallback.
+  useEffect(() => {
+    if (!state.user?.id) return;
+
+    const userId = state.user.id;
+
+    const doRefresh = async () => {
+      const updated = await fetchProfile(userId);
+      setState(prev => {
+        if (prev.profile?.role !== updated?.role) {
+          return { ...prev, profile: updated };
+        }
+        return prev;
+      });
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') doRefresh();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    const interval = setInterval(doRefresh, 60_000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
+    };
+  }, [state.user?.id, fetchProfile]);
+
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
