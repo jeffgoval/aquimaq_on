@@ -10,7 +10,8 @@ import {
     ChevronDown,
     Eye,
     RefreshCw,
-    X
+    X,
+    Download
 } from 'lucide-react';
 import {
     getOrdersAdmin,
@@ -138,6 +139,27 @@ const AdminOrdersManagement: React.FC = () => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
+    const exportToCSV = () => {
+        const header = ['ID', 'Cliente', 'Telefone', 'Status', 'Total (R$)', 'Data', 'Rastreio'];
+        const rows = filteredOrders.map(o => [
+            o.id,
+            o.clientName || '',
+            o.clientPhone || '',
+            statusConfig[o.status]?.label || o.status,
+            o.total.toFixed(2).replace('.', ','),
+            new Date(o.createdAt).toLocaleDateString('pt-BR'),
+            o.trackingCode || '',
+        ]);
+        const csv = [header, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pedidos_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="space-y-5 max-w-6xl mx-auto">
             {/* Page Header */}
@@ -146,13 +168,24 @@ const AdminOrdersManagement: React.FC = () => {
                     <h1 className="text-xl font-semibold text-stone-800">Pedidos</h1>
                     <p className="text-stone-400 text-[13px] mt-0.5">Gerencie todos os pedidos</p>
                 </div>
-                <button
-                    onClick={loadOrders}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-[13px] font-medium"
-                >
-                    <RefreshCw size={14} />
-                    Atualizar
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={exportToCSV}
+                        disabled={filteredOrders.length === 0}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Exportar pedidos filtrados em CSV"
+                    >
+                        <Download size={14} />
+                        Exportar CSV
+                    </button>
+                    <button
+                        onClick={loadOrders}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-[13px] font-medium"
+                    >
+                        <RefreshCw size={14} />
+                        Atualizar
+                    </button>
+                </div>
             </div>
 
             {/* Feedback */}

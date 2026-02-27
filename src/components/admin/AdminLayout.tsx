@@ -68,7 +68,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const { settings } = useStore();
-    const { isAdmin, signOut } = useAuth();
+    const { isAdmin, isGerente, hasRole, signOut } = useAuth();
+    const isVendedor = hasRole(['vendedor']);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
@@ -103,7 +104,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT', 'KNOWLEDGE_BASE'].includes(item.id)) return false;
+        // Vendedor: apenas Dashboard, Pedidos e Produtos
+        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
+        // Gerente: oculta itens exclusivos de admin
+        if (!isAdmin && !isVendedor && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT', 'KNOWLEDGE_BASE'].includes(item.id)) return false;
         return true;
     });
 
@@ -149,7 +153,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                         <div className="flex flex-col">
                             <span className="text-stone-900 font-medium text-sm">{settings?.storeName || 'Aquimaq'}</span>
                             <span className="text-stone-400 text-[10px] uppercase tracking-wider">
-                                Painel Admin
+                                {isAdmin ? 'Painel Admin' : isGerente ? 'Painel Gerente' : isVendedor ? 'Painel Vendedor' : 'Painel'}
                             </span>
                         </div>
                     </div>
@@ -243,7 +247,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     {/* Right side - Badge */}
                     <div className="flex items-center gap-2">
                         <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium uppercase tracking-wide bg-stone-100 text-stone-600">
-                            Admin
+                            {isAdmin ? 'Admin' : isGerente ? 'Gerente' : isVendedor ? 'Vendedor' : 'Painel'}
                         </span>
                     </div>
                 </header>

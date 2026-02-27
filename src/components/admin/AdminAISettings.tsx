@@ -49,16 +49,22 @@ const AdminAISettings: React.FC = () => {
         setSuccess(null);
 
         try {
-            if (!formData.api_key.trim()) {
+            const key = formData.api_key.trim();
+            if (!key) {
                 throw new Error('A chave da API (API Key) é obrigatória.');
+            }
+            if (formData.provider === 'openai' && !key.startsWith('sk-')) {
+                throw new Error('Chave inválida — chaves da OpenAI começam com "sk-". Verifique e tente novamente.');
+            }
+            if (!formData.model?.trim()) {
+                throw new Error('O modelo é obrigatório. Use "text-embedding-3-small" se não souber qual escolher.');
             }
 
             await saveAISettings(formData);
             setSuccess('Configurações de IA salvas com sucesso!');
-
             setTimeout(() => setSuccess(null), 3000);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erro ao salvar configurações');
+            setError(err instanceof Error ? err.message : 'Erro ao salvar configurações. Verifique os dados e tente novamente.');
         } finally {
             setSaving(false);
         }

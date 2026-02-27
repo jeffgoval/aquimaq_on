@@ -1,290 +1,199 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  FileText,
-  Upload,
-  Trash2,
-  Loader2,
-  FileWarning,
-  RefreshCw,
-} from 'lucide-react';
-import {
-  getKnowledgeBase,
-  uploadDocument,
-  processDocument,
-  deleteDocument,
-  type KnowledgeBaseDocumentSummary,
-} from '@/services/aiService';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/services/supabase';
+import { FileText, Upload, Trash2, RefreshCw } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 
-type ProcessingState = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
+interface KnowledgeFile {
+  id: string;
+  title: string;
+  source_type: string;
+  created_at: string;
+  metadata?: { storage_path?: string } | null;
+}
 
 const AdminKnowledgeBase: React.FC = () => {
-  const [documents, setDocuments] = useState<KnowledgeBaseDocumentSummary[]>([]);
+  const [files, setFiles] = useState<KnowledgeFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [processingState, setProcessingState] = useState<ProcessingState>('idle');
-  const [processingError, setProcessingError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deletingTitle, setDeletingTitle] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { showToast: addToast } = useToast();
 
-  const loadDocuments = useCallback(async () => {
+  const loadFiles = async () => {
     setLoading(true);
-    setError(null);
-    try {
-      const list = await getKnowledgeBase();
-      setDocuments(list);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar documentos.');
-    } finally {
-      setLoading(false);
+    const { data, error } = await (supabase as any)
+      .from('ai_knowledge_base')
+      .select('id, title, source_type, created_at, metadata')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      // Remover duplicatas de chunks para mostrar apenas o "Documento"
+      const uniqueFiles = (data as KnowledgeFile[]).filter((v, i, a) => a.findIndex(t => t.title === v.title) === i);
+      setFiles(uniqueFiles);
     }
-  }, []);
+    setLoading(false);
+  };
 
-  useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+  useEffect(() => { loadFiles(); }, []);
 
-  const handleFiles = useCallback(
-    async (files: FileList | File[]) => {
-      const file = (Array.isArray(files) ? files[0] : files?.[0]) as File | undefined;
-      if (!file || file.type !== 'application/pdf') {
-        setProcessingError('Apenas ficheiros PDF são permitidos.');
-        setProcessingState('error');
-        return;
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // 1. Upload para o Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('knowledge-base')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Disparar Edge Function de Ingestão
+      const { error: processError } = await supabase.functions.invoke('process-knowledge-base', {
+        body: { file_path: filePath, document_title: file.name }
+      });
+
+      if (processError) throw processError;
+
+      addToast('Documento processado e vetorizado com sucesso!', 'success');
+      loadFiles();
+    } catch (err: any) {
+      addToast(err.message || 'Erro no processamento', 'error');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDelete = (title: string) => {
+    setDeletingTitle(title);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingTitle) return;
+    setDeleting(true);
+    try {
+      // Buscar storage_path antes de deletar (para limpeza do bucket)
+      const { data: chunks } = await (supabase as any)
+        .from('ai_knowledge_base')
+        .select('metadata')
+        .eq('title', deletingTitle)
+        .limit(1);
+
+      const storagePath = (chunks as any[])?.[0]?.metadata?.storage_path as string | undefined;
+
+      // Deletar todos os chunks do documento
+      const { error } = await (supabase as any)
+        .from('ai_knowledge_base')
+        .delete()
+        .eq('title', deletingTitle);
+
+      if (error) throw error;
+
+      // Tentar remover do Storage se houver caminho salvo
+      if (storagePath) {
+        await supabase.storage.from('knowledge-base').remove([storagePath]);
       }
 
-      setProcessingState('uploading');
-      setProcessingError(null);
-
-      try {
-        const { url, path } = await uploadDocument(file);
-        setProcessingState('processing');
-        await processDocument({
-          fileUrl: url,
-          filePath: path,
-          title: file.name.replace(/\.pdf$/i, ''),
-          sourceType: 'document',
-        });
-        setProcessingState('done');
-        await loadDocuments();
-        setTimeout(() => setProcessingState('idle'), 1500);
-      } catch (err) {
-        setProcessingError(err instanceof Error ? err.message : 'Erro ao processar documento.');
-        setProcessingState('error');
-        setTimeout(() => setProcessingState('idle'), 3000);
-      }
-    },
-    [loadDocuments]
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-      if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
-    },
-    [handleFiles]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (files?.length) handleFiles(files);
-      e.target.value = '';
-    },
-    [handleFiles]
-  );
-
-  const handleDelete = useCallback(
-    async (doc: KnowledgeBaseDocumentSummary) => {
-      const target = doc.fileUrl || doc.storagePath;
-      if (!target) {
-        setError('Este documento não pode ser removido da base (falta referência).');
-        return;
-      }
-      setDeletingId(doc.id);
-      setError(null);
-      try {
-        await deleteDocument(target);
-        await loadDocuments();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao remover documento.');
-      } finally {
-        setDeletingId(null);
-      }
-    },
-    [loadDocuments]
-  );
-
-  const isProcessing = processingState === 'uploading' || processingState === 'processing';
+      addToast('Documento removido com sucesso.', 'success');
+      loadFiles();
+    } catch (err: any) {
+      addToast(err.message || 'Erro ao remover documento.', 'error');
+    } finally {
+      setDeleting(false);
+      setDeletingTitle(null);
+    }
+  };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-stone-800 flex items-center gap-2">
-            <FileText className="text-stone-500" size={24} />
-            Base de Conhecimento (RAG)
-          </h1>
-          <p className="text-stone-400 text-[13px] mt-0.5">
-            Envie PDFs para enriquecer as respostas do assistente com IA.
-          </p>
+          <h1 className="text-xl font-bold text-stone-800">Base de Conhecimento (RAG)</h1>
+          <p className="text-sm text-stone-500">Treine a sua IA enviando manuais e PDFs técnicos.</p>
         </div>
-        <button
-          type="button"
-          onClick={loadDocuments}
-          disabled={loading}
-          className="p-2 rounded-lg border border-stone-200 text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-colors disabled:opacity-50"
-          aria-label="Atualizar lista"
-        >
-          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-        </button>
+
+        <label className="cursor-pointer bg-stone-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-800 transition-all flex items-center gap-2">
+          {uploading ? <RefreshCw className="animate-spin" size={16} /> : <Upload size={16} />}
+          {uploading ? 'Processando...' : 'Enviar PDF'}
+          <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={uploading} />
+        </label>
       </div>
 
-      {/* Drag and Drop */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        className={`
-          relative border-2 border-dashed rounded-xl p-8 text-center transition-colors
-          ${isDragging ? 'border-agro-500 bg-agro-50/50' : 'border-stone-200 bg-stone-50/50'}
-          ${isProcessing ? 'pointer-events-none opacity-80' : ''}
-        `}
-      >
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={handleFileInput}
-          disabled={isProcessing}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-          aria-label="Selecionar PDF"
-        />
-        {isProcessing ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 size={36} className="text-agro-600 animate-spin" />
-            <p className="text-stone-600 font-medium">
-              {processingState === 'uploading' ? 'A enviar ficheiro...' : 'A processar e gerar vetores...'}
+      <div className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-stone-50 border-b border-stone-100">
+            <tr>
+              <th className="px-6 py-3 font-semibold text-stone-700">Documento</th>
+              <th className="px-6 py-3 font-semibold text-stone-700">Tipo</th>
+              <th className="px-6 py-3 font-semibold text-stone-700">Data</th>
+              <th className="px-6 py-3 font-semibold text-stone-700 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-50">
+            {loading ? (
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-stone-400">Carregando base de conhecimento...</td></tr>
+            ) : files.length === 0 ? (
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-stone-400">Nenhum documento processado.</td></tr>
+            ) : files.map(file => (
+              <tr key={file.id} className="hover:bg-stone-50/50 transition-colors">
+                <td className="px-6 py-4 flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FileText size={18} /></div>
+                  <span className="font-medium text-stone-800">{file.title}</span>
+                </td>
+                <td className="px-6 py-4 text-stone-500 uppercase text-[11px] font-bold">{file.source_type}</td>
+                <td className="px-6 py-4 text-stone-500">{new Date(file.created_at).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-right">
+                  <button
+                    onClick={() => handleDelete(file.title)}
+                    className="text-stone-400 hover:text-red-500 p-2 transition-colors"
+                    title="Remover documento"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal de confirmação de exclusão */}
+      {deletingTitle && (
+        <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-semibold text-stone-900 mb-2">Remover Documento</h3>
+            <p className="text-stone-500 mb-1 font-medium text-[14px]">
+              Tem certeza que deseja remover <span className="text-stone-800 font-semibold">"{deletingTitle}"</span>?
             </p>
-            <div className="w-48 h-1.5 bg-stone-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-agro-600 rounded-full animate-pulse"
-                style={{ width: processingState === 'uploading' ? '40%' : '80%' }}
-              />
+            <p className="text-stone-400 text-xs mb-6">
+              Todos os chunks vetorizados deste documento serão excluídos. Essa ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeletingTitle(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {deleting && <RefreshCw size={14} className="animate-spin" />}
+                {deleting ? 'Removendo...' : 'Remover'}
+              </button>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="w-12 h-12 rounded-full bg-stone-200 flex items-center justify-center mx-auto mb-3">
-              <Upload size={22} className="text-stone-500" />
-            </div>
-            <p className="text-stone-600 font-medium">Arraste um PDF ou clique para selecionar</p>
-            <p className="text-stone-400 text-[13px] mt-1">Máx. 20 MB. O documento será processado e indexado automaticamente.</p>
-          </>
-        )}
-      </div>
-
-      {processingState === 'done' && (
-        <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-[13px] border border-emerald-100 flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          Documento processado e adicionado à base.
         </div>
       )}
-
-      {processingError && (
-        <div className="p-3 rounded-lg bg-red-50 text-red-700 text-[13px] border border-red-100 flex items-center gap-2">
-          <FileWarning size={16} />
-          {processingError}
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 rounded-lg bg-red-50 text-red-700 text-[13px] border border-red-100 flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          {error}
-        </div>
-      )}
-
-      {/* Tabela de documentos */}
-      <div className="border border-stone-200 rounded-xl bg-white overflow-hidden shadow-sm">
-        <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-          <h2 className="font-medium text-stone-800">Documentos na base</h2>
-          <p className="text-[12px] text-stone-400 mt-0.5">Título, tipo, data e estado de processamento</p>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="text-stone-400 animate-spin" />
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="py-12 text-center text-stone-400 text-[14px]">
-            Nenhum documento processado. Envie um PDF acima para começar.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50/30">
-                  <th className="px-4 py-3 text-[12px] font-semibold text-stone-500 uppercase tracking-wider">Título</th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-stone-500 uppercase tracking-wider">Tipo</th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-stone-500 uppercase tracking-wider">Data</th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-stone-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-[12px] font-semibold text-stone-500 uppercase tracking-wider w-20">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {documents.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-stone-50/50 transition-colors">
-                    <td className="px-4 py-3 text-[14px] font-medium text-stone-800">{doc.title}</td>
-                    <td className="px-4 py-3 text-[13px] text-stone-600">{doc.sourceType}</td>
-                    <td className="px-4 py-3 text-[13px] text-stone-500">
-                      {new Date(doc.createdAt).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium bg-emerald-100 text-emerald-700">
-                        Processado · {doc.chunkCount} {doc.chunkCount === 1 ? 'chunk' : 'chunks'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {(doc.fileUrl || doc.storagePath) ? (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(doc)}
-                          disabled={deletingId === doc.id}
-                          className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                          aria-label="Remover documento"
-                        >
-                          {deletingId === doc.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-stone-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

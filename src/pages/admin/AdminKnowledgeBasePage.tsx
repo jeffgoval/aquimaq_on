@@ -1,12 +1,11 @@
 import React from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import AdminKnowledgeBase from '@/components/admin/AdminKnowledgeBase';
 
 const AdminKnowledgeBasePage: React.FC = () => {
   return (
-    <AdminLayout>
+    <div className="animate-fade-in">
       <AdminKnowledgeBase />
-    </AdminLayout>
+    </div>
   );
 };
 

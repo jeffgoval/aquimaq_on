@@ -42,6 +42,7 @@ const AdminProductsManagement: React.FC = () => {
     const [editingProductId, setEditingProductId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [savedScroll, setSavedScroll] = useState(0);
+    const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null);
 
     useEffect(() => {
         loadProducts();
@@ -96,8 +97,17 @@ const AdminProductsManagement: React.FC = () => {
         return { label: 'OK', color: 'text-emerald-600 bg-emerald-50' };
     };
 
-    const handleToggleActive = async (id: string, currentStatus: boolean, e: React.MouseEvent) => {
+    const handleToggleActive = (id: string, currentStatus: boolean, e: React.MouseEvent, name: string) => {
         e.stopPropagation();
+        // Confirmar antes de desativar (oculta produto da loja)
+        if (currentStatus) {
+            setConfirmDeactivate({ id, name });
+        } else {
+            doToggleActive(id, false);
+        }
+    };
+
+    const doToggleActive = async (id: string, currentStatus: boolean) => {
         try {
             const { error } = await (supabase.from('products') as any).update({ is_active: !currentStatus }).eq('id', id);
             if (error) throw error;
@@ -140,6 +150,7 @@ const AdminProductsManagement: React.FC = () => {
     }
 
     return (
+        <>
         <div className="space-y-5 max-w-6xl mx-auto">
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -242,7 +253,7 @@ const AdminProductsManagement: React.FC = () => {
                                                             {product.name}
                                                         </span>
                                                         <button
-                                                            onClick={(e) => handleToggleActive(product.id, !!product.is_active, e)}
+                                                            onClick={(e) => handleToggleActive(product.id, !!product.is_active, e, product.name)}
                                                             className={`mt-0.5 text-[10px] flex items-center gap-1 font-medium px-1.5 py-0.5 rounded transition-colors
                                                                 ${product.is_active ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'text-stone-500 bg-stone-100 hover:bg-stone-200'}
                                                             `}
@@ -304,6 +315,39 @@ const AdminProductsManagement: React.FC = () => {
                 )}
             </div>
         </div>
+
+        {/* Modal de confirmação de desativação */}
+        {confirmDeactivate && (
+            <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
+                    <h3 className="text-lg font-semibold text-stone-900 mb-2">Desativar Produto</h3>
+                    <p className="text-stone-500 mb-1 font-medium text-[14px]">
+                        Tem certeza que deseja desativar <span className="text-stone-800 font-semibold">"{confirmDeactivate.name}"</span>?
+                    </p>
+                    <p className="text-stone-400 text-xs mb-6">
+                        O produto ficará oculto na loja. Você pode reativá-lo a qualquer momento.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                        <button
+                            onClick={() => setConfirmDeactivate(null)}
+                            className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                doToggleActive(confirmDeactivate.id, true);
+                                setConfirmDeactivate(null);
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                        >
+                            Desativar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 
