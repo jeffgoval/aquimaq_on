@@ -15,8 +15,10 @@ export interface RecentOrderRow {
   date: string;
 }
 
-/** Estatísticas e últimos pedidos para o dashboard admin. */
-export const getDashboardStats = async (): Promise<{
+/** Estatísticas e últimos pedidos para o dashboard admin.
+ *  @param vendedorId - quando informado, filtra apenas pedidos deste vendedor
+ */
+export const getDashboardStats = async (vendedorId?: string): Promise<{
   stats: DashboardStats;
   recentOrders: RecentOrderRow[];
 }> => {
@@ -27,27 +29,39 @@ export const getDashboardStats = async (): Promise<{
     1
   ).toISOString();
 
+  // Helper para aplicar filtro de vendedor quando necessário
+  const applyVendedorFilter = (query: any) =>
+    vendedorId ? query.eq('vendedor_id', vendedorId) : query;
+
   const [
     { data: recentData },
     { count: totalOrders },
     { count: pendingCount },
     { data: monthOrders },
   ] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('id, total, status, created_at, cliente_id')
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase.from('orders').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['aguardando_pagamento', 'pago', 'em_separacao']),
-    supabase
-      .from('orders')
-      .select('total')
-      .gte('created_at', startOfMonth)
-      .neq('status', 'cancelado'),
+    applyVendedorFilter(
+      supabase
+        .from('orders')
+        .select('id, total, status, created_at, cliente_id')
+        .order('created_at', { ascending: false })
+        .limit(5)
+    ),
+    applyVendedorFilter(
+      supabase.from('orders').select('*', { count: 'exact', head: true })
+    ),
+    applyVendedorFilter(
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['aguardando_pagamento', 'pago', 'em_separacao'])
+    ),
+    applyVendedorFilter(
+      supabase
+        .from('orders')
+        .select('total')
+        .gte('created_at', startOfMonth)
+        .neq('status', 'cancelado')
+    ),
   ]);
 
   const totalRevenue = (monthOrders ?? []).reduce(
@@ -117,9 +131,11 @@ export interface OrderAdminRow {
   trackingCode?: string | null;
 }
 
-/** Lista pedidos para admin (com nome/telefone do cliente). */
-export const getOrdersAdmin = async (): Promise<OrderAdminRow[]> => {
-  const { data, error } = await supabase
+/** Lista pedidos para admin (com nome/telefone do cliente).
+ *  @param vendedorId - quando informado, filtra apenas pedidos deste vendedor
+ */
+export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow[]> => {
+  let query = supabase
     .from('orders')
     .select(`
       *,
@@ -127,6 +143,12 @@ export const getOrdersAdmin = async (): Promise<OrderAdminRow[]> => {
       order_items(product_id, product_name, quantity, unit_price)
     `)
     .order('created_at', { ascending: false });
+
+  if (vendedorId) {
+    query = (query as any).eq('vendedor_id', vendedorId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 

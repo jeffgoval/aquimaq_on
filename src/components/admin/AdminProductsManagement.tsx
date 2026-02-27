@@ -15,6 +15,7 @@ import { supabase } from '@/services/supabase';
 import { Product, ProductCategory } from '@/types';
 import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProductWithFlags extends Product {
     is_new?: boolean;
@@ -32,6 +33,9 @@ const categoryOptions = [
 ];
 
 const AdminProductsManagement: React.FC = () => {
+    const { user, hasRole } = useAuth();
+    const isVendedor = hasRole(['vendedor']);
+
     const [products, setProducts] = useState<ProductWithFlags[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -46,12 +50,14 @@ const AdminProductsManagement: React.FC = () => {
 
     useEffect(() => {
         loadProducts();
-    }, []);
+    }, [isVendedor, user?.id]);
 
     const loadProducts = async () => {
         try {
             setLoading(true);
-            const data = await getProductsAdmin();
+            // Vendedor vê apenas seus próprios produtos
+            const vendedorId = isVendedor ? user?.id : undefined;
+            const data = await getProductsAdmin(vendedorId);
 
             const mapped = (data || []).map((p: ProductRow) => ({
                 id: p.id,
@@ -143,6 +149,7 @@ const AdminProductsManagement: React.FC = () => {
         return (
             <AdminProductEditor
                 productId={editingProductId || undefined}
+                vendedorId={isVendedor ? (user?.id ?? undefined) : undefined}
                 onBack={handleEditorClose}
                 onSave={handleEditorSave}
             />

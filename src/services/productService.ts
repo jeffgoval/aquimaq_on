@@ -135,13 +135,15 @@ export const getProductRowById = async (
   return data as ProductRow;
 };
 
-/** Lista produtos para admin (todos, ordenados por nome). */
-export const getProductsAdmin = async (): Promise<ProductRow[]> => {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('name');
-
+/** Lista produtos para admin (todos, ordenados por nome).
+ *  @param vendedorId - quando informado, filtra apenas produtos deste vendedor
+ */
+export const getProductsAdmin = async (vendedorId?: string): Promise<ProductRow[]> => {
+  let query = supabase.from('products').select('*').order('name');
+  if (vendedorId) {
+    query = (query as any).eq('vendedor_id', vendedorId);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data as ProductRow[]) ?? [];
 };

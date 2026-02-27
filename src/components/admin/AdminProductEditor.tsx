@@ -20,6 +20,7 @@ import ImageUploader from './ImageUploader';
 
 interface AdminProductEditorProps {
     productId?: string; // undefined = novo produto
+    vendedorId?: string; // quando criado por um vendedor, associa ao seu id
     onBack: () => void;
     onSave: () => void;
 }
@@ -56,6 +57,7 @@ const categoryOptions = [
 
 const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
     productId,
+    vendedorId,
     onBack,
     onSave
 }) => {
@@ -194,6 +196,8 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
             wholesale_min_amount: formData.wholesaleMinAmount || null,
             wholesale_discount_percent: formData.wholesaleDiscountPercent || null,
             culture: formData.culture || null,
+            // Associa ao vendedor quando criado por um vendedor
+            ...(vendedorId && !productId ? { vendedor_id: vendedorId } : {}),
         };
 
         try {

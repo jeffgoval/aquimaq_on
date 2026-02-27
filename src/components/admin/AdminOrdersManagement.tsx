@@ -20,6 +20,7 @@ import {
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PedidoComCliente extends OrderAdminRow {
     status: OrderStatus;
@@ -47,6 +48,9 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 const AdminOrdersManagement: React.FC = () => {
+    const { user, hasRole } = useAuth();
+    const isVendedor = hasRole(['vendedor']);
+
     const [orders, setOrders] = useState<PedidoComCliente[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -58,12 +62,14 @@ const AdminOrdersManagement: React.FC = () => {
 
     useEffect(() => {
         loadOrders();
-    }, []);
+    }, [isVendedor, user?.id]);
 
     const loadOrders = async () => {
         try {
             setLoading(true);
-            const data = await getOrdersAdmin();
+            // Vendedor vê apenas seus próprios pedidos
+            const vendedorId = isVendedor ? user?.id : undefined;
+            const data = await getOrdersAdmin(vendedorId);
             setOrders(data as PedidoComCliente[]);
         } catch (error) {
             if (import.meta.env.DEV) console.error('Error loading orders:', error);

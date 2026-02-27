@@ -70,6 +70,7 @@ export interface ProductRow {
   wholesale_discount_percent: number | null;
   seo_title: string | null;
   seo_description: string | null;
+  vendedor_id: string | null;
   created_at: string | null;
   updated_at: string | null;
 }

@@ -14,6 +14,7 @@ import {
     getDashboardStats,
     restoreStockFromUnpaidOrders,
 } from '@/services/adminService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StatCardProps {
     title: string;
@@ -92,6 +93,9 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
+    const { user, hasRole } = useAuth();
+    const isVendedor = hasRole(['vendedor']);
+
     const [stats, setStats] = useState({
         totalRevenue: 0,
         totalOrders: 0,
@@ -115,7 +119,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
         const load = async () => {
             try {
-                const { stats: nextStats, recentOrders: nextRecent } = await getDashboardStats();
+                // Vendedor vê apenas suas próprias estatísticas
+                const vendedorId = isVendedor ? user?.id : undefined;
+                const { stats: nextStats, recentOrders: nextRecent } = await getDashboardStats(vendedorId);
                 if (mounted) {
                     setStats(nextStats);
                     setRecentOrders(nextRecent);
@@ -138,7 +144,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             mounted = false;
             clearTimeout(timeoutId);
         };
-    }, []);
+    }, [isVendedor, user?.id]);
 
     if (loading) {
         return (
@@ -189,7 +195,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         <LayoutDashboard className="text-stone-400" size={24} />
                         Dashboard
                     </h1>
-                    <p className="text-stone-400 text-[13px] mt-0.5">Visão geral do seu negócio</p>
+                    <p className="text-stone-400 text-[13px] mt-0.5">
+                        {isVendedor ? 'Resumo das suas vendas e pedidos' : 'Visão geral do seu negócio'}
+                    </p>
                 </div>
                 {error && (
                     <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg flex items-center gap-2 relative">
@@ -250,6 +258,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         <p className="text-stone-400 text-[12px]">Editar preços e estoque</p>
                     </div>
                 </button>
+                {!isVendedor && (
                 <button
                     onClick={() => onNavigate('USERS')}
                     className="group flex items-center gap-3 bg-white border border-stone-100 rounded-xl p-4 text-left hover:border-stone-200 transition-colors"
@@ -262,9 +271,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         <p className="text-stone-400 text-[12px]">Administrar acessos</p>
                     </div>
                 </button>
+                )}
             </div>
 
-            {/* Restaurar estoque de pedidos não pagos */}
+            {/* Restaurar estoque de pedidos não pagos — apenas admin/gerente */}
+            {!isVendedor && (
             <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -303,6 +314,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     </p>
                 )}
             </div>
+            )}
 
             {/* Recent Orders Table */}
             <div className="bg-white rounded-xl border border-stone-100 overflow-hidden">
