@@ -14,6 +14,7 @@ import {
     Store,
     MessageCircle,
     Cpu,
+    FileText,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,8 +22,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'CHAT';
-
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'CHAT' | 'KNOWLEDGE_BASE';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -33,6 +33,7 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
     [ROUTES.ADMIN_AI_SETTINGS]: 'AI_SETTINGS',
     [ROUTES.ADMIN_CHAT]: 'CHAT',
+    [ROUTES.ADMIN_KNOWLEDGE_BASE]: 'KNOWLEDGE_BASE',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
@@ -44,6 +45,7 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     SETTINGS: ROUTES.ADMIN_SETTINGS,
     AI_SETTINGS: ROUTES.ADMIN_AI_SETTINGS,
     CHAT: ROUTES.ADMIN_CHAT,
+    KNOWLEDGE_BASE: ROUTES.ADMIN_KNOWLEDGE_BASE,
 };
 
 interface AdminLayoutProps {
@@ -97,10 +99,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
         { id: 'CHAT', label: 'Chat', icon: <MessageCircle size={18} /> },
+        { id: 'KNOWLEDGE_BASE', label: 'Base de Conhecimento', icon: <FileText size={18} /> },
         { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT'].includes(item.id)) return false;
+        if (!isAdmin && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT', 'KNOWLEDGE_BASE'].includes(item.id)) return false;
         return true;
     });
 

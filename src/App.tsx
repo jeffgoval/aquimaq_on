@@ -35,7 +35,9 @@ const AdminProductsManagement = lazy(() => import('./components/admin/AdminProdu
 const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerManagement'));
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
 const AdminChatPanel = lazy(() => import('./components/admin/AdminChatPanel'));
+const AdminChatPage = lazy(() => import('./pages/admin/AdminChatPage'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
+const AdminKnowledgeBasePage = lazy(() => import('./pages/admin/AdminKnowledgeBasePage'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 
 const ScrollToTop = () => {
@@ -62,7 +64,9 @@ function AdminRoutes() {
             'ORDERS': ROUTES.ADMIN_ORDERS,
             'PRODUCTS': ROUTES.ADMIN_PRODUCTS,
             'USERS': ROUTES.ADMIN_USERS,
-            'DASHBOARD': ROUTES.ADMIN
+            'DASHBOARD': ROUTES.ADMIN,
+            'KNOWLEDGE_BASE': ROUTES.ADMIN_KNOWLEDGE_BASE,
+            'CHAT': ROUTES.ADMIN_CHAT,
         };
         navigate(paths[view] || ROUTES.ADMIN);
     };
@@ -91,9 +95,14 @@ function AdminRoutes() {
                         <AdminAISettings />
                     </ProtectedRoute>
                 } />
+                <Route path={ROUTE_PATHS.ADMIN_KNOWLEDGE_BASE} element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminKnowledgeBasePage />
+                    </ProtectedRoute>
+                } />
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
                     <ProtectedRoute allowedRoles={['admin']}>
-                        <AdminChatPanel />
+                        <AdminChatPage />
                     </ProtectedRoute>
                 } />
             </Routes>

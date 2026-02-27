@@ -26,6 +26,7 @@ export const ROUTES = {
   ADMIN_SETTINGS: '/admin/configuracoes',
   ADMIN_CHAT: '/admin/chat',
   ADMIN_AI_SETTINGS: '/admin/ai-settings',
+  ADMIN_KNOWLEDGE_BASE: '/admin/knowledge-base',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -52,5 +53,6 @@ export const ROUTE_PATHS = {
   ADMIN_SETTINGS: 'configuracoes',
   ADMIN_CHAT: 'chat',
   ADMIN_AI_SETTINGS: 'ai-settings',
+  ADMIN_KNOWLEDGE_BASE: 'knowledge-base',
   ORDERS: 'meus-pedidos',
 } as const;

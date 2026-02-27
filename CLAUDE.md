@@ -25,6 +25,7 @@ npx supabase functions deploy mercado-pago-webhook --no-verify-jwt
 npx supabase functions deploy melhor-envios-quote
 npx supabase functions deploy melhor-envios-webhook --no-verify-jwt
 npx supabase functions deploy ai-chat   # Chat RAG (ai_settings + ai_knowledge_base)
+npx supabase functions deploy process-knowledge-base   # Ingestão PDF → ai_knowledge_base
 
 npx supabase link --project-ref <ref>
 npx supabase db push   # apply migrations
@@ -92,6 +93,7 @@ For `ai-chat`: API key is stored in `ai_settings` (admin); optionally set `OPENA
 | `melhor-envios-quote` | `verify_jwt=true` | Fetches shipping quotes from Melhor Envios API |
 | `melhor-envios-webhook` | `verify_jwt=false` | Handles Melhor Envios shipping events |
 | `ai-chat` | `verify_jwt=true` | RAG: embedding da pergunta, busca em `ai_knowledge_base`, resposta com memória (histórico) |
+| `process-knowledge-base` | `verify_jwt=true` | Ingestão RAG: fetch do PDF por URL, extração de texto, chunking e inserção em `ai_knowledge_base` com embeddings (metadata: file_url, storage_path) |
 
 ### Database (Supabase Postgres)
 
@@ -100,6 +102,11 @@ Key tables: `products`, `profiles`, `orders`, `order_items`, `payments`, `chat_c
 RLS policies are in `supabase/migrations/`. Without them, all reads/writes fail. Migrations in `supabase/migrations/` starting with `20260225_fix_linter_*` address Supabase linter warnings.
 
 Storage buckets (must be created manually as **public**): `store-assets`, `product-images`, `knowledge-base`.
+
+**RAG (Base de Conhecimento):**
+1. **Bucket:** No Dashboard → Storage → New bucket → id = `knowledge-base`, público (ou via API).
+2. **Database:** Aplicar a migração `supabase/migrations/20260226000000_ai_knowledge_base_and_bucket.sql` (`npx supabase db push` ou via Dashboard). Garante a tabela `ai_knowledge_base` com coluna `embedding` tipo `vector(1536)` e a função `match_knowledge_base`.
+3. **Deploy da ingestão:** `npx supabase link --project-ref <ref>` (uma vez); depois `npx supabase functions deploy process-knowledge-base`.
 
 ### Roles
 `cliente` (default) | `vendedor` | `gerente` | `admin`
