@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, Phone, Truck, ShieldCheck, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, Phone, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
@@ -105,17 +105,7 @@ const Header: React.FC<HeaderProps> = ({
         <header role="banner" className="flex flex-col w-full shadow-md sticky top-0 z-50 font-sans">
             {/* 1. TOP BAR */}
             <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 hidden md:block border-b border-slate-800">
-                <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <div className="flex space-x-6">
-                        <span className="flex items-center">
-                            <Truck size={14} className="mr-2 text-agro-500 shrink-0" />
-                            Frete Grátis para todo Brasil em compras acima de R$ 299
-                        </span>
-                        <span className="flex items-center">
-                            <ShieldCheck size={14} className="mr-2 text-agro-500 shrink-0" />
-                            Garantia de 12 meses em toda a linha
-                        </span>
-                    </div>
+                <div className="max-w-7xl mx-auto flex justify-end items-center">
                     <div className="flex space-x-6">
                         {settings?.phone ? (
                             <a
