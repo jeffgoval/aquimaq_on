@@ -107,7 +107,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         // Vendedor: apenas Dashboard, Pedidos e Produtos
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
         // Gerente: oculta itens exclusivos de admin
-        if (!isAdmin && !isVendedor && ['USERS', 'SETTINGS', 'AI_SETTINGS', 'ANALYTICS', 'CHAT', 'KNOWLEDGE_BASE'].includes(item.id)) return false;
+        if (!isAdmin && !isVendedor && ['SETTINGS', 'AI_SETTINGS', 'ANALYTICS'].includes(item.id)) return false;
         return true;
     });
 

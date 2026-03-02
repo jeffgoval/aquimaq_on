@@ -83,9 +83,9 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_PRODUCTS} element={<AdminProductsManagement />} />
                 <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={<AdminBannerManagement />} />
 
-                {/* Admin Only Routes */}
+                {/* Admin and Gerente Routes */}
                 <Route path={ROUTE_PATHS.ADMIN_USERS} element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <AdminUsersManagement />
                     </ProtectedRoute>
                 } />
@@ -100,12 +100,12 @@ function AdminRoutes() {
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_KNOWLEDGE_BASE} element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <AdminKnowledgeBasePage />
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <AdminChatPage />
                     </ProtectedRoute>
                 } />

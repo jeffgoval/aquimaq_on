@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, RefreshCw } from 'lucide-react';
 import { getUsersAdmin, updateUserRole, type AdminUserRow } from '@/services/adminService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminUsersManagement: React.FC = () => {
+    const { isAdmin, isGerente, user: currentUser } = useAuth();
     const [users, setUsers] = useState<AdminUserRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -12,7 +14,8 @@ const AdminUsersManagement: React.FC = () => {
         try {
             setLoading(true);
             const data = await getUsersAdmin();
-            setUsers(data);
+            const filteredData = isAdmin ? data : data.filter((u) => u.role !== 'admin');
+            setUsers(filteredData);
         } catch (error) {
             console.error('Error loading users:', error);
             setMessage({ type: 'error', text: 'Erro ao carregar usuários.' });
@@ -26,6 +29,16 @@ const AdminUsersManagement: React.FC = () => {
     }, []);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
+        // Block gerentes from interacting with admin roles
+        if (isGerente && !isAdmin) {
+            const targetUser = users.find(u => u.id === userId);
+            if (targetUser?.role === 'admin' || newRole === 'admin') {
+                setMessage({ type: 'error', text: 'Gerentes não podem gerenciar contas de Administrador.' });
+                setTimeout(() => setMessage(null), 3000);
+                return;
+            }
+        }
+
         try {
             setUpdatingId(userId);
             await updateUserRole(userId, newRole);
@@ -113,17 +126,22 @@ const AdminUsersManagement: React.FC = () => {
                                                 <select
                                                     value={user.role || 'cliente'}
                                                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                                    disabled={updatingId === user.id}
+                                                    disabled={
+                                                        updatingId === user.id ||
+                                                        (!isAdmin && user.role === 'admin') ||
+                                                        (!isAdmin && user.id === currentUser?.id)
+                                                    }
                                                     className={`
                                                         px-2 py-1 bg-stone-50 border border-stone-200 rounded text-[12px] font-medium cursor-pointer text-stone-700
                                                         focus:ring-1 focus:ring-stone-300 focus:outline-none focus:bg-white
                                                         ${updatingId === user.id ? 'opacity-50' : ''}
+                                                        ${(!isAdmin && (user.role === 'admin' || user.id === currentUser?.id)) ? 'cursor-not-allowed bg-stone-100 opacity-60' : ''}
                                                     `}
                                                 >
                                                     <option value="cliente">Cliente</option>
-                                                    <option value="admin">Admin</option>
                                                     <option value="vendedor">Vendedor</option>
                                                     <option value="gerente">Gerente</option>
+                                                    {(isAdmin || user.role === 'admin') && <option value="admin">Admin</option>}
                                                 </select>
                                             </div>
                                         </td>
