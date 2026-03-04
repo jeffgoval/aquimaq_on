@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
     Image as ImageIcon,
     Plus,
@@ -9,7 +9,8 @@ import {
     EyeOff,
     X,
     Save,
-    Calendar
+    Calendar,
+    Timer,
 } from 'lucide-react';
 import {
     getBanners,
@@ -19,6 +20,7 @@ import {
     toggleBannerActive,
     type Banner,
 } from '@/services/bannerService';
+import { getStoreSettings, saveStoreSettings } from '@/services/storeSettingsService';
 import ImageUploader from './ImageUploader';
 
 const colorOptions = [
@@ -27,6 +29,12 @@ const colorOptions = [
     { value: 'from-blue-900 to-blue-800', label: 'Azul Escuro' },
     { value: 'from-amber-900 to-amber-800', label: 'Âmbar Escuro' },
     { value: 'from-violet-900 to-violet-800', label: 'Violeta Escuro' },
+];
+
+const SLIDE_INTERVAL_OPTIONS = [
+    { value: 3000, label: '3 segundos' },
+    { value: 5000, label: '5 segundos' },
+    { value: 8000, label: '8 segundos' },
 ];
 
 const AdminBannerManagement: React.FC = () => {
@@ -40,10 +48,13 @@ const AdminBannerManagement: React.FC = () => {
     const [draggedBannerId, setDraggedBannerId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
+    const [slideIntervalMs, setSlideIntervalMs] = useState(5000);
+    const [savingInterval, setSavingInterval] = useState(false);
+
     const [formData, setFormData] = useState({
         title: '',
         subtitle: '',
-        image_url: '',
+        image_urls: [] as string[],
         cta_text: '',
         cta_link: '',
         color_gradient: 'from-agro-900 to-agro-800',
@@ -53,8 +64,25 @@ const AdminBannerManagement: React.FC = () => {
     });
 
     useEffect(() => {
-        loadBanners();
+        loadInitialData();
     }, []);
+
+    const loadInitialData = async () => {
+        try {
+            setLoading(true);
+            const [bannerData, storeSettings] = await Promise.all([
+                getBanners(),
+                getStoreSettings(),
+            ]);
+            setBanners(bannerData);
+            setSlideIntervalMs(storeSettings?.bannerSlideIntervalMs ?? 5000);
+        } catch (error) {
+            console.error('Error loading banners/settings:', error);
+            setMessage({ type: 'error', text: 'Erro ao carregar banners.' });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadBanners = async () => {
         try {
@@ -69,11 +97,27 @@ const AdminBannerManagement: React.FC = () => {
         }
     };
 
+    const handleSlideIntervalChange = async (nextValue: number) => {
+        setSlideIntervalMs(nextValue);
+        setSavingInterval(true);
+
+        const result = await saveStoreSettings({ bannerSlideIntervalMs: nextValue });
+        if (!result.success) {
+            setMessage({ type: 'error', text: result.error || 'Erro ao salvar tempo de transição.' });
+            setSavingInterval(false);
+            return;
+        }
+
+        setSavingInterval(false);
+        setMessage({ type: 'success', text: 'Tempo de transição do slider atualizado.' });
+        setTimeout(() => setMessage(null), 2500);
+    };
+
     const resetForm = () => {
         setFormData({
             title: '',
             subtitle: '',
-            image_url: '',
+            image_urls: [],
             cta_text: '',
             cta_link: '',
             color_gradient: 'from-agro-900 to-agro-800',
@@ -88,7 +132,7 @@ const AdminBannerManagement: React.FC = () => {
         setFormData({
             title: banner.title,
             subtitle: banner.subtitle || '',
-            image_url: banner.image_url,
+            image_urls: banner.image_url ? [banner.image_url] : [],
             cta_text: banner.cta_text || '',
             cta_link: banner.cta_link || '',
             color_gradient: banner.color_gradient,
@@ -112,8 +156,8 @@ const AdminBannerManagement: React.FC = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.title.trim() || !formData.image_url) {
-            setMessage({ type: 'error', text: 'Título e imagem são obrigatórios.' });
+        if (!formData.title.trim() || formData.image_urls.length === 0) {
+            setMessage({ type: 'error', text: 'Título e pelo menos uma imagem são obrigatórios.' });
             return;
         }
 
@@ -122,24 +166,40 @@ const AdminBannerManagement: React.FC = () => {
         const bannerData = {
             title: formData.title,
             subtitle: formData.subtitle || null,
-            image_url: formData.image_url,
             cta_text: formData.cta_text || null,
             cta_link: formData.cta_link || null,
             color_gradient: formData.color_gradient,
             is_active: formData.is_active,
             starts_at: formData.starts_at ? new Date(formData.starts_at + 'T12:00:00Z').toISOString() : null,
             ends_at: formData.ends_at ? new Date(formData.ends_at + 'T12:00:00Z').toISOString() : null,
-            position: editingBanner?.position ?? banners.length,
         };
 
         try {
             if (editingBanner) {
-                await updateBanner(editingBanner.id, bannerData);
+                await updateBanner(editingBanner.id, {
+                    ...bannerData,
+                    image_url: formData.image_urls[0],
+                    position: editingBanner.position ?? 0,
+                });
             } else {
-                await createBanner(bannerData);
+                const startPosition = banners.length;
+                await Promise.all(
+                    formData.image_urls.map((imageUrl, index) =>
+                        createBanner({
+                            ...bannerData,
+                            image_url: imageUrl,
+                            position: startPosition + index,
+                        })
+                    )
+                );
             }
 
-            setMessage({ type: 'success', text: editingBanner ? 'Banner atualizado!' : 'Banner criado!' });
+            setMessage({
+                type: 'success',
+                text: editingBanner
+                    ? 'Banner atualizado!'
+                    : `${formData.image_urls.length} banner(s) criado(s)!`,
+            });
             handleCancel();
             loadBanners();
         } catch (error) {
@@ -168,7 +228,6 @@ const AdminBannerManagement: React.FC = () => {
         }
     };
 
-    // Drag and Drop handlers
     const handleDragStart = (e: React.DragEvent, id: string) => {
         setDraggedBannerId(id);
         e.dataTransfer.effectAllowed = 'move';
@@ -183,8 +242,8 @@ const AdminBannerManagement: React.FC = () => {
         e.preventDefault();
         if (!draggedBannerId || draggedBannerId === targetId) return;
 
-        const sourceIndex = banners.findIndex(b => b.id === draggedBannerId);
-        const targetIndex = banners.findIndex(b => b.id === targetId);
+        const sourceIndex = banners.findIndex((b) => b.id === draggedBannerId);
+        const targetIndex = banners.findIndex((b) => b.id === targetId);
 
         if (sourceIndex === -1 || targetIndex === -1) return;
 
@@ -192,20 +251,18 @@ const AdminBannerManagement: React.FC = () => {
         const [movedBanner] = newBanners.splice(sourceIndex, 1);
         newBanners.splice(targetIndex, 0, movedBanner);
 
-        // Update local state optimistic
         const updatedBanners = newBanners.map((b, index) => ({ ...b, position: index }));
         setBanners(updatedBanners);
         setDraggedBannerId(null);
 
         try {
-            // Update backend
-            await Promise.all(updatedBanners.map(b => updateBanner(b.id, { position: b.position })));
+            await Promise.all(updatedBanners.map((b) => updateBanner(b.id, { position: b.position })));
             setMessage({ type: 'success', text: 'Ordem atualizada!' });
             setTimeout(() => setMessage(null), 2000);
         } catch (error) {
             console.error('Error updating order:', error);
             setMessage({ type: 'error', text: 'Erro ao reordenar banners.' });
-            loadBanners(); // revert in case of error
+            loadBanners();
         }
     };
 
@@ -219,10 +276,9 @@ const AdminBannerManagement: React.FC = () => {
     };
 
     const handleImagesChange = (images: string[]) => {
-        setFormData(prev => ({ ...prev, image_url: images[0] || '' }));
+        setFormData((prev) => ({ ...prev, image_urls: images }));
     };
 
-    // Editor Modal/Form
     if (isCreating) {
         return (
             <div className="max-w-3xl mx-auto">
@@ -242,23 +298,20 @@ const AdminBannerManagement: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Form */}
                 <div className="space-y-5">
-                    {/* Image */}
                     <div className="bg-white rounded-xl border border-stone-100 p-5">
                         <h2 className="text-[14px] font-medium text-stone-700 mb-4 flex items-center gap-2">
                             <ImageIcon size={16} className="text-stone-400" />
                             Imagem do Banner
                         </h2>
                         <ImageUploader
-                            images={formData.image_url ? [formData.image_url] : []}
+                            images={formData.image_urls}
                             onChange={handleImagesChange}
-                            maxImages={1}
+                            maxImages={editingBanner ? 1 : 8}
                             bucket="store-assets"
                         />
                     </div>
 
-                    {/* Content */}
                     <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                         <h2 className="text-[14px] font-medium text-stone-700">Conteúdo</h2>
 
@@ -269,7 +322,7 @@ const AdminBannerManagement: React.FC = () => {
                             <input
                                 type="text"
                                 value={formData.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 placeholder="Ex: Safra Garantida 2026"
                             />
@@ -282,7 +335,7 @@ const AdminBannerManagement: React.FC = () => {
                             <input
                                 type="text"
                                 value={formData.subtitle}
-                                onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, subtitle: e.target.value }))}
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 placeholder="Texto complementar..."
                             />
@@ -296,7 +349,7 @@ const AdminBannerManagement: React.FC = () => {
                                 <input
                                     type="text"
                                     value={formData.cta_text}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, cta_text: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, cta_text: e.target.value }))}
                                     className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                     placeholder="Ver Promoções"
                                 />
@@ -308,7 +361,7 @@ const AdminBannerManagement: React.FC = () => {
                                 <input
                                     type="text"
                                     value={formData.cta_link}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, cta_link: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, cta_link: e.target.value }))}
                                     className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                     placeholder="/categoria/promocoes"
                                 />
@@ -321,17 +374,16 @@ const AdminBannerManagement: React.FC = () => {
                             </label>
                             <select
                                 value={formData.color_gradient}
-                                onChange={(e) => setFormData(prev => ({ ...prev, color_gradient: e.target.value }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, color_gradient: e.target.value }))}
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
                             >
-                                {colorOptions.map(opt => (
+                                {colorOptions.map((opt) => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
 
-                    {/* Schedule */}
                     <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                         <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
                             <Calendar size={16} className="text-stone-400" />
@@ -346,7 +398,7 @@ const AdminBannerManagement: React.FC = () => {
                                 <input
                                     type="date"
                                     value={formData.starts_at}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, starts_at: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, starts_at: e.target.value }))}
                                     className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 />
                             </div>
@@ -357,7 +409,7 @@ const AdminBannerManagement: React.FC = () => {
                                 <input
                                     type="date"
                                     value={formData.ends_at}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, ends_at: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, ends_at: e.target.value }))}
                                     className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 />
                             </div>
@@ -367,20 +419,26 @@ const AdminBannerManagement: React.FC = () => {
                             <input
                                 type="checkbox"
                                 checked={formData.is_active}
-                                onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, is_active: e.target.checked }))}
                                 className="w-4 h-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500"
                             />
                             <span className="text-[13px] text-stone-600">Banner ativo</span>
                         </label>
                     </div>
 
-                    {/* Preview */}
-                    {formData.image_url && (
+                    {formData.image_urls.length > 0 && (
                         <div className="bg-white rounded-xl border border-stone-100 p-5">
-                            <h2 className="text-[14px] font-medium text-stone-700 mb-4">Preview</h2>
+                            <h2 className="text-[14px] font-medium text-stone-700 mb-4">
+                                Preview
+                                {!editingBanner && formData.image_urls.length > 1 && (
+                                    <span className="ml-2 text-[11px] font-normal text-stone-500">
+                                        ({formData.image_urls.length} slides serão criados)
+                                    </span>
+                                )}
+                            </h2>
                             <div className="relative aspect-[4/1] md:aspect-[21/9] rounded-lg overflow-hidden">
-                                <img src={formData.image_url} alt="" className="w-full h-full object-cover" />
-                                <div className={`absolute inset-0 bg-gradient-to-r ${formData.color_gradient} opacity-80`}></div>
+                                <img src={formData.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                                <div className={`absolute inset-0 bg-gradient-to-r ${formData.color_gradient} opacity-80`} />
                                 <div className="absolute inset-0 flex items-center p-6">
                                     <div className="text-white">
                                         <h3 className="text-xl font-bold">{formData.title || 'Título do Banner'}</h3>
@@ -391,7 +449,6 @@ const AdminBannerManagement: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <button
                             onClick={handleCancel}
@@ -413,10 +470,8 @@ const AdminBannerManagement: React.FC = () => {
         );
     }
 
-    // List View
     return (
         <div className="space-y-5 max-w-6xl mx-auto">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-semibold text-stone-800">Banners</h1>
@@ -424,27 +479,42 @@ const AdminBannerManagement: React.FC = () => {
                         Gerencie o carrossel da página inicial
                     </p>
                 </div>
-                <button
-                    onClick={handleCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700"
-                >
-                    <Plus size={16} />
-                    Novo Banner
-                </button>
+
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-2 border border-stone-200 rounded-lg bg-white">
+                        <Timer size={15} className="text-stone-500" />
+                        <label className="text-[12px] text-stone-600">Transição:</label>
+                        <select
+                            value={slideIntervalMs}
+                            onChange={(e) => handleSlideIntervalChange(Number(e.target.value))}
+                            disabled={savingInterval}
+                            className="text-[12px] bg-transparent text-stone-700 outline-none"
+                        >
+                            {SLIDE_INTERVAL_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        onClick={handleCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700"
+                    >
+                        <Plus size={16} />
+                        Novo Banner
+                    </button>
+                </div>
             </div>
 
-            {/* Feedback */}
             {message && (
-                <div className={`px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    }`}>
+                <div className={`px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                     {message.text}
                 </div>
             )}
 
-            {/* Banners Grid */}
             {loading ? (
                 <div className="p-8 text-center">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500 mb-2"></div>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500 mb-2" />
                     <p className="text-stone-400 text-[13px]">Carregando...</p>
                 </div>
             ) : banners.length === 0 ? (
@@ -467,21 +537,17 @@ const AdminBannerManagement: React.FC = () => {
                             onDragStart={(e) => handleDragStart(e, banner.id)}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, banner.id)}
-                            className={`bg-white rounded-xl border p-4 flex items-center gap-4 transition-all ${!banner.is_active ? 'opacity-60' : ''
-                                } ${draggedBannerId === banner.id ? 'opacity-50 border-dashed border-stone-400' : 'border-stone-100'} cursor-move`}
+                            className={`bg-white rounded-xl border p-4 flex items-center gap-4 transition-all ${!banner.is_active ? 'opacity-60' : ''} ${draggedBannerId === banner.id ? 'opacity-50 border-dashed border-stone-400' : 'border-stone-100'} cursor-move`}
                         >
-                            {/* Drag Handle */}
                             <div className="text-stone-300">
                                 <GripVertical size={20} />
                             </div>
 
-                            {/* Thumbnail */}
                             <div className="w-24 h-14 rounded-lg overflow-hidden relative flex-shrink-0">
                                 <img src={banner.image_url} alt="" className="w-full h-full object-cover" />
-                                <div className={`absolute inset-0 bg-gradient-to-r ${banner.color_gradient} opacity-60`}></div>
+                                <div className={`absolute inset-0 bg-gradient-to-r ${banner.color_gradient} opacity-60`} />
                             </div>
 
-                            {/* Info */}
                             <div className="flex-1 min-w-0">
                                 <h3 className="text-[13px] font-medium text-stone-700 truncate">{banner.title}</h3>
                                 {banner.subtitle && (
@@ -506,7 +572,6 @@ const AdminBannerManagement: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => toggleActive(banner)}
@@ -538,7 +603,6 @@ const AdminBannerManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Delete Modal */}
             {deletingId && (
                 <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">

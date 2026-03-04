@@ -19,6 +19,7 @@ serve(async (req) => {
     const body = await req.json();
     const conversation_id = body.conversation_id ?? body.conversationId;
     const message = body.message;
+    const skipCustomerInsert = Boolean(body.skip_customer_insert);
 
     if (!conversation_id || !message?.trim()) {
       throw new Error("conversation_id e message são obrigatórios");
@@ -99,10 +100,14 @@ CONTEXTO:\n${contextText}`,
     const reply = chatData.choices[0].message.content;
 
     // 7. Salvar Mensagens no Banco
-    await supabaseClient.from("chat_messages").insert([
-      { conversation_id, content: message, sender_type: "customer" },
-      { conversation_id, content: reply, sender_type: "ai_agent" },
-    ]);
+    const rows = [
+      !skipCustomerInsert
+        ? { conversation_id, content: message, sender_type: "customer" }
+        : null,
+      { conversation_id, content: reply, sender_type: "ai_agent", delivery_status: "sent", metadata: { channel: "web_or_whatsapp" } },
+    ].filter(Boolean);
+
+    await supabaseClient.from("chat_messages").insert(rows as Record<string, unknown>[]);
 
     await supabaseClient
       .from("chat_conversations")

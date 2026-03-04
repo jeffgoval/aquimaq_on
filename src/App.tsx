@@ -81,7 +81,11 @@ function AdminRoutes() {
                 <Route index element={<AdminDashboard onNavigate={handleAdminNavigate} />} />
                 <Route path={ROUTE_PATHS.ADMIN_ORDERS} element={<AdminOrdersManagement />} />
                 <Route path={ROUTE_PATHS.ADMIN_PRODUCTS} element={<AdminProductsManagement />} />
-                <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={<AdminBannerManagement />} />
+                <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                        <AdminBannerManagement />
+                    </ProtectedRoute>
+                } />
 
                 {/* Admin and Gerente Routes */}
                 <Route path={ROUTE_PATHS.ADMIN_USERS} element={

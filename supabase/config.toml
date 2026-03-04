@@ -31,3 +31,13 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/process-knowledge-base/deno.json"
 entrypoint = "./functions/process-knowledge-base/index.ts"
+
+[functions.whatsapp-inbound]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-inbound/index.ts"
+
+[functions.whatsapp-send]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/whatsapp-send/index.ts"

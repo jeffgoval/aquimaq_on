@@ -1,17 +1,14 @@
 -- WhatsApp session state for n8n/Evolution API integration
 CREATE TABLE IF NOT EXISTS whatsapp_sessions (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  phone         TEXT NOT NULL UNIQUE,           -- ex: 5511999999999
-  human_mode    BOOLEAN NOT NULL DEFAULT FALSE,
-  chatwoot_contact_id     INTEGER,
-  chatwoot_conversation_id INTEGER,
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone           TEXT NOT NULL UNIQUE,           -- ex: 5511999999999
+  human_mode      BOOLEAN NOT NULL DEFAULT FALSE,
   conversation_id UUID REFERENCES chat_conversations(id) ON DELETE SET NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_whatsapp_sessions_phone ON whatsapp_sessions(phone);
-CREATE INDEX IF NOT EXISTS idx_whatsapp_sessions_chatwoot ON whatsapp_sessions(chatwoot_conversation_id);
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_whatsapp_session_timestamp()

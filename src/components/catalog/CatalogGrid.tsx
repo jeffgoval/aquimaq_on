@@ -74,12 +74,13 @@ export const CatalogGrid: React.FC<CatalogGridProps> = ({
         <div className="w-full">
             {products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-                    {products.map((product) => (
+                    {products.map((product, index) => (
                         <ProductCard
                             key={product.id}
                             product={product}
                             onViewDetails={onProductClick}
                             onAddToCart={onAddToCart}
+                            imageLoading={index < 4 ? 'eager' : 'lazy'}
                         />
                     ))}
                 </div>

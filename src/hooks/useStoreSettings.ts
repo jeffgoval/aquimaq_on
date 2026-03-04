@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { getStoreSettings, saveStoreSettings } from '@/services/storeSettingsService';
 import type { StoreSettings } from '@/types/store';
 
@@ -46,3 +46,4 @@ export const useStoreSettings = () => {
 
   return { settings, isLoading, error, saveSettings };
 };
+

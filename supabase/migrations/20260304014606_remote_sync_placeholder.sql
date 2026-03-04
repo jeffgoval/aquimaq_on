@@ -1,0 +1,2 @@
+-- Placeholder migration to align local history with a migration already present on remote.
+-- This file intentionally contains no schema changes.

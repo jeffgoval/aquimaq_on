@@ -22,11 +22,9 @@ const Image: React.FC<ImageProps> = ({
     ...props
 }) => {
     const [error, setError] = useState(false);
-    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         setError(false);
-        setLoaded(false);
     }, [src, srcSet]);
 
     if (error) {
@@ -58,13 +56,8 @@ const Image: React.FC<ImageProps> = ({
             sizes={sizes}
             alt={alt}
             loading={loading}
-            onLoad={() => setLoaded(true)}
             onError={() => setError(true)}
-            className={`
-        transition-opacity duration-500 ease-in-out
-        ${loaded ? 'opacity-100' : 'opacity-0'}
-        ${className}
-      `}
+            className={className}
             {...props}
         />
     );

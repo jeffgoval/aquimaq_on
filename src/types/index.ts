@@ -102,6 +102,9 @@ export type PaymentStatus =
 
 // Chat (frontend)
 export type ChatStatus = 'active' | 'waiting_human' | 'closed';
+export type ChatQueueState = 'new' | 'bot' | 'waiting_human' | 'assigned' | 'closed';
+export type ChatChannel = 'web' | 'whatsapp';
+export type MessageDeliveryStatus = 'pending' | 'sent' | 'delivered' | 'failed';
 export type MessageSender = 'customer' | 'ai_agent' | 'human_agent';
 
 export interface ChatMessage {
@@ -110,16 +113,21 @@ export interface ChatMessage {
   senderType: MessageSender;
   senderId: string | null;
   content: string;
+  externalMessageId?: string | null;
+  deliveryStatus?: MessageDeliveryStatus;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
 export interface ChatConversation {
   id: string;
-  customerId: string;
+  customerId: string | null;
   customerName?: string;
   assignedAgent: string | null;
   status: ChatStatus;
-  channel: string | null;
+  channel: ChatChannel | null;
+  contactPhone?: string | null;
+  queueState?: ChatQueueState;
   subject: string | null;
   createdAt: string;
   updatedAt: string;

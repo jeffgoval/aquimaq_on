@@ -22,6 +22,7 @@ export interface StoreSettingsSocialMedia {
 /** Formato usado na UI (camelCase) */
 export interface StoreSettings {
   storeName: string;
+  razaoSocial: string;
   description: string;
   cnpj: string;
   email: string;
@@ -34,12 +35,15 @@ export interface StoreSettings {
   bannerUrl?: string;
   maxInstallments: number;
   acceptedPaymentTypes: string[];
+  bannerSlideIntervalMs?: number;
+  reclameAquiUrl: string;
 }
 
 /** Formato da tabela store_settings no Supabase (snake_case). Endereço de origem apenas em origin_* (Melhor Envios / Mercado Pago). */
 export interface StoreSettingsDB {
   id?: string;
   store_name: string;
+  razao_social?: string | null;
   description: string;
   document?: string; // legado; o banco usa cnpj
   cnpj?: string;
@@ -59,6 +63,8 @@ export interface StoreSettingsDB {
   origin_state?: string | null;
   max_installments?: number | null;
   accepted_payment_types?: string[] | null;
+  banner_slide_interval_ms?: number | null;
+  reclame_aqui_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -98,9 +104,10 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
       : defaultAddress;
 
   return {
-    storeName: r.store_name ?? (r as Record<string, unknown>).name ?? '',
+    storeName: r.store_name ?? '',
+    razaoSocial: r.razao_social ?? '',
     description: r.description ?? '',
-    cnpj: (r as Record<string, unknown>).cnpj ?? r.document ?? '',
+    cnpj: r.cnpj ?? r.document ?? '',
     email: r.email ?? '',
     phone: r.phone ?? '',
     whatsapp: r.whatsapp ?? '',
@@ -111,6 +118,8 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     bannerUrl: r.banner_url ?? undefined,
     maxInstallments: r.max_installments ?? 12,
     acceptedPaymentTypes: r.accepted_payment_types ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
+    bannerSlideIntervalMs: r.banner_slide_interval_ms ?? 5000,
+    reclameAquiUrl: r.reclame_aqui_url ?? '',
   };
 };
 
@@ -120,6 +129,7 @@ export const storeSettingsToDB = (
 ): Partial<StoreSettingsDB> => {
   const out: Partial<StoreSettingsDB> = {};
   if (s.storeName !== undefined) out.store_name = s.storeName;
+  if (s.razaoSocial !== undefined) out.razao_social = s.razaoSocial || null;
   if (s.description !== undefined) out.description = s.description;
   if (s.cnpj !== undefined) out.cnpj = s.cnpj;
   if (s.email !== undefined) out.email = s.email;
@@ -140,5 +150,7 @@ export const storeSettingsToDB = (
   if (s.bannerUrl !== undefined) out.banner_url = s.bannerUrl ?? null;
   if (s.maxInstallments !== undefined) out.max_installments = s.maxInstallments;
   if (s.acceptedPaymentTypes !== undefined) out.accepted_payment_types = s.acceptedPaymentTypes;
+  if (s.bannerSlideIntervalMs !== undefined) out.banner_slide_interval_ms = s.bannerSlideIntervalMs;
+  if (s.reclameAquiUrl !== undefined) out.reclame_aqui_url = s.reclameAquiUrl || null;
   return out;
 };

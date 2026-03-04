@@ -16,20 +16,25 @@ export interface Banner {
 
 /** Banners ativos para o hero (período vigente). */
 export const getActiveBanners = async (): Promise<Banner[]> => {
-  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('banners')
     .select('*')
     .eq('is_active', true)
-    .or(`starts_at.is.null,starts_at.lte."${now}"`)
-    .or(`ends_at.is.null,ends_at.gte."${now}"`)
     .order('position', { ascending: true });
 
   if (error) {
     console.error('Error loading banners:', error);
     return [];
   }
-  return (data as Banner[]) ?? [];
+  const now = Date.now();
+  const rows = (data as Banner[]) ?? [];
+  return rows.filter((banner) => {
+    const startsAt = banner.starts_at ? new Date(banner.starts_at).getTime() : null;
+    const endsAt = banner.ends_at ? new Date(banner.ends_at).getTime() : null;
+    const startsOk = startsAt == null || startsAt <= now;
+    const endsOk = endsAt == null || endsAt >= now;
+    return startsOk && endsOk;
+  });
 };
 
 /** Todos os banners (admin). */

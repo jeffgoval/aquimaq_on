@@ -50,13 +50,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
     <div className="flex flex-col h-full">
       {/* Main Image Stage */}
       <div
-        className="w-full h-[400px] md:h-[520px] bg-white border-b border-gray-100 flex items-center justify-center overflow-hidden p-6 relative group cursor-zoom-in"
+        className="w-full h-[320px] sm:h-[420px] lg:h-[500px] rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden p-4 sm:p-6 relative group cursor-zoom-in"
         onClick={() => setIsLightboxOpen(true)}
       >
         <Image
           src={selectedImage}
           alt={productName}
-          className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
         />
         <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1">
           <Maximize2 size={12} /> Ampliar
@@ -65,13 +65,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
 
       {/* Thumbnails Strip */}
       {images.length > 1 && (
-        <div className="flex overflow-x-auto gap-2 p-4 bg-white scrollbar-hide">
+        <div className="flex overflow-x-auto gap-2 p-4 scrollbar-hide">
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setSelectedImage(img)}
               className={`
-                relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all bg-white
+                relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all bg-gray-50
                 ${selectedImage === img
                   ? 'border-agro-600 shadow-sm opacity-100'
                   : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300'}

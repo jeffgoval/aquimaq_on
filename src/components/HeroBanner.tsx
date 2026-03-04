@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { getActiveBanners } from '@/services/bannerService';
 import { useStore } from '@/contexts/StoreContext';
 
-const SLIDE_INTERVAL_MS = 5000;
+const DEFAULT_SLIDE_INTERVAL_MS = 5000;
 
 const HeroBannerSkeleton: React.FC = () => (
     <div className="relative bg-gray-200 animate-pulse h-[400px] md:h-[480px]" aria-hidden />
@@ -17,33 +17,42 @@ const HeroBanner: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const isPausedRef = useRef(false);
     const touchStartXRef = useRef<number | null>(null);
+    const slideIntervalMs = settings?.bannerSlideIntervalMs ?? DEFAULT_SLIDE_INTERVAL_MS;
 
     useEffect(() => {
         getActiveBanners()
-            .then((data) => { if (data?.length) setBanners(data); })
+            .then((data) => {
+                if (data?.length) setBanners(data);
+            })
             .catch((err) => console.error('Error loading banners:', err))
             .finally(() => setLoading(false));
     }, []);
 
-    // Auto-advance slides — pauses when isPausedRef is true
+    // Auto-advance slides - pauses when isPausedRef is true.
     useEffect(() => {
         if (banners.length <= 1) return;
         const interval = setInterval(() => {
             if (!isPausedRef.current) {
                 setCurrentSlide((prev) => (prev + 1) % banners.length);
             }
-        }, SLIDE_INTERVAL_MS);
+        }, slideIntervalMs);
         return () => clearInterval(interval);
-    }, [banners.length]);
+    }, [banners.length, slideIntervalMs]);
 
     const goToSlide = (index: number) => setCurrentSlide(index);
-    const goToPrev = useCallback(() => setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length), [banners.length]);
-    const goToNext = useCallback(() => setCurrentSlide((prev) => (prev + 1) % banners.length), [banners.length]);
+    const goToPrev = useCallback(
+        () => setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length),
+        [banners.length]
+    );
+    const goToNext = useCallback(
+        () => setCurrentSlide((prev) => (prev + 1) % banners.length),
+        [banners.length]
+    );
 
-    // Touch swipe handlers
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartXRef.current = e.touches[0].clientX;
     };
+
     const handleTouchEnd = (e: React.TouchEvent) => {
         if (touchStartXRef.current === null) return;
         const diff = touchStartXRef.current - e.changedTouches[0].clientX;
@@ -64,22 +73,24 @@ const HeroBanner: React.FC = () => {
     return (
         <div
             className="relative bg-gray-100 group"
-            onMouseEnter={() => { isPausedRef.current = true; }}
-            onMouseLeave={() => { isPausedRef.current = false; }}
+            onMouseEnter={() => {
+                isPausedRef.current = true;
+            }}
+            onMouseLeave={() => {
+                isPausedRef.current = false;
+            }}
         >
             <div
                 className="max-w-[1920px] mx-auto relative overflow-hidden h-[400px] md:h-[480px]"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Slides */}
                 {banners.map((slide, index) => (
                     <div
                         key={slide.id}
                         className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
                         aria-hidden={index !== currentSlide}
                     >
-                        {/* Background */}
                         <div className="absolute inset-0">
                             <div
                                 className="w-full h-full bg-cover bg-center bg-no-repeat"
@@ -91,7 +102,6 @@ const HeroBanner: React.FC = () => {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                         </div>
 
-                        {/* Content */}
                         <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
                             <div className="max-w-xl text-white py-12">
                                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 shadow-sm">
@@ -136,7 +146,6 @@ const HeroBanner: React.FC = () => {
                     </div>
                 ))}
 
-                {/* Navigation Arrows */}
                 {banners.length > 1 && (
                     <>
                         <button
@@ -156,7 +165,6 @@ const HeroBanner: React.FC = () => {
                     </>
                 )}
 
-                {/* Dots */}
                 {banners.length > 1 && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
                         {banners.map((_, index) => (

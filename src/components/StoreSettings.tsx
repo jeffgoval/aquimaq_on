@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, MessageCircle, Instagram, Facebook, Youtube, CreditCard } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, MessageCircle, Instagram, Facebook, Youtube, CreditCard, Clock, Star } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
@@ -12,10 +12,12 @@ interface StoreSettingsProps {
 /** Formulário alinhado a StoreSettings (camelCase) para evitar duplicação */
 interface StoreConfig {
     storeName: string;
+    razaoSocial: string;
     cnpj: string;
     phone: string;
     email: string;
     whatsapp: string;
+    openingHours: string;
     address: {
         zip: string;
         street: string;
@@ -33,6 +35,7 @@ interface StoreConfig {
     logoUrl?: string;
     maxInstallments: number;
     acceptedPaymentTypes: string[];
+    reclameAquiUrl: string;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -48,10 +51,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
     const [formData, setFormData] = useState<StoreConfig>({
         storeName: '',
+        razaoSocial: '',
         cnpj: '',
         phone: '',
         email: '',
         whatsapp: '',
+        openingHours: '',
         address: {
             zip: '',
             street: '',
@@ -69,6 +74,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         logoUrl: '',
         maxInstallments: 12,
         acceptedPaymentTypes: ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
+        reclameAquiUrl: '',
     });
 
     // Sync formData with loaded settings (camelCase)
@@ -76,10 +82,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         if (settings) {
             setFormData({
                 storeName: settings.storeName,
+                razaoSocial: settings.razaoSocial || '',
                 cnpj: maskDocument(settings.cnpj || ''),
                 phone: maskPhone(settings.phone || ''),
                 email: settings.email || '',
                 whatsapp: maskPhone(settings.whatsapp || ''),
+                openingHours: settings.openingHours || '',
                 address: {
                     zip: maskCEP(settings.address.zip || ''),
                     street: settings.address.street || '',
@@ -97,6 +105,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 logoUrl: settings.logoUrl || '',
                 maxInstallments: settings.maxInstallments ?? 12,
                 acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
+                reclameAquiUrl: settings.reclameAquiUrl || '',
             });
         }
     }, [settings]);
@@ -184,10 +193,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
         const result = await saveSettings({
             storeName: formData.storeName,
+            razaoSocial: formData.razaoSocial,
             cnpj: formData.cnpj.replace(/\D/g, ''),
             phone: formData.phone.replace(/\D/g, ''),
             email: formData.email,
             whatsapp: formData.whatsapp.replace(/\D/g, ''),
+            openingHours: formData.openingHours,
             address: {
                 zip: formData.address.zip.replace(/\D/g, ''),
                 street: formData.address.street,
@@ -201,6 +212,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             logoUrl: formData.logoUrl || undefined,
             maxInstallments: formData.maxInstallments,
             acceptedPaymentTypes: formData.acceptedPaymentTypes,
+            reclameAquiUrl: formData.reclameAquiUrl,
         });
 
         setIsLoading(false);
@@ -293,6 +305,21 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Razão Social</label>
+                                        <div className="relative">
+                                            <FileText className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                name="razaoSocial"
+                                                value={formData.razaoSocial}
+                                                onChange={handleChange}
+                                                placeholder="Ex: Aquimaq Comércio de Máquinas Ltda."
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-400">Exibida no rodapé (exigência CDC).</p>
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">CNPJ</label>
                                         <div className="relative">
                                             <FileText className="absolute left-3.5 top-3 text-gray-400" size={18} />
@@ -334,7 +361,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="space-y-2 lg:col-span-2">
+                                    <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">E-mail</label>
                                         <div className="relative">
                                             <Mail className="absolute left-3.5 top-3 text-gray-400" size={18} />
@@ -346,6 +373,21 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                             />
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Horário de Atendimento</label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                name="openingHours"
+                                                value={formData.openingHours}
+                                                onChange={handleChange}
+                                                placeholder="Ex: Seg a Sex, 8h às 18h | Sáb, 8h às 12h"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-400">Exibido no rodapé na seção de atendimento.</p>
                                     </div>
                                 </div>
                             </section>
@@ -542,6 +584,29 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+                            </section>
+
+                            {/* Rodapé & Confiança */}
+                            <section className="space-y-6">
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                    <Star className="text-agro-600" size={20} />
+                                    Rodapé &amp; Confiança
+                                </h3>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700">URL do Reclame Aqui</label>
+                                    <div className="relative">
+                                        <Star className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                        <input
+                                            type="url"
+                                            name="reclameAquiUrl"
+                                            value={formData.reclameAquiUrl}
+                                            onChange={handleChange}
+                                            placeholder="https://www.reclameaqui.com.br/empresa/aquimaq/"
+                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
                                 </div>
                             </section>
 

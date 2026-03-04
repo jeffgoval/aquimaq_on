@@ -8,7 +8,9 @@
     "type-check": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "test": "tsx --test src/utils/__tests__/cart-calculations.test.ts",
+    "test:watch": "tsx --watch --test src/utils/__tests__/cart-calculations.test.ts"
   },
   "dependencies": {
     "openai": "^4.77.0",

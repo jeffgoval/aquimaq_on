@@ -1,4 +1,4 @@
-# Aquimap - Soluções Agropecuárias Online
+# Aquimaq - Soluções Agropecuárias Online
 
 E-commerce especializado em produtos agropecuários, ferramentas, peças e sementes.
 
@@ -36,7 +36,7 @@ E-commerce especializado em produtos agropecuários, ferramentas, peças e semen
    npx supabase link --project-ref <project-ref>
    npx supabase db push
    ```
-   As políticas RLS (Row Level Security) estão em `supabase/migrations/20250223100000_crud_rls_policies.sql`. Sem elas, o CRUD falha (leitura/escrita negada). Se aplicou o projeto manualmente, execute esse SQL no Dashboard (SQL Editor) ou via `db push`.
+   As políticas RLS (Row Level Security) devem ser aplicadas pelas migrations disponíveis em `supabase/migrations/`. Se aplicou o projeto manualmente, execute as migrations no Dashboard (SQL Editor) ou via `db push`.
 
 5. **Storage**: Crie no Dashboard (Storage > New bucket) os buckets **públicos**: `store-assets`, `product-images`, `knowledge-base`.
 

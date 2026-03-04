@@ -15,9 +15,14 @@ interface ProductCardProps {
     product: Product;
     onAddToCart: (product: Product, quantity?: number) => void;
     onViewDetails?: (product: Product) => void;
+    imageLoading?: 'eager' | 'lazy';
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+    product,
+    onAddToCart,
+    imageLoading = 'lazy',
+}) => {
     const { isInWishlist, toggleWishlist } = useWishlist();
     const isFavorite = isInWishlist(product.id);
 
@@ -49,6 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
                 <Image
                     src={product.imageUrl}
                     alt={product.name}
+                    loading={imageLoading}
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                 />
 
