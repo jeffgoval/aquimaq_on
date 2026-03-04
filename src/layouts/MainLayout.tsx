@@ -2,7 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import WhatsAppCTA from '@/components/WhatsAppCTA';
 import CookieConsent from '@/components/CookieConsent';
 import { useCart } from '@/features/cart';
 import { ProductCategory } from '@/types';
@@ -57,7 +56,6 @@ const MainLayout: React.FC = () => {
             </main>
 
             <Footer />
-            <WhatsAppCTA />
             <CookieConsent />
         </div>
     );

@@ -184,6 +184,16 @@ export const getAssignmentEvents = async (conversationId: string): Promise<ChatA
   return (data ?? []) as ChatAssignmentEventRow[];
 };
 
+export const getConversationById = async (id: string): Promise<ChatConversation | null> => {
+  const { data, error } = await (supabase
+    .from('chat_conversations')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()) as any;
+  if (error || !data) return null;
+  return mapConversation(data as ChatConversationRow);
+};
+
 export const subscribeToMessages = (
   conversationId: string,
   callback: (message: ChatMessage) => void
