@@ -55,6 +55,8 @@ const Cart: React.FC<CartProps> = ({
     const [showAddressModal, setShowAddressModal] = useState(false);
 
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+    const outOfStockItems = items.filter(i => (i.stock ?? 0) === 0);
+    const hasOutOfStock = outOfStockItems.length > 0;
 
     const isAddressComplete = (p: ProfileRow | null) =>
         !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
@@ -331,6 +333,19 @@ const Cart: React.FC<CartProps> = ({
 
                             {/* ── CTA ── */}
                             <div className="pt-2 border-t border-gray-100">
+                                {hasOutOfStock && (
+                                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                                        <p className="font-semibold mb-1 flex items-center gap-1.5">
+                                            <AlertTriangle size={14} /> Itens indisponíveis no carrinho
+                                        </p>
+                                        <ul className="list-disc list-inside space-y-0.5 text-xs">
+                                            {outOfStockItems.map(i => (
+                                                <li key={i.id}>{i.name} — <span className="font-medium">Esgotado</span></li>
+                                            ))}
+                                        </ul>
+                                        <p className="mt-1.5 text-xs text-red-600">Remova os itens esgotados para continuar.</p>
+                                    </div>
+                                )}
                                 {!profile ? (
                                     <button
                                         onClick={() => navigate(ROUTES.LOGIN)}
@@ -361,7 +376,7 @@ const Cart: React.FC<CartProps> = ({
                                 ) : (
                                     <button
                                         onClick={onCheckout}
-                                        disabled={isProcessing}
+                                        disabled={isProcessing || hasOutOfStock}
                                         className="w-full flex items-center justify-center gap-2 py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-base rounded-xl transition-all shadow-lg shadow-orange-200/60 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
                                     >
                                         {isProcessing ? (

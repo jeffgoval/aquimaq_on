@@ -50,14 +50,12 @@ const AdminProductsManagement: React.FC = () => {
 
     useEffect(() => {
         loadProducts();
-    }, [isVendedor, user?.id]);
+    }, []);
 
     const loadProducts = async () => {
         try {
             setLoading(true);
-            // Vendedor vê apenas seus próprios produtos
-            const vendedorId = isVendedor ? user?.id : undefined;
-            const data = await getProductsAdmin(vendedorId);
+            const data = await getProductsAdmin();
 
             const mapped = (data || []).map((p: ProductRow) => ({
                 id: p.id,

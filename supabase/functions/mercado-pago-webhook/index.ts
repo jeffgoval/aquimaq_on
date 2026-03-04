@@ -157,16 +157,37 @@ Deno.serve(async (req) => {
 
     // 2. Update order status
     const newOrderStatus = mapOrderStatus(mappedStatus);
-    const { error: orderError } = await supabase
+    const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .update({
             status: newOrderStatus,
             updated_at: new Date().toISOString(),
         })
-        .eq("id", orderIdUuid);
+        .eq("id", orderIdUuid)
+        .select("id, stock_decremented")
+        .maybeSingle();
 
     if (orderError) {
         console.error("Webhook DB order update error:", orderError.message);
+    }
+
+    // 3. Decrement stock when payment is approved (once only)
+    if (mappedStatus === "approved" && orderRow && !orderRow.stock_decremented) {
+        const { error: stockError } = await supabase.rpc("decrement_stock_for_order", {
+            p_order_id: orderIdUuid,
+        });
+
+        if (stockError) {
+            console.error("Stock decrement error:", stockError.message);
+        } else {
+            // Mark so we never decrement twice for the same order
+            await supabase
+                .from("orders")
+                .update({ stock_decremented: true })
+                .eq("id", orderIdUuid);
+
+            console.log("Stock decremented for order:", orderIdUuid);
+        }
     }
 
     console.log("Webhook processed:", JSON.stringify({

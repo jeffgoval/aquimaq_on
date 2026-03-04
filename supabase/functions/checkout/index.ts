@@ -138,15 +138,40 @@ Deno.serve(async (req) => {
     }
 
     // 2. Insert order_items (exclude the shipping pseudo-item)
-    const orderItems = payload.items
-        .filter((item) => item.id !== "shipping")
-        .map((item) => ({
-            order_id: orderRow.id,
-            product_id: item.id ?? null,
-            product_name: item.title,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-        }));
+    const realItems = payload.items.filter((item) => item.id !== "shipping");
+
+    // Server-side stock validation
+    const productIds = realItems.map((i) => i.id).filter(Boolean) as string[];
+    if (productIds.length > 0) {
+        const { data: stockRows } = await supabaseAdmin
+            .from("products")
+            .select("id, name, stock")
+            .in("id", productIds);
+
+        for (const item of realItems) {
+            if (!item.id) continue;
+            const product = (stockRows ?? []).find((p: { id: string }) => p.id === item.id);
+            if (!product) continue;
+            if ((product as { stock: number }).stock < item.quantity) {
+                // Remove the order we just created before returning the error
+                await supabaseAdmin.from("orders").delete().eq("id", orderRow.id);
+                return new Response(
+                    JSON.stringify({
+                        error: `Estoque insuficiente para "${(product as { name: string }).name}". Disponível: ${(product as { stock: number }).stock}.`,
+                    }),
+                    { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+        }
+    }
+
+    const orderItems = realItems.map((item) => ({
+        order_id: orderRow.id,
+        product_id: item.id ?? null,
+        product_name: item.title,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+    }));
     if (orderItems.length > 0) {
         await supabaseAdmin.from("order_items").insert(orderItems);
     }
