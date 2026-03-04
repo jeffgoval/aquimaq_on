@@ -1,12 +1,15 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '@/types';
+import { useStore } from '@/contexts/StoreContext';
 
 interface ProductSEOProps {
     product: Product;
 }
 
 const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
+    const { settings } = useStore();
+    const maxInstallments = settings?.maxInstallments ?? 12;
     // Schema.org structured data for Google Rich Snippets
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
@@ -48,7 +51,7 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
             {/* Primary SEO Tags */}
             <title>{`${product.name} | Melhor Preço na Aquimaq`}</title>
             <meta name="title" content={`${product.name} | Aquimaq`} />
-            <meta name="description" content={`Compre ${product.name} na Aquimaq. ${product.description ? product.description.substring(0, 150) : ''}... Frete Grátis e Parcelamento em até 10x.`} />
+            <meta name="description" content={`Compre ${product.name} na Aquimaq. ${product.description ? product.description.substring(0, 150) : ''}... Frete Grátis e Parcelamento em até ${maxInstallments}x.`} />
             <link rel="canonical" href={window.location.href.split('?')[0]} />
 
             {/* Open Graph / Facebook */}

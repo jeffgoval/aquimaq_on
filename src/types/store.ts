@@ -32,6 +32,8 @@ export interface StoreSettings {
   socialMedia: StoreSettingsSocialMedia;
   logoUrl?: string;
   bannerUrl?: string;
+  maxInstallments: number;
+  acceptedPaymentTypes: string[];
 }
 
 /** Formato da tabela store_settings no Supabase (snake_case). Endereço de origem apenas em origin_* (Melhor Envios / Mercado Pago). */
@@ -55,6 +57,8 @@ export interface StoreSettingsDB {
   origin_district?: string | null;
   origin_city?: string | null;
   origin_state?: string | null;
+  max_installments?: number | null;
+  accepted_payment_types?: string[] | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -105,6 +109,8 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     socialMedia: r.social_media ?? defaultSocial,
     logoUrl: r.logo_url ?? undefined,
     bannerUrl: r.banner_url ?? undefined,
+    maxInstallments: r.max_installments ?? 12,
+    acceptedPaymentTypes: r.accepted_payment_types ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
   };
 };
 
@@ -132,5 +138,7 @@ export const storeSettingsToDB = (
   if (s.socialMedia !== undefined) out.social_media = s.socialMedia;
   if (s.logoUrl !== undefined) out.logo_url = s.logoUrl ?? null;
   if (s.bannerUrl !== undefined) out.banner_url = s.bannerUrl ?? null;
+  if (s.maxInstallments !== undefined) out.max_installments = s.maxInstallments;
+  if (s.acceptedPaymentTypes !== undefined) out.accepted_payment_types = s.acceptedPaymentTypes;
   return out;
 };

@@ -104,10 +104,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        // Vendedor: apenas Dashboard, Pedidos e Produtos
-        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
-        // Gerente: oculta itens exclusivos de admin
-        if (!isAdmin && !isVendedor && ['SETTINGS', 'AI_SETTINGS', 'ANALYTICS'].includes(item.id)) return false;
+        // Vendedor: dashboard, pedidos, produtos e chat
+        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS', 'CHAT'].includes(item.id)) return false;
+        // Gerente: oculta itens exclusivos de admin (IA e analytics), mas libera configurações
+        if (!isAdmin && !isVendedor && ['AI_SETTINGS', 'ANALYTICS'].includes(item.id)) return false;
         return true;
     });
 

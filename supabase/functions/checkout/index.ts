@@ -151,7 +151,20 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("order_items").insert(orderItems);
     }
 
-    // 3. Create Mercado Pago preference
+    // 3. Read payment settings from store_settings
+    const { data: storeRow } = await supabaseAdmin
+        .from("store_settings")
+        .select("max_installments, accepted_payment_types")
+        .maybeSingle();
+
+    const maxInstallments = (storeRow as any)?.max_installments ?? 12;
+    const acceptedTypes: string[] = (storeRow as any)?.accepted_payment_types ?? ["credit_card", "debit_card", "bank_transfer", "ticket"];
+    const allTypes = ["credit_card", "debit_card", "bank_transfer", "ticket"];
+    const excludedPaymentTypes = allTypes
+        .filter((t) => !acceptedTypes.includes(t))
+        .map((t) => ({ id: t }));
+
+    // 4. Create Mercado Pago preference
     const backUrls = {
         success: `${payload.back_url_base}/pagamento/sucesso`,
         failure: `${payload.back_url_base}/pagamento/falha`,
@@ -176,6 +189,10 @@ Deno.serve(async (req) => {
                 statement_descriptor: "AQUIMAQ",
                 back_urls: backUrls,
                 notification_url: webhookUrl,
+                payment_methods: {
+                    installments: maxInstallments,
+                    ...(excludedPaymentTypes.length > 0 && { excluded_payment_types: excludedPaymentTypes }),
+                },
                 // payer omitted — avoids "uma das partes é de teste" sandbox error
                 // auto_return omitted — requires public HTTPS URLs
             },

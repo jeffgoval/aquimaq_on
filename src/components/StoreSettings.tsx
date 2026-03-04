@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, MessageCircle, Instagram, Facebook, Youtube } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, MessageCircle, Instagram, Facebook, Youtube, CreditCard } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
@@ -31,7 +31,18 @@ interface StoreConfig {
         youtube: string;
     };
     logoUrl?: string;
+    maxInstallments: number;
+    acceptedPaymentTypes: string[];
 }
+
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+    credit_card: 'Cartão de Crédito',
+    debit_card: 'Cartão de Débito',
+    bank_transfer: 'PIX',
+    ticket: 'Boleto',
+};
+
+const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
@@ -55,7 +66,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             facebook: '',
             youtube: ''
         },
-        logoUrl: ''
+        logoUrl: '',
+        maxInstallments: 12,
+        acceptedPaymentTypes: ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
     });
 
     // Sync formData with loaded settings (camelCase)
@@ -81,7 +94,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     facebook: settings.socialMedia?.facebook || '',
                     youtube: settings.socialMedia?.youtube || ''
                 },
-                logoUrl: settings.logoUrl || ''
+                logoUrl: settings.logoUrl || '',
+                maxInstallments: settings.maxInstallments ?? 12,
+                acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
             });
         }
     }, [settings]);
@@ -183,7 +198,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 state: formData.address.state
             },
             socialMedia: formData.socialMedia,
-            logoUrl: formData.logoUrl || undefined
+            logoUrl: formData.logoUrl || undefined,
+            maxInstallments: formData.maxInstallments,
+            acceptedPaymentTypes: formData.acceptedPaymentTypes,
         });
 
         setIsLoading(false);
@@ -474,6 +491,56 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                             onChange={(e) => handleAddressChange('state', e.target.value.toUpperCase())}
                                             className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                         />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Pagamento */}
+                            <section className="space-y-6">
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                    <CreditCard className="text-agro-600" size={20} />
+                                    Configurações de Pagamento
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Max installments */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Máximo de Parcelas</label>
+                                        <select
+                                            value={formData.maxInstallments}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, maxInstallments: Number(e.target.value) }))}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                        >
+                                            {[1, 2, 3, 4, 6, 9, 12].map(n => (
+                                                <option key={n} value={n}>{n === 1 ? 'Somente à vista' : `Até ${n}x`}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-gray-400">Número máximo de parcelas exibidas no Mercado Pago.</p>
+                                    </div>
+
+                                    {/* Accepted payment types */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Formas de Pagamento Aceitas</label>
+                                        <div className="space-y-2 pt-1">
+                                            {ALL_PAYMENT_TYPES.map(type => (
+                                                <label key={type} className="flex items-center gap-2 cursor-pointer select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.acceptedPaymentTypes.includes(type)}
+                                                        onChange={(e) => {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                acceptedPaymentTypes: e.target.checked
+                                                                    ? [...prev.acceptedPaymentTypes, type]
+                                                                    : prev.acceptedPaymentTypes.filter(t => t !== type),
+                                                            }));
+                                                        }}
+                                                        className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{PAYMENT_TYPE_LABELS[type]}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </section>

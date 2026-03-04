@@ -90,7 +90,7 @@ function AdminRoutes() {
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_SETTINGS} element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <StoreSettings onBack={() => navigate(ROUTES.ADMIN)} />
                     </ProtectedRoute>
                 } />
@@ -105,7 +105,7 @@ function AdminRoutes() {
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
                         <AdminChatPage />
                     </ProtectedRoute>
                 } />

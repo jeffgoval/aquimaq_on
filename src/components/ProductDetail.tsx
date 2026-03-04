@@ -84,7 +84,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const isOutOfStock = product.stock === 0;
     const isLowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
     const pixPrice = product.price * (1 - PIX_DISCOUNT);
-    const installmentValue = product.price / 10;
+    const maxInstallments = settings?.maxInstallments ?? 12;
+    const installmentValue = product.price / maxInstallments;
     const hasWholesale = product.wholesaleMinAmount != null && product.wholesaleDiscountPercent != null;
 
     const handleCalculateShipping = useCallback(async (e: React.FormEvent) => {
@@ -127,9 +128,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const trustSeals = [
         { icon: ShieldCheck, label: 'Compra Segura' },
         { icon: Truck, label: 'Entrega Brasil' },
-        { icon: CreditCard, label: '10x Sem Juros' },
+        { icon: CreditCard, label: `${maxInstallments}x Sem Juros` },
         { icon: RefreshCcw, label: 'Troca Fácil' },
-    ] as const;
+    ];
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
@@ -254,7 +255,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         <p className="text-sm text-gray-500">
                             ou{' '}
                             <span className="font-semibold text-gray-700">
-                                10x de {formatCurrency(installmentValue)}
+                                {maxInstallments}x de {formatCurrency(installmentValue)}
                             </span>{' '}
                             sem juros
                         </p>
@@ -446,11 +447,32 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                                     {product.description}
                                 </p>
                             )}
-                            {activeTab === 'especificacoes' && (
-                                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                                    {product.technicalSpecs}
-                                </p>
-                            )}
+                            {activeTab === 'especificacoes' && (() => {
+                                let specs: Record<string, string> | null = null;
+                                try { specs = JSON.parse(product.technicalSpecs); } catch {}
+                                if (specs && typeof specs === 'object' && !Array.isArray(specs)) {
+                                    const entries = Object.entries(specs);
+                                    return (
+                                        <div className="overflow-hidden rounded-lg border border-gray-100">
+                                            <table className="w-full text-sm">
+                                                <tbody>
+                                                    {entries.map(([key, val], i) => (
+                                                        <tr key={key} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                                            <td className="py-2.5 px-4 font-medium text-gray-700 w-2/5 border-r border-gray-100">{key}</td>
+                                                            <td className="py-2.5 px-4 text-gray-600">{String(val)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                                        {product.technicalSpecs}
+                                    </p>
+                                );
+                            })()}
                             {activeTab === 'documentos' && (
                                 <ul className="space-y-3">
                                     {productDocs.map(doc => (
