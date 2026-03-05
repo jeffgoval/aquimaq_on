@@ -21,8 +21,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 <title>{storeName}</title>
                 <link rel="icon" href={favicon} />
                 <link rel="apple-touch-icon" href={favicon} />
-                <meta property="og:image" content={favicon} />
-                <meta name="twitter:image" content={favicon} />
+                <meta property="og:image" content={settings?.logoUrl ?? '/og-image.png'} />
+                <meta name="twitter:image" content={settings?.logoUrl ?? '/og-image.png'} />
             </Helmet>
             {children}
         </StoreContext.Provider>
