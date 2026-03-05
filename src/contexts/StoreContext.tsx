@@ -1,4 +1,5 @@
 ﻿import React, { createContext, useContext } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useStoreSettings, StoreSettings } from '@/hooks/useStoreSettings';
 
 interface StoreContextValue {
@@ -11,8 +12,18 @@ const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { settings, isLoading } = useStoreSettings();
 
+    const favicon = settings?.logoUrl ?? '/icon.svg';
+    const storeName = settings?.storeName ?? 'Aquimaq';
+
     return (
         <StoreContext.Provider value={{ settings, isLoading }}>
+            <Helmet>
+                <title>{storeName}</title>
+                <link rel="icon" href={favicon} />
+                <link rel="apple-touch-icon" href={favicon} />
+                <meta property="og:image" content={favicon} />
+                <meta name="twitter:image" content={favicon} />
+            </Helmet>
             {children}
         </StoreContext.Provider>
     );
