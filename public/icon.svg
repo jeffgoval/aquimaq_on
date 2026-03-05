@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fundo azul marinho arredondado -->
+  <rect width="512" height="512" fill="#1a2f6e" rx="96"/>
+  <!-- Letra A estilizada — traço esquerdo -->
+  <polygon points="80,420 200,92 256,200 160,420" fill="white"/>
+  <!-- Traço direito -->
+  <polygon points="432,420 312,92 256,200 352,420" fill="white"/>
+  <!-- Barra horizontal do A (em verde) -->
+  <rect x="168" y="270" width="176" height="52" rx="8" fill="#7ab317"/>
+  <!-- Engrenagem pequena no canto superior direito -->
+  <circle cx="390" cy="122" r="60" fill="none" stroke="#7ab317" stroke-width="22"/>
+  <circle cx="390" cy="122" r="22" fill="#7ab317"/>
+  <!-- Dentes da engrenagem (simplificado, 6 dentes) -->
+  <rect x="378" y="48" width="24" height="30" rx="6" fill="#7ab317"/>
+  <rect x="378" y="166" width="24" height="30" rx="6" fill="#7ab317"/>
+  <rect x="316" y="110" width="30" height="24" rx="6" fill="#7ab317"/>
+  <rect x="434" y="110" width="30" height="24" rx="6" fill="#7ab317"/>
+  <rect x="335" y="67" width="24" height="30" rx="6" transform="rotate(45 347 82)" fill="#7ab317"/>
+  <rect x="420" y="147" width="24" height="30" rx="6" transform="rotate(45 432 162)" fill="#7ab317"/>
+  <rect x="335" y="147" width="30" height="24" rx="6" transform="rotate(-45 350 159)" fill="#7ab317"/>
+  <rect x="415" y="67" width="30" height="24" rx="6" transform="rotate(-45 430 79)" fill="#7ab317"/>
+</svg>
