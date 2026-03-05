@@ -105,12 +105,6 @@ const AboutPage: React.FC = () => {
                         </section>
                     </div>
 
-                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
-                        <span>Quer fazer parte da nossa equipe?</span>
-                        <Link to={ROUTES.WORK_WITH_US} className="text-agro-600 font-semibold hover:underline">
-                            Trabalhe Conosco
-                        </Link>
-                    </div>
                 </div>
             </div>
         </div>

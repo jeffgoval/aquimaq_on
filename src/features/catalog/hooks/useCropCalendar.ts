@@ -15,7 +15,7 @@ function isCultureInSeasonForMonth(row: CropCalendarRow, month: number): boolean
   return inPlant || inHarvest;
 }
 
-const CACHE_KEY = 'crop_calendar_cache';
+const CACHE_KEY = 'crop_calendar_cache_v2';
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 interface CacheData {

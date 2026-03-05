@@ -28,7 +28,6 @@ const PaymentPendingPage = lazy(() => import('./pages/PaymentPendingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
-const WorkWithUsPage = lazy(() => import('./pages/WorkWithUsPage'));
 
 // Admin Components
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -148,7 +147,6 @@ function AppContent() {
                             <Route path={ROUTE_PATHS.CONTACT} element={<ContactPage />} />
                             <Route path={ROUTE_PATHS.ABOUT} element={<AboutPage />} />
                             <Route path={ROUTE_PATHS.FAQ} element={<FAQPage />} />
-                            <Route path={ROUTE_PATHS.WORK_WITH_US} element={<WorkWithUsPage />} />
                         </Route>
 
                         {/* Admin Routes */}

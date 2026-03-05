@@ -29,3 +29,6 @@ aquimaq_on/
 .vercel
 .env*.local
 .claude/
+
+# Supabase CLI temp files
+supabase/supabase/

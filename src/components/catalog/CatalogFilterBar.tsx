@@ -127,7 +127,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300'
                                     }`}
                             >
-                                <option value="">Cultura</option>
+                                <option value="">Fase do Café</option>
                                 {availableCultures.map((c) => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
