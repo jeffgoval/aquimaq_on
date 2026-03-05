@@ -5,12 +5,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-whatsapp-signature",
 };
 
-type InboundBody = {
+/** Formato simplificado (legado/teste). */
+type SimpleBody = {
   message_id?: string;
   from_phone?: string;
   text?: string;
   timestamp?: string;
   event_type?: string;
+};
+
+/** Payload nativo Evolution API v2 (MESSAGES_UPSERT). */
+type EvolutionPayload = {
+  event?: string;
+  instance?: string;
+  data?: {
+    key?: { id?: string; remoteJid?: string; fromMe?: boolean };
+    message?: { conversation?: string; extendedTextMessage?: { text?: string } };
+    messageTimestamp?: number | string;
+    pushName?: string;
+  };
 };
 
 function json(status: number, payload: Record<string, unknown>) {
@@ -57,19 +70,48 @@ Deno.serve(async (req) => {
     if (!provided || provided !== expected) return json(401, { error: "Invalid signature" });
   }
 
-  let body: InboundBody;
+  let parsed: unknown;
   try {
-    body = JSON.parse(rawBody) as InboundBody;
+    parsed = JSON.parse(rawBody);
   } catch {
     return json(400, { error: "Invalid JSON body" });
   }
 
-  const messageId = body.message_id?.trim();
-  const text = body.text?.trim();
-  const phone = normalizePhone(body.from_phone ?? "");
-  const eventType = (body.event_type ?? "message").toLowerCase();
-  if (!messageId || !text || !phone) return json(400, { error: "message_id, from_phone and text are required" });
-  if (eventType !== "message") return json(200, { ignored: true });
+  let messageId: string;
+  let text: string;
+  let phone: string;
+  let timestamp: string;
+  let eventType: string;
+
+  const evo = parsed as EvolutionPayload;
+  if (evo?.data?.key != null && (evo.event === "messages.upsert" || evo.event === "MESSAGES_UPSERT")) {
+    if (evo.data.key.fromMe === true) {
+      return json(200, { ignored: true, reason: "fromMe" });
+    }
+    const key = evo.data.key;
+    const msg = evo.data.message;
+    messageId = (key.id ?? "").trim();
+    text = (msg?.conversation ?? msg?.extendedTextMessage?.text ?? "").trim();
+    const remoteJid = (key.remoteJid ?? "").replace(/\D/g, "");
+    phone = remoteJid ? normalizePhone(remoteJid.replace(/@.*$/, "")) : "";
+    const ts = evo.data.messageTimestamp;
+    timestamp = ts != null ? String(ts) : new Date().toISOString();
+    eventType = "message";
+  } else {
+    const body = parsed as SimpleBody;
+    messageId = body.message_id?.trim() ?? "";
+    text = body.text?.trim() ?? "";
+    phone = normalizePhone(body.from_phone ?? "");
+    timestamp = body.timestamp ?? new Date().toISOString();
+    eventType = (body.event_type ?? "message").toLowerCase();
+  }
+
+  if (!messageId || !text || !phone) {
+    return json(400, { error: "message_id, from_phone and text are required" });
+  }
+  if (eventType !== "message") {
+    return json(200, { ignored: true });
+  }
 
   const supabase = createClient(supabaseUrl, serviceRole);
 
@@ -103,30 +145,19 @@ Deno.serve(async (req) => {
   let humanMode = sessionRow?.human_mode ?? false;
 
   if (!conversationId) {
-    const { data: lastSession } = await supabase
-      .from("whatsapp_sessions")
-      .select("assigned_agent")
-      .not("assigned_agent", "is", null)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const { data: rrAgent } = await supabase.rpc("next_vendedor_for_handoff", {
-      last_agent_id: lastSession?.assigned_agent ?? null,
-    });
-    assignedAgent = rrAgent ?? null;
-    humanMode = Boolean(assignedAgent);
+    assignedAgent = null;
+    humanMode = false;
 
     const { data: conv, error: convError } = await supabase
       .from("chat_conversations")
       .insert({
         customer_id: null,
-        status: humanMode ? "active" : "waiting_human",
+        status: "active",
         channel: "whatsapp",
         subject: "Atendimento WhatsApp",
         contact_phone: phone,
-        assigned_agent: assignedAgent,
-        current_queue_state: humanMode ? "assigned" : "bot",
+        assigned_agent: null,
+        current_queue_state: "bot",
       })
       .select("id")
       .single();
@@ -136,25 +167,16 @@ Deno.serve(async (req) => {
     await supabase.from("whatsapp_sessions").upsert({
       phone,
       conversation_id: conversationId,
-      human_mode: humanMode,
-      assigned_agent: assignedAgent,
-      last_customer_message_at: body.timestamp ?? new Date().toISOString(),
+      human_mode: false,
+      assigned_agent: null,
+      last_customer_message_at: timestamp,
       unread_count: 1,
     }, { onConflict: "phone" });
-
-    if (assignedAgent) {
-      await supabase.from("chat_assignment_events").insert({
-        conversation_id: conversationId,
-        from_agent: null,
-        to_agent: assignedAgent,
-        reason: "round_robin_new_conversation",
-      });
-    }
   } else {
     await supabase
       .from("whatsapp_sessions")
       .update({
-        last_customer_message_at: body.timestamp ?? new Date().toISOString(),
+        last_customer_message_at: timestamp,
         unread_count: (sessionRow?.unread_count ?? 0) + 1,
       })
       .eq("phone", phone);
@@ -175,15 +197,21 @@ Deno.serve(async (req) => {
     .update({
       updated_at: new Date().toISOString(),
       current_queue_state: humanMode ? "assigned" : "bot",
-      status: humanMode ? "active" : "waiting_human",
+      status: "active",
     })
     .eq("id", conversationId);
 
   let routing: "ai" | "human" = humanMode ? "human" : "ai";
 
   if (!humanMode) {
+    const internalSecret = Deno.env.get("AI_CHAT_INTERNAL_SECRET");
     const { data: aiData, error: aiError } = await supabase.functions.invoke("ai-chat", {
-      body: { conversation_id: conversationId, message: text, skip_customer_insert: true },
+      body: {
+        conversation_id: conversationId,
+        message: text,
+        skip_customer_insert: true,
+        ...(internalSecret ? { _internal_secret: internalSecret } : {}),
+      },
     });
     if (aiError) {
       routing = "human";
@@ -213,8 +241,8 @@ Deno.serve(async (req) => {
               },
               body: JSON.stringify({
                 number: phone,
-                options: { delay: 1200 },
                 text: aiData.reply,
+                delay: 1200,
               }),
             },
           );

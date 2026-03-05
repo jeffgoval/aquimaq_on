@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           number: conversation.contact_phone,
-          options: { delay: 1200 },
           text: content,
+          delay: 1200,
         }),
       },
     );

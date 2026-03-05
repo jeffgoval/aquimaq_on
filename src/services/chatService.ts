@@ -38,10 +38,10 @@ export const createConversation = async (subject?: string): Promise<ChatConversa
   const { data, error } = await ((supabase.from('chat_conversations') as any)
     .insert({
       customer_id: user.id,
-      status: 'waiting_human',
+      status: 'active',
       subject: subject ?? null,
       channel: 'web',
-      current_queue_state: 'new',
+      current_queue_state: 'bot',
     })
     .select()
     .single()) as any;
