@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const meToken = Deno.env.get("MELHOR_ENVIOS_TOKEN");
+    const meToken = Deno.env.get("MELHOR_ENVIO_TOKEN");
 
     if (!meToken) {
         return new Response(JSON.stringify({ error: "MELHOR_ENVIOS_TOKEN not configured" }), {
