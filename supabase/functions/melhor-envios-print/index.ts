@@ -6,7 +6,10 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ME_API_BASE = "https://melhorenvios.com.br/api/v2";
+const IS_PRODUCTION = Deno.env.get("PRODUCTION_MELHOR_ENVIO") === "true";
+const ME_API_BASE = IS_PRODUCTION
+    ? "https://www.melhorenvio.com.br/api/v2"
+    : "https://sandbox.melhorenvio.com.br/api/v2";
 
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
