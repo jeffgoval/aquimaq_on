@@ -129,7 +129,7 @@ export const getProductRowById = async (
     .from('products')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
   return data as ProductRow;
@@ -141,7 +141,8 @@ export const getProductRowById = async (
 export const getProductsAdmin = async (vendedorId?: string): Promise<ProductRow[]> => {
   let query = supabase.from('products').select('*').order('name');
   if (vendedorId) {
-    query = (query as any).eq('vendedor_id', vendedorId);
+    // Inclui produtos do vendedor E produtos sem dono (vendedor_id IS NULL)
+    query = (query as any).or(`vendedor_id.eq.${vendedorId},vendedor_id.is.null`);
   }
   const { data, error } = await query;
   if (error) throw error;

@@ -14,7 +14,7 @@ import QuantitySelector from './ui/QuantitySelector';
 import SectionErrorBoundary from './SectionErrorBoundary';
 import ProductReviews from './ProductReviews';
 import RelatedProducts from './RelatedProducts';
-import RecommendationsByCulture from './RecommendationsByCulture';
+import RecommendationsByPhase from './RecommendationsByPhase';
 import { useCropCalendar } from '@/hooks/useCropCalendar';
 import { useStore } from '@/contexts/StoreContext';
 import { useProductDocuments } from '@/hooks/useProductDocuments';
@@ -508,9 +508,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                 </SectionErrorBoundary>
                 {product.culture && (
                     <SectionErrorBoundary>
-                        <RecommendationsByCulture
-                            culture={product.culture}
-                            availableCultures={availableCultures}
+                        <RecommendationsByPhase
+                            phase={product.culture}
+                            availablePhases={availableCultures}
                             excludeProductId={product.id}
                             onAddToCart={onAddToCart}
                             limit={4}

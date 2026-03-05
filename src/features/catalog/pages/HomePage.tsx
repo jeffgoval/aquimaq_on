@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Catalog from '../components/Catalog';
 import TrustBar from '@/components/TrustBar';
@@ -10,7 +10,8 @@ import { parseCategoryFromUrl } from '../utils/urlSearch';
 import { useProducts } from '../hooks/useCatalogProducts';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
 import { useCropCalendar } from '../hooks/useCropCalendar';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ProductCard from '@/components/ProductCard';
+import { ChevronLeft, ChevronRight, PawPrint } from 'lucide-react';
 
 const PAGE_SIZE = 12;
 
@@ -23,6 +24,19 @@ const HomePage: React.FC = () => {
     const filters = useCatalogFilters({ onFilterChange: () => setPage(1) });
 
     const { cultures: availableCultures, culturesInSeasonThisMonth } = useCropCalendar();
+
+    // Auto-seleciona a primeira fase da safra do mês atual quando o calendário carrega
+    useEffect(() => {
+        if (culturesInSeasonThisMonth.length > 0 && !filters.recommendationCulture) {
+            filters.onRecommendationCultureChange(culturesInSeasonThisMonth[0]);
+        }
+    }, [culturesInSeasonThisMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const { products: petProducts, isLoading: isPetLoading } = useProducts({
+        category: ProductCategory.PET,
+        pageSize: 4,
+        page: 1,
+    });
 
     const searchQuery = searchParams.get('q') ?? '';
     const selectedCategory = useMemo(
@@ -102,6 +116,34 @@ const HomePage: React.FC = () => {
                     culturesInSeasonThisMonth={culturesInSeasonThisMonth}
                 />
             </ErrorBoundary>
+
+            {/* Seção Linha Pet */}
+            {(isPetLoading || petProducts.length > 0) && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 animate-fade-in">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-6">
+                        <PawPrint size={26} className="text-agro-600" />
+                        Cuidado com seus Pets
+                    </h2>
+                    {isPetLoading ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[1, 2, 3, 4].map((n) => (
+                                <div key={n} className="bg-gray-100 rounded-xl h-64 animate-pulse" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {petProducts.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    onViewDetails={(p) => navigate(ROUTES.PRODUCT(p.id))}
+                                    onAddToCart={addToCart}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {!isLoading && products.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-2">

@@ -48,11 +48,15 @@ interface ProductFormData {
 }
 
 const categoryOptions = [
-    { value: 'Ferramentas Manuais', label: 'Ferramentas Manuais' },
-    { value: 'Peças de Reposição', label: 'Peças de Reposição' },
-    { value: 'Acessórios', label: 'Acessórios' },
-    { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
-    { value: 'Itens de Prateleira', label: 'Itens de Prateleira' },
+    { value: 'Máquinas e Equipamentos', label: 'Máquinas e Equipamentos' },
+    { value: 'Peças de Reposição',       label: 'Peças de Reposição' },
+    { value: 'Insumos Agrícolas',        label: 'Insumos Agrícolas' },
+    { value: 'Colheita e Ferramentas',   label: 'Colheita e Ferramentas' },
+    { value: 'Linha Pet',                label: 'Linha Pet' },
+    { value: 'EPI e Segurança',          label: 'EPI e Segurança' },
+    { value: 'Ferramentas Manuais',      label: 'Ferramentas Manuais' },
+    { value: 'Acessórios',               label: 'Acessórios' },
+    { value: 'Sementes Fracionadas',     label: 'Sementes Fracionadas' },
 ];
 
 const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
@@ -72,7 +76,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         price: 0,
         oldPrice: null,
         discount: null,
-        category: 'Ferramentas Manuais',
+        category: 'Máquinas e Equipamentos',
         stock: 0,
         isNew: false,
         isBestSeller: false,
@@ -108,7 +112,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 price: data.price || 0,
                 oldPrice: data.old_price || null,
                 discount: data.discount || null,
-                category: data.category || 'Ferramentas Manuais',
+                category: data.category || 'Máquinas e Equipamentos',
                 stock: data.stock || 0,
                 isNew: data.is_new || false,
                 isBestSeller: data.is_best_seller || false,
@@ -343,7 +347,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                             name="culture"
                             value={formData.culture}
                             onChange={handleChange}
-                            placeholder="Ex.: Soja, Milho, Café"
+                            placeholder="Ex.: Café - Pré-Florada e Florada"
                             className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                         />
                     </div>

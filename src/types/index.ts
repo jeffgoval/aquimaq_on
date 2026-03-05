@@ -17,11 +17,15 @@ export enum ProductCategory {
   ACCESSORIES = 'Acessórios',
   SEEDS = 'Sementes Fracionadas',
   SHELF = 'Itens de Prateleira',
-  // New Categories from Mega Menu
   NUTRITION = 'Nutrição Animal',
   DEFENSIVES = 'Defensivos Agrícolas',
   PPE = 'EPI e Segurança',
   EQUIPMENT = 'Equipamentos',
+  // Mega Menu v2
+  MACHINES = 'Máquinas e Equipamentos',
+  INPUTS = 'Insumos Agrícolas',
+  HARVEST = 'Colheita e Ferramentas',
+  PET = 'Linha Pet',
 }
 
 // Entidades

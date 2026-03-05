@@ -1,7 +1,7 @@
 import React from 'react';
 import { Product } from '@/types';
 import HeroBanner from '../HeroBanner';
-import RecommendationsByCulture from '../RecommendationsByCulture';
+import RecommendationsByPhase from '../RecommendationsByPhase';
 import { CatalogFeaturedSection } from './CatalogFeaturedSection';
 
 interface CatalogHeroProps {
@@ -37,13 +37,13 @@ export const CatalogHero: React.FC<CatalogHeroProps> = ({
                     onAddToCart={onAddToCart}
                 />
             )}
-            <RecommendationsByCulture
-                culture={recommendationCulture}
-                availableCultures={availableCultures}
-                onCultureChange={onRecommendationCultureChange}
+            <RecommendationsByPhase
+                phase={recommendationCulture}
+                availablePhases={availableCultures}
+                onPhaseChange={onRecommendationCultureChange}
                 onAddToCart={onAddToCart}
                 limit={8}
-                showCultureSelector={true}
+                showPhaseSelector={true}
             />
         </>
     );
