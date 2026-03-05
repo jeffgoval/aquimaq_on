@@ -79,7 +79,7 @@ serve(async (req) => {
     // 3. Busca Semântica no Banco de Dados (RAG)
     const { data: documents } = await supabaseClient.rpc("match_knowledge_base", {
       query_embedding: embedding,
-      match_threshold: 0.4, // Calibragem profissional
+      match_threshold: 0.65, // E-commerce técnico: só contextos bem relevantes; dúvidas muito específicas sem doc → handoff
       match_count: 5,
     });
 
@@ -91,63 +91,84 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(6);
 
-    // 5. Buscar produtos (estoque e preço) para o cliente perguntar disponibilidade e preço
+    // 5. Buscar produtos: prioridade busca semântica (embedding), fallback por palavras-chave
     const msgLower = message.toLowerCase().trim();
-    const wantsProductInfo =
-      /\b(preço|preco|valor|quanto custa|custa|tem (em )?estoque|disponível|disponivel|produto|produtos|catálogo|catalogo)\b/.test(msgLower);
-    let productsContext = "Nenhum produto listado.";
+    const wantsProductInfo = /\b(preço|preco|valor|quanto custa|custa|tem|estoque|disponível|disponivel|produto|catálogo|vende)\b/.test(msgLower);
+
+    let productsContext = "Nenhum produto encontrado para esta busca específica.";
+
     if (wantsProductInfo) {
-      let productsQuery = supabaseClient
-        .from("products")
-        .select("name, price, stock, category")
-        .eq("is_active", true)
-        .limit(40);
-      // Busca por termo se a mensagem tiver mais de 2 caracteres (ex.: nome de produto ou categoria)
-      const words = message.split(/\s+/).filter((w) => w.length > 2);
-      if (words.length > 0) {
-        const term = words[0];
-        productsQuery = productsQuery.or(
-          `name.ilike.%${term}%,category.ilike.%${term}%`
-        );
+      type ProductRow = { id: string; name: string; price: number; stock: number; category: string | null };
+      let products: ProductRow[] | null = null;
+
+      // 5a. Tentar busca semântica (produtos com embedding: ex. "máquina de café barata" encontra por significado)
+      const { data: semanticProducts } = await supabaseClient.rpc("match_products_semantic", {
+        query_embedding: embedding,
+        match_threshold: 0.5,
+        match_count: 25,
+      });
+      if (semanticProducts?.length) {
+        products = semanticProducts as ProductRow[];
       }
-      const { data: products } = await productsQuery;
+
+      // 5b. Fallback: busca por termos (ilike) quando semântica não retorna nada ou produtos ainda sem embedding
+      if (!products?.length) {
+        const ignoreWords = ["tem", "preco", "preço", "valor", "estoque", "disponivel", "disponível", "quanto", "custa", "vende", "vocês", "voces"];
+        const searchTerms = msgLower
+          .split(/\s+/)
+          .filter((w) => w.length > 2 && !ignoreWords.includes(w));
+
+        let productsQuery = supabaseClient
+          .from("products")
+          .select("name, price, stock, category")
+          .eq("is_active", true)
+          .limit(25);
+
+        if (searchTerms.length > 0) {
+          const orCondition = searchTerms
+            .map((term) => `name.ilike.%${term}%,category.ilike.%${term}%`)
+            .join(",");
+          productsQuery = productsQuery.or(orCondition);
+        }
+        const { data: keywordProducts } = await productsQuery;
+        products = keywordProducts as ProductRow[] | null;
+      }
+
       if (products?.length) {
         productsContext = products
-          .map(
-            (p: { name: string; price: number; stock: number; category: string | null }) =>
-              `- ${p.name}: R$ ${Number(p.price).toFixed(2)}, estoque: ${p.stock > 0 ? "sim" : "indisponível"}${p.category ? ` (${p.category})` : ""}`
-          )
+          .map((p) => {
+            const status = p.stock > 0 ? "EM ESTOQUE" : "INDISPONÍVEL";
+            return `- ${p.name.toUpperCase()}: R$ ${Number(p.price).toFixed(2)} | Status: ${status} | Categoria: ${p.category || "Geral"}`;
+          })
           .join("\n");
       }
     }
 
-    // 6. Construir o Contexto e Prompt
+    // 6. Construir o Contexto e Prompt Rígido (evitando alucinação)
     const contextText =
       documents?.map((d) => `[FONTE: ${d.title}]\n${d.content}`).join("\n\n") ??
-      "Nenhum contexto encontrado.";
+      "Sem manuais técnicos disponíveis.";
 
-    const systemContent = wantsProductInfo
-      ? `Você é o assistente técnico da Aquimaq. Use o contexto abaixo para responder. Quando o cliente perguntar sobre produtos, preços ou estoque, use a lista PRODUTOS E ESTOQUE.
-Se não souber, diga que não encontrou a informação e encaminhe para um humano.
+    const systemContent = `Você é o Especialista Técnico da Aquimaq.
+REGRAS DE OURO:
+1. Use APENAS o "CONTEXTO TÉCNICO" para dúvidas de manutenção/uso.
+2. Use APENAS "PRODUTOS E ESTOQUE" para preços e disponibilidade.
+3. Se a informação não estiver nestas listas, você DEVE dizer: "Infelizmente não localizei essa informação técnica ou o produto no meu sistema." e definir "request_human": true.
+4. JAMAIS invente preços ou prazos.
+5. Responda de forma curta e profissional.
 
 PRODUTOS E ESTOQUE:
 ${productsContext}
 
-CONTEXTO (manuais/bulas):
-${contextText}`
-      : `Você é o assistente técnico da Aquimaq. Use o contexto abaixo para responder.
-Se não souber, diga que não encontrou a informação e encaminhe para um humano.
-CONTEXTO:\n${contextText}`;
+CONTEXTO TÉCNICO:
+${contextText}
 
-    const handoffInstruction = `
-Responda em JSON com exatamente duas chaves: "reply" (string: sua mensagem ao cliente) e "request_human" (boolean: true se não souber ajudar ou o cliente pedir para falar com um humano; caso contrário false).
-Exemplo: {"reply": "Encontrei a informação...", "request_human": false}
-Se for transferir para humano, inclua na "reply" uma frase como "Um atendente vai ajudar em breve."`;
+FORMATO DE RESPOSTA: Responda em JSON com exatamente duas chaves: "reply" (string: sua mensagem ao cliente) e "request_human" (boolean: true se não souber ou informação não estiver nos dados acima; caso contrário false). Se transferir para humano, inclua na "reply" algo como "Um atendente vai ajudar em breve."`;
 
     const messages = [
       {
         role: "system",
-        content: systemContent + handoffInstruction,
+        content: systemContent,
       },
       ...([...(history ?? [])].reverse().map((m) => ({
         role: m.sender_type === "customer" ? "user" : "assistant",
@@ -209,6 +230,19 @@ Se for transferir para humano, inclua na "reply" uma frase como "Um atendente va
     } catch {
       reply = typeof content === "string" ? content : "Desculpe, ocorreu um erro.";
     }
+    // Safety Check: se a resposta contiver frases de incerteza, forçar handoff (última barreira)
+    const uncertaintyMarkers = [
+      "não encontrei a informação",
+      "não localizei",
+      "não tenho acesso",
+      "falar com um atendente",
+      "transferir para um humano",
+    ];
+    if (!requestHuman && uncertaintyMarkers.some((marker) => reply.toLowerCase().includes(marker))) {
+      requestHuman = true;
+    }
+
+    const usage = chatData.usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
 
     // 8. Se handoff, atualizar conversa para waiting_human e opcionalmente atribuir vendedor
     if (requestHuman) {
@@ -253,7 +287,7 @@ Se for transferir para humano, inclua na "reply" uma frase como "Um atendente va
       !skipCustomerInsert
         ? { conversation_id, content: message, sender_type: "customer" }
         : null,
-      { conversation_id, content: reply, sender_type: "ai_agent", delivery_status: "sent", metadata: { channel: "web_or_whatsapp" } },
+      { conversation_id, content: reply, sender_type: "ai_agent", delivery_status: "sent", metadata: { channel: "web_or_whatsapp", model, prompt_tokens: usage?.prompt_tokens ?? null } },
     ].filter(Boolean);
 
     await supabaseClient.from("chat_messages").insert(rows as Record<string, unknown>[]);

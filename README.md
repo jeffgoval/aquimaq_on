@@ -42,7 +42,7 @@ E-commerce especializado em produtos agropecuários, ferramentas, peças e semen
 
 6. **Estoque**: O botão **Restaurar estoque** no Admin > Dashboard executa a RPC `restore_stock_from_unpaid_orders()` para repor estoque de pedidos não pagos.
 
-7. **Chat com IA (RAG + estoque/preço)**: Para o assistente responder com base em manuais e bulas, popular a base de conhecimento: Admin → Base de Conhecimento (upload de PDFs) ou `npm run ingest -- <caminho-arquivo> [titulo] [sourceType]`. O bucket `knowledge-base` deve existir no Storage. Ver também `docs/evolution-api-vps.md` para integrar WhatsApp via Evolution API na VPS.
+7. **Chat com IA (RAG + estoque/preço)**: Para o assistente responder com base em manuais e bulas, popular a base de conhecimento: Admin → Base de Conhecimento (upload de PDFs) ou `npm run ingest -- <caminho-arquivo> [titulo] [sourceType]`. O bucket `knowledge-base` deve existir no Storage. Para **busca semântica de produtos** (ex.: "máquina de café barata" encontrar por significado), aplique a migration que adiciona `products.embedding` e depois chame a Edge Function `sync-product-embeddings` (requer usuário admin/gerente) para popular os embeddings; o ai-chat usa essa busca quando disponível e faz fallback para busca por palavras-chave. Ver também `docs/evolution-api-vps.md` para integrar WhatsApp via Evolution API na VPS.
 
 ## Estrutura do Projeto
 

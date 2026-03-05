@@ -21,6 +21,11 @@ verify_jwt = true
 import_map = "./functions/process-knowledge-base/deno.json"
 entrypoint = "./functions/process-knowledge-base/index.ts"
 
+[functions.sync-product-embeddings]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/sync-product-embeddings/index.ts"
+
 [functions.whatsapp-inbound]
 enabled = true
 verify_jwt = false
