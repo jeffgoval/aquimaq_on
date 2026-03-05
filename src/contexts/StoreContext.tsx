@@ -12,7 +12,7 @@ const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { settings, isLoading } = useStoreSettings();
 
-    const favicon = settings?.logoUrl ?? '/icon.svg';
+    const favicon = settings?.logoUrl ?? '/logo%20aquimaq.png';
     const storeName = settings?.storeName ?? 'Aquimaq';
 
     return (
@@ -21,8 +21,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 <title>{storeName}</title>
                 <link rel="icon" href={favicon} />
                 <link rel="apple-touch-icon" href={favicon} />
-                <meta property="og:image" content={settings?.logoUrl ?? '/og-image.png'} />
-                <meta name="twitter:image" content={settings?.logoUrl ?? '/og-image.png'} />
+                <meta property="og:image" content={settings?.logoUrl ?? '/logo%20aquimaq.png'} />
+                <meta name="twitter:image" content={settings?.logoUrl ?? '/logo%20aquimaq.png'} />
             </Helmet>
             {children}
         </StoreContext.Provider>

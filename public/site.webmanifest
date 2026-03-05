@@ -9,9 +9,9 @@
     "scope": "/",
     "icons": [
         {
-            "src": "/icon.svg",
-            "sizes": "192x192 512x512",
-            "type": "image/svg+xml"
+            "src": "/logo%20aquimaq.png",
+            "sizes": "512x512",
+            "type": "image/png"
         }
     ]
 }
