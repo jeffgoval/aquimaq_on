@@ -129,6 +129,7 @@ export interface OrderAdminRow {
   createdAt: string;
   paymentMethod?: string | null;
   trackingCode?: string | null;
+  meOrderId?: string | null;
 }
 
 /** Lista pedidos para admin (com nome/telefone do cliente).
@@ -185,6 +186,7 @@ export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow
       createdAt: order.created_at,
       paymentMethod: order.payment_method,
       trackingCode: order.tracking_code,
+      meOrderId: order.me_order_id ?? null,
     };
   });
 };
@@ -198,6 +200,16 @@ export const updateOrderStatus = async (
     .update({ status })
     .eq('id', orderId);
   if (error) throw error;
+};
+
+/** Solicita impressão de etiqueta térmica via Melhor Envios. Retorna URL do PDF. */
+export const printMelhorEnviosLabel = async (orderId: string): Promise<string> => {
+  const { data, error } = await supabase.functions.invoke('melhor-envios-print', {
+    body: { orderId },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('URL do PDF não retornada');
+  return data.url as string;
 };
 
 /** Atualiza código de rastreio de um pedido. */

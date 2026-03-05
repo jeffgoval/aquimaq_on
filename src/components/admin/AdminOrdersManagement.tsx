@@ -11,12 +11,14 @@ import {
     Eye,
     RefreshCw,
     X,
-    Download
+    Download,
+    Printer
 } from 'lucide-react';
 import {
     getOrdersAdmin,
     updateOrderStatus,
     updateOrderTracking,
+    printMelhorEnviosLabel,
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
@@ -59,6 +61,7 @@ const AdminOrdersManagement: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<PedidoComCliente | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
+    const [printingLabel, setPrintingLabel] = useState(false);
 
     useEffect(() => {
         loadOrders();
@@ -115,6 +118,21 @@ const AdminOrdersManagement: React.FC = () => {
             setMessage({ type: 'error', text: 'Erro ao atualizar rastreio.' });
         } finally {
             setEditingTracking(null);
+        }
+    };
+
+    const handlePrintLabel = async (order: PedidoComCliente) => {
+        setPrintingLabel(true);
+        setMessage({ type: 'success', text: 'Gerando etiqueta...' });
+        try {
+            const url = await printMelhorEnviosLabel(order.id);
+            window.open(url, '_blank');
+            setMessage(null);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';
+            setMessage({ type: 'error', text: msg });
+        } finally {
+            setPrintingLabel(false);
         }
     };
 
@@ -389,6 +407,18 @@ const AdminOrdersManagement: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Imprimir Etiqueta Melhor Envios */}
+                            {selectedOrder.meOrderId && (
+                                <button
+                                    onClick={() => handlePrintLabel(selectedOrder)}
+                                    disabled={printingLabel}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-medium transition-colors"
+                                >
+                                    <Printer size={15} />
+                                    {printingLabel ? 'Gerando etiqueta...' : 'Imprimir Etiqueta Térmica (10×15)'}
+                                </button>
+                            )}
 
                             {/* Items list */}
                             <div>
