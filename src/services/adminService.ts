@@ -313,10 +313,39 @@ export const updateUserRole = async (userId: string, role: string): Promise<void
 
 export interface AISettings {
   id?: string;
+  // Credenciais
   provider: string;
   api_key: string;
-  model: string | null;
+  model: string | null;           // modelo de embeddings
+  // Agente
+  chat_model: string;             // modelo conversacional
+  system_prompt: string | null;
+  temperature: number;
+  max_tokens: number;
+  max_iterations: number;
+  // Ferramentas
+  active_tools: string[];
+  rag_threshold: number;
+  product_threshold: number;
+  // Comportamento
+  greeting_message: string | null;
+  handoff_triggers: string | null;
 }
+
+export const AI_SETTINGS_DEFAULTS: Omit<AISettings, 'id' | 'api_key'> = {
+  provider: 'openai',
+  model: 'text-embedding-3-small',
+  chat_model: 'gpt-4o-mini',
+  system_prompt: null,
+  temperature: 0.3,
+  max_tokens: 1000,
+  max_iterations: 6,
+  active_tools: ['buscar_produtos', 'buscar_pedido', 'buscar_conhecimento'],
+  rag_threshold: 0.60,
+  product_threshold: 0.45,
+  greeting_message: 'Olá! Sou a assistente virtual da Aquimaq. Como posso ajudar?',
+  handoff_triggers: 'atendente,quero falar com humano,quero falar com uma pessoa,preciso de ajuda humana',
+};
 
 /** Obtém as configurações de IA. */
 export const getAISettings = async (): Promise<AISettings | null> => {
@@ -329,24 +358,19 @@ export const getAISettings = async (): Promise<AISettings | null> => {
   return data as AISettings | null;
 };
 
-
-/** Salva as configurações de IA. */
+/** Salva as configurações de IA (upsert). */
 export const saveAISettings = async (settings: Omit<AISettings, 'id'>): Promise<void> => {
-  // Try to get first to see if we update or insert
   const current = await getAISettings();
+  const payload = { ...settings, updated_at: new Date().toISOString() };
 
   if (current?.id) {
     const { error } = await (supabase.from('ai_settings') as any)
-      .update({
-        provider: settings.provider,
-        api_key: settings.api_key,
-        model: settings.model
-      })
+      .update(payload)
       .eq('id', current.id);
     if (error) throw error;
   } else {
     const { error } = await (supabase.from('ai_settings') as any)
-      .insert([settings]);
+      .insert([payload]);
     if (error) throw error;
   }
 };
