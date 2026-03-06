@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 import { env } from "../config/env"
-import { prisma } from "../db/prisma"
+import { getHistory } from "./supabase.service"
 import { logger } from "../utils/logger"
 import { ecommerceService } from "./ecommerce.service"
 
@@ -255,16 +255,12 @@ interface ProcessOutput {
 async function process(input: ProcessInput): Promise<ProcessOutput> {
   const { conversationId, phone, message } = input
 
-  const history = await prisma.message.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "asc" },
-    take: 12,
-  })
+  const history = await getHistory(conversationId, 12)
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history.map((m) => ({
-      role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+      role: (m.sender_type === "customer" ? "user" : "assistant") as "user" | "assistant",
       content: m.content,
     })),
     { role: "user", content: message },

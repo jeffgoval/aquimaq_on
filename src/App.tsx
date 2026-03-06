@@ -41,6 +41,7 @@ const AdminChatPanel = lazy(() => import('./components/admin/AdminChatPanel'));
 const AdminChatPage = lazy(() => import('./pages/admin/AdminChatPage'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
 const AdminKnowledgeBasePage = lazy(() => import('./pages/admin/AdminKnowledgeBasePage'));
+const AdminWhatsAppPage = lazy(() => import('./pages/admin/AdminWhatsAppPage'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 
 const ScrollToTop = () => {
@@ -70,6 +71,7 @@ function AdminRoutes() {
             'DASHBOARD': ROUTES.ADMIN,
             'KNOWLEDGE_BASE': ROUTES.ADMIN_KNOWLEDGE_BASE,
             'CHAT': ROUTES.ADMIN_CHAT,
+            'WHATSAPP': ROUTES.ADMIN_WHATSAPP,
         };
         navigate(paths[view] || ROUTES.ADMIN);
     };
@@ -110,6 +112,11 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
                         <AdminChatPage />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_WHATSAPP} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                        <AdminWhatsAppPage />
                     </ProtectedRoute>
                 } />
             </Routes>

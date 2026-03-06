@@ -1,19 +1,26 @@
 import { WASocket, proto } from "@whiskeysockets/baileys"
 import { logger } from "../utils/logger"
-import { prisma } from "../db/prisma"
 import { aiService } from "../services/ai.service"
 import { sendMessage } from "./baileys.client"
 import { env } from "../config/env"
+import {
+  getSession,
+  upsertSession,
+  updateSession,
+  createConversation,
+  updateConversation,
+  saveMessage,
+} from "../services/supabase.service"
 
 export async function handleIncomingMessage(
-  sock: WASocket,
+  _sock: WASocket,
   msg: proto.IWebMessageInfo
 ) {
-  const phone = msg.key.remoteJid?.replace("@s.whatsapp.net", "")
-  if (!phone) return
+  const remoteJid = msg.key.remoteJid
+  if (!remoteJid) return
+  if (remoteJid.includes("@g.us") || remoteJid.includes("@broadcast")) return
 
-  // Ignorar mensagens de grupos
-  if (msg.key.remoteJid?.includes("@g.us")) return
+  const phone = remoteJid.replace(/@.*$/, "")
 
   const text =
     msg.message?.conversation ||
@@ -25,88 +32,90 @@ export async function handleIncomingMessage(
   logger.info({ phone, text }, "[WA] Mensagem recebida")
 
   try {
-    // Buscar ou criar cliente
-    const customer = await prisma.customer.upsert({
-      where: { phone },
-      update: {},
-      create: { phone },
-    })
+    const session = await getSession(phone)
+    let conversationId = session?.conversation_id ?? null
+    const humanMode = session?.human_mode ?? false
 
-    // Buscar conversa ativa ou criar nova
-    let conversation = await prisma.conversation.findFirst({
-      where: {
-        customerId: customer.id,
-        status: { in: ["ai", "human"] },
-      },
-      orderBy: { createdAt: "desc" },
-    })
-
-    if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: { customerId: customer.id, status: "ai" },
+    if (!conversationId) {
+      const conv = await createConversation(phone)
+      conversationId = conv.id
+      await upsertSession({
+        phone,
+        conversation_id: conversationId,
+        human_mode: false,
+        assigned_agent: null,
+        unread_count: 1,
+      })
+    } else {
+      await updateSession(phone, {
+        unread_count: (session?.unread_count ?? 0) + 1,
       })
     }
 
-    // Salvar mensagem do usuário
-    await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        role: "user",
-        content: text,
-      },
+    await saveMessage({
+      conversation_id: conversationId,
+      sender_type: "customer",
+      content: text,
+      external_message_id: msg.key.id ?? null,
+      delivery_status: "delivered",
+      metadata: { channel: "whatsapp", source: "baileys" },
     })
 
-    // Se conversa está com humano, não processar com IA
-    if (conversation.status === "human") {
-      logger.info({ phone }, "[WA] Conversa em atendimento humano - ignorando IA")
+    await updateConversation(conversationId, {
+      status: "active",
+      current_queue_state: humanMode ? "assigned" : "bot",
+    })
+
+    if (humanMode) {
+      logger.info({ phone }, "[WA] Modo humano — ignorando IA")
       return
     }
 
-    // Processar com IA
     const { reply, needsHuman } = await aiService.process({
-      conversationId: conversation.id,
+      conversationId,
       phone,
       message: text,
     })
 
-    // Salvar resposta da IA
-    await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        role: "ai",
-        content: reply,
-      },
+    await saveMessage({
+      conversation_id: conversationId,
+      sender_type: "ai_agent",
+      content: reply,
+      delivery_status: "sent",
+      metadata: { channel: "whatsapp" },
     })
 
-    // Enviar resposta para o cliente
-    await sendMessage(env.WA_SESSION_NAME, phone, reply)
+    let sent = false
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        await sendMessage(env.WA_SESSION_NAME, remoteJid, reply)
+        sent = true
+        break
+      } catch (sendErr: any) {
+        if (attempt < 3) {
+          logger.warn({ phone, attempt, err: sendErr?.message }, "[WA] Erro ao enviar, aguardando...")
+          await new Promise((r) => setTimeout(r, 3000))
+        }
+      }
+    }
+    if (!sent) logger.error({ phone }, "[WA] Falha definitiva ao enviar após 4 tentativas")
 
-    // Fazer handoff se necessário
     if (needsHuman) {
-      await doHandoff(conversation.id, phone, text)
+      await doHandoff(conversationId, phone)
     }
   } catch (err) {
     logger.error({ phone, err }, "[WA] Erro ao processar mensagem")
   }
 }
 
-async function doHandoff(conversationId: string, customerPhone: string, lastMessage: string) {
-  logger.info({ conversationId, customerPhone }, "[WA] Iniciando handoff para vendedor")
+async function doHandoff(conversationId: string, phone: string) {
+  logger.info({ conversationId, phone }, "[WA] Handoff — marcando waiting_human no Supabase")
 
-  // Atualizar status da conversa
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: { status: "human" },
+  await updateConversation(conversationId, {
+    status: "waiting_human",
+    current_queue_state: "waiting_human",
+    assigned_agent: null,
   })
 
-  // Notificar vendedor via WhatsApp
-  const notificationText =
-    `🔔 *Novo atendimento para você!*\n\n` +
-    `📱 Cliente: ${customerPhone}\n` +
-    `💬 Última mensagem: "${lastMessage}"\n\n` +
-    `A IA não conseguiu resolver. Entre em contato diretamente com o cliente.`
-
-  await sendMessage(env.WA_SESSION_NAME, env.SELLER_PHONE, notificationText)
-
-  logger.info({ customerPhone }, "[WA] Vendedor notificado via WhatsApp")
+  await updateSession(phone, { human_mode: false, assigned_agent: null })
 }
