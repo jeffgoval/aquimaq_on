@@ -148,18 +148,20 @@ export const sendAdminMessage = async (
   if (convError) throw new Error(convError.message);
   if (!conv) throw new Error('Conversa nao encontrada');
 
+  // Salva a mensagem no DB independente do canal
+  const { error: msgError } = await (supabase.from('chat_messages') as any).insert({
+    conversation_id: conversationId,
+    sender_type: 'human_agent',
+    sender_id: adminId,
+    content,
+    delivery_status: conv.channel === 'whatsapp' ? 'pending' : 'sent',
+    metadata: { channel: conv.channel ?? 'web' },
+  });
+  if (msgError) throw new Error(msgError.message);
+
+  // Para WhatsApp, tenta enviar via API (falha silenciosa — mensagem já está no DB)
   if (conv.channel === 'whatsapp') {
-    await sendWhatsAppMessage(conversationId, content);
-  } else {
-    const { error } = await (supabase.from('chat_messages') as any).insert({
-      conversation_id: conversationId,
-      sender_type: 'human_agent',
-      sender_id: adminId,
-      content,
-      delivery_status: 'sent',
-      metadata: { channel: 'web' },
-    });
-    if (error) throw new Error(error.message);
+    sendWhatsAppMessage(conversationId, content).catch(() => {});
   }
 
   const { error: updateError } = await (supabase.from('chat_conversations') as any)
