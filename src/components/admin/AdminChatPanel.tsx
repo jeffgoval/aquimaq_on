@@ -45,6 +45,8 @@ const AdminChatPanel: React.FC = () => {
   const [handoffing, setHandoffing] = useState(false);
   const [closing, setClosing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedId;
 
   const loadConversations = useCallback(async () => {
     setLoading(true);
@@ -72,7 +74,25 @@ const AdminChatPanel: React.FC = () => {
   useEffect(() => {
     loadConversations();
     loadSellers();
-  }, [loadConversations, loadSellers]);
+
+    // Subscription em tempo real para novos eventos em chat_conversations
+    const channel = supabase
+      .channel('admin:conversations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_conversations' }, () => {
+        loadConversations();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+        const row = payload.new as { conversation_id: string };
+        // Se a msg chegou numa conversa que NÃO está aberta, atualiza a lista
+        if (row.conversation_id !== selectedIdRef.current) {
+          loadConversations();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!selectedId) {
@@ -321,7 +341,7 @@ const AdminChatPanel: React.FC = () => {
                       >
                         <div className="flex items-center justify-between mb-1 gap-4">
                           <span className={`text-[11px] font-semibold ${msg.senderType === 'customer' ? 'text-stone-500' : msg.senderType === 'ai_agent' ? 'text-blue-600' : 'text-agro-200'}`}>
-                            {msg.senderType === 'customer' ? 'Cliente' : msg.senderType === 'ai_agent' ? 'Robo IA' : 'Atendente'}
+                            {msg.senderType === 'customer' ? 'Cliente' : msg.senderType === 'ai_agent' ? 'Agente IA' : 'Atendente'}
                           </span>
                           <span className={`text-[10px] ${msg.senderType === 'customer' ? 'text-stone-400' : 'text-agro-200/70'}`}>
                             {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

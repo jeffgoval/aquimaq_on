@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getAISettings, saveAISettings, type AISettings } from '@/services/adminService';
-import { Settings2, Save, Key, RefreshCw, Cpu } from 'lucide-react';
+import { supabase } from '@/services/supabase';
+import { Settings2, Save, Key, RefreshCw, Cpu, Database } from 'lucide-react';
 
 const AdminAISettings: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -40,6 +42,24 @@ const AdminAISettings: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSyncEmbeddings = async () => {
+        setSyncing(true);
+        setError(null);
+        setSuccess(null);
+        try {
+            const { data, error: fnError } = await supabase.functions.invoke('sync-product-embeddings', {
+                body: { only_missing: true },
+            });
+            if (fnError) throw fnError;
+            setSuccess(`Embeddings sincronizados: ${data?.updated ?? 0} produtos atualizados de ${data?.total ?? 0}.`);
+            setTimeout(() => setSuccess(null), 5000);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Erro ao sincronizar embeddings.');
+        } finally {
+            setSyncing(false);
+        }
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -168,7 +188,20 @@ const AdminAISettings: React.FC = () => {
 
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex justify-between items-center gap-3 pt-2">
+                    <button
+                        type="button"
+                        onClick={handleSyncEmbeddings}
+                        disabled={syncing}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[13px] font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                        title="Gera embeddings para produtos que ainda não têm (necessário para busca semântica no chat)"
+                    >
+                        {syncing ? (
+                            <><RefreshCw size={14} className="animate-spin" /> Sincronizando...</>
+                        ) : (
+                            <><Database size={14} /> Sincronizar Embeddings de Produtos</>
+                        )}
+                    </button>
                     <button
                         type="submit"
                         disabled={saving}
