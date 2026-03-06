@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import PDFParser from "https://esm.sh/pdf-parse@1.1.1?no-check";
+// @ts-ignore — importa direto do lib para evitar fs.readFileSync do index.js
+import pdf from "https://esm.sh/pdf-parse@1.1.1/lib/pdf-parse.js?no-check";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,9 +108,8 @@ serve(async (req) => {
       resolved_file_url = file_url!;
     }
 
-    // 3. Extrair texto do PDF (pdf-parse)
-    const arrayBuffer = pdfBuffer;
-    const pdfData = await PDFParser(new Uint8Array(arrayBuffer)) as { text: string };
+    // 3. Extrair texto do PDF
+    const pdfData = await pdf(new Uint8Array(pdfBuffer)) as { text: string };
     const fullText = pdfData?.text ?? "";
 
     if (!fullText?.trim()) {
