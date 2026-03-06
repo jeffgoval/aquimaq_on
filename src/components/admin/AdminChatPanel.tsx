@@ -139,10 +139,11 @@ const AdminChatPanel: React.FC = () => {
     try {
       setHandoffing(true);
       await handoffConversation(selectedId, handoffTo, 'manual_handoff');
+      setHandoffTo('');
       await loadConversations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in handoff:', error);
-      alert('Erro ao transferir atendimento');
+      alert(`Erro ao transferir: ${error?.message ?? 'tente novamente'}`);
     } finally {
       setHandoffing(false);
     }
@@ -222,8 +223,12 @@ const AdminChatPanel: React.FC = () => {
           ) : (
             <ul className="divide-y divide-stone-100 overflow-y-auto flex-1 custom-scrollbar">
               {filtered.map((c) => {
-                const canClaim = c.status === 'waiting_human' && (
-                  isAdmin || isGerente || !c.assignedAgent || c.assignedAgent === user?.id
+                // Admin/gerente podem assumir qualquer conversa aberta não atribuída a eles
+                // Vendedor só pode assumir waiting_human sem agente ou atribuída a ele
+                const canClaim = c.status !== 'closed' && (
+                  (isAdmin || isGerente)
+                    ? c.assignedAgent !== user?.id
+                    : c.status === 'waiting_human' && (!c.assignedAgent || c.assignedAgent === user?.id)
                 );
                 return (
                   <li key={c.id} className="p-2">
