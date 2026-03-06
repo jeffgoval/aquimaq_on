@@ -15,7 +15,6 @@ import {
     MessageCircle,
     Cpu,
     FileText,
-    MessageSquare,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +22,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'CHAT' | 'KNOWLEDGE_BASE' | 'WHATSAPP';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI_SETTINGS' | 'CHAT' | 'KNOWLEDGE_BASE';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -35,7 +34,6 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_AI_SETTINGS]: 'AI_SETTINGS',
     [ROUTES.ADMIN_CHAT]: 'CHAT',
     [ROUTES.ADMIN_KNOWLEDGE_BASE]: 'KNOWLEDGE_BASE',
-    [ROUTES.ADMIN_WHATSAPP]: 'WHATSAPP',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
@@ -48,7 +46,6 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     AI_SETTINGS: ROUTES.ADMIN_AI_SETTINGS,
     CHAT: ROUTES.ADMIN_CHAT,
     KNOWLEDGE_BASE: ROUTES.ADMIN_KNOWLEDGE_BASE,
-    WHATSAPP: ROUTES.ADMIN_WHATSAPP,
 };
 
 interface AdminLayoutProps {
@@ -102,16 +99,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
-        { id: 'CHAT', label: 'Chat', icon: <MessageCircle size={18} /> },
-        { id: 'WHATSAPP', label: 'WhatsApp Bot', icon: <MessageSquare size={18} /> },
+        { id: 'CHAT', label: 'Atendimento', icon: <MessageCircle size={18} /> },
         { id: 'KNOWLEDGE_BASE', label: 'Base de Conhecimento', icon: <FileText size={18} /> },
         { id: 'AI_SETTINGS', label: 'Integração IA', icon: <Cpu size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
         // Vendedor: dashboard, pedidos, produtos e chat
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS', 'CHAT'].includes(item.id)) return false;
-        // WhatsApp Bot: apenas admin e gerente
-        if (item.id === 'WHATSAPP' && !isAdmin && !isGerente) return false;
         // Gerente: oculta itens exclusivos de admin (IA e analytics), mas libera configurações
         if (!isAdmin && !isVendedor && ['AI_SETTINGS', 'ANALYTICS'].includes(item.id)) return false;
         return true;
