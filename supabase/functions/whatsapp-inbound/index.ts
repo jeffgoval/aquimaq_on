@@ -14,8 +14,8 @@ type SimpleBody = {
   event_type?: string;
 };
 
-/** Payload nativo Evolution API v2 (MESSAGES_UPSERT). */
-type EvolutionPayload = {
+/** Payload nativo WhatsApp API v2 (MESSAGES_UPSERT). */
+type WhatsAppPayload = {
   event?: string;
   instance?: string;
   data?: {
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
   let timestamp: string;
   let eventType: string;
 
-  const evo = parsed as EvolutionPayload;
+  const evo = parsed as WhatsAppPayload;
   if (evo?.data?.key != null && (evo.event === "messages.upsert" || evo.event === "MESSAGES_UPSERT")) {
     if (evo.data.key.fromMe === true) {
       return json(200, { ignored: true, reason: "fromMe" });
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
     content: text,
     external_message_id: messageId,
     delivery_status: "delivered",
-    metadata: { event_type: eventType, channel: "whatsapp", source: "evolution" },
+    metadata: { event_type: eventType, channel: "whatsapp", source: "whatsapp_api" },
   });
   if (msgError) return json(500, { error: msgError.message });
 
@@ -224,20 +224,20 @@ Deno.serve(async (req) => {
         })
         .eq("id", conversationId);
     } else {
-      const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
-      const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
-      const evolutionInstance = Deno.env.get("EVOLUTION_INSTANCE");
-      if (evolutionUrl && evolutionKey && evolutionInstance && typeof aiData?.reply === "string") {
+      const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
+      const waApiKey = Deno.env.get("WHATSAPP_API_KEY");
+      const waInstance = Deno.env.get("WHATSAPP_INSTANCE");
+      if (waApiUrl && waApiKey && waInstance && typeof aiData?.reply === "string") {
         let deliveryStatus: "sent" | "failed" = "failed";
         let providerResponse: unknown = null;
         try {
           const sendRes = await fetch(
-            `${evolutionUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(evolutionInstance)}`,
+            `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "apikey": evolutionKey,
+                "apikey": waApiKey,
               },
               body: JSON.stringify({
                 number: phone,
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
               delivery_status: deliveryStatus,
               metadata: {
                 channel: "whatsapp",
-                provider: "evolution",
+                provider: "whatsapp_api",
                 provider_response: providerResponse,
               },
             })

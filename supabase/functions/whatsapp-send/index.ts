@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
-  const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
-  const evolutionInstance = Deno.env.get("EVOLUTION_INSTANCE");
+  const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
+  const waApiKey = Deno.env.get("WHATSAPP_API_KEY");
+  const waInstance = Deno.env.get("WHATSAPP_INSTANCE");
   if (!supabaseUrl || !anonKey || !serviceRole) return json(500, { error: "Server configuration error" });
 
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
   }
 
   if (!conversation.contact_phone) return json(400, { error: "Conversation has no contact phone" });
-  if (!evolutionUrl || !evolutionKey || !evolutionInstance) {
-    return json(500, { error: "Evolution API is not configured" });
+  if (!waApiUrl || !waApiKey || !waInstance) {
+    return json(500, { error: "WhatsApp API is not configured" });
   }
 
   const externalMessageId = crypto.randomUUID();
@@ -82,12 +82,12 @@ Deno.serve(async (req) => {
 
   try {
     const sendRes = await fetch(
-      `${evolutionUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(evolutionInstance)}`,
+      `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": evolutionKey,
+          "apikey": waApiKey,
         },
         body: JSON.stringify({
           number: conversation.contact_phone,
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     delivery_status: providerStatus,
     metadata: {
       channel: "whatsapp",
-      provider: "evolution",
+      provider: "whatsapp_api",
       provider_response: providerResponse,
     },
   });
