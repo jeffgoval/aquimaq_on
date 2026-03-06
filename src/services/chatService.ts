@@ -86,7 +86,7 @@ export const sendWhatsAppMessage = async (
 export const getConversations = async (): Promise<ChatConversation[]> => {
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('*, profiles:customer_id(name, email)')
+    .select('*, profiles:customer_id(name, email), whatsapp_sessions(unread_count)')
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -94,13 +94,12 @@ export const getConversations = async (): Promise<ChatConversation[]> => {
   return (data ?? []).map((row: any) => ({
     ...mapConversation(row as ChatConversationRow),
     customerName: row.profiles?.name || row.profiles?.email || (row.contact_phone ? `WhatsApp ${row.contact_phone}` : 'Cliente'),
+    unreadCount: row.whatsapp_sessions?.[0]?.unread_count ?? 0,
   }));
 };
 
 export const claimConversation = async (conversationId: string, agentId: string): Promise<void> => {
   const { error } = await (supabase.from('chat_conversations') as any)
-    // Uses `as any` due partial Database typing coverage in this repo.
-    // Keeps behavior consistent with existing services.
     .update({
       assigned_agent: agentId,
       status: 'active',
@@ -109,6 +108,11 @@ export const claimConversation = async (conversationId: string, agentId: string)
     })
     .eq('id', conversationId);
   if (error) throw new Error(error.message);
+
+  // For WhatsApp conversations, activate human mode so the AI bot stops responding
+  await (supabase.from('whatsapp_sessions') as any)
+    .update({ human_mode: true, assigned_agent: agentId, unread_count: 0 })
+    .eq('conversation_id', conversationId);
 };
 
 export const handoffConversation = async (
@@ -122,6 +126,11 @@ export const handoffConversation = async (
     p_reason: reason,
   });
   if (error) throw new Error(error.message);
+
+  // Keep human mode active on WhatsApp so the bot stays silent after transfer
+  await (supabase.from('whatsapp_sessions') as any)
+    .update({ human_mode: true, assigned_agent: toAgent })
+    .eq('conversation_id', conversationId);
 };
 
 export const closeConversation = async (conversationId: string): Promise<void> => {
@@ -133,6 +142,11 @@ export const closeConversation = async (conversationId: string): Promise<void> =
     })
     .eq('id', conversationId);
   if (error) throw new Error(error.message);
+
+  // Reset human mode so the bot can take over if the customer contacts again
+  await (supabase.from('whatsapp_sessions') as any)
+    .update({ human_mode: false, assigned_agent: null, unread_count: 0 })
+    .eq('conversation_id', conversationId);
 };
 
 export const sendAdminMessage = async (

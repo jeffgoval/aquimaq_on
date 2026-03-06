@@ -135,6 +135,7 @@ export interface ChatConversation {
   subject: string | null;
   createdAt: string;
   updatedAt: string;
+  unreadCount?: number;
 }
 
 // Navigation Types (Simplified for Catalog Only)
