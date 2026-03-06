@@ -241,16 +241,9 @@ const AdminChatPanel: React.FC = () => {
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${c.status === 'waiting_human' ? 'bg-amber-100 text-amber-700' : c.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
                           {statusLabel[c.status] ?? c.status}
                         </span>
-                        <div className="flex items-center gap-1.5">
-                          {(c.unreadCount ?? 0) > 0 && (
-                            <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                              {c.unreadCount}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
-                            {channelLabel[c.channel ?? 'web'] ?? c.channel}
-                          </span>
-                        </div>
+                        <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                          {channelLabel[c.channel ?? 'web'] ?? c.channel}
+                        </span>
                       </div>
                       {canClaim && (
                         <button

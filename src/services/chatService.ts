@@ -86,7 +86,7 @@ export const sendWhatsAppMessage = async (
 export const getConversations = async (): Promise<ChatConversation[]> => {
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('*, profiles:customer_id(name, email), whatsapp_sessions(unread_count)')
+    .select('*, profiles:customer_id(name, email)')
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -94,7 +94,6 @@ export const getConversations = async (): Promise<ChatConversation[]> => {
   return (data ?? []).map((row: any) => ({
     ...mapConversation(row as ChatConversationRow),
     customerName: row.profiles?.name || row.profiles?.email || (row.contact_phone ? `WhatsApp ${row.contact_phone}` : 'Cliente'),
-    unreadCount: row.whatsapp_sessions?.[0]?.unread_count ?? 0,
   }));
 };
 
