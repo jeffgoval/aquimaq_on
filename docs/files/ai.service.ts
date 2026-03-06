@@ -107,11 +107,11 @@ const TOOL_DEFINITIONS: Record<string, OpenAI.Chat.ChatCompletionTool> = {
     type: "function",
     function: {
       name: "buscar_produtos",
-      description: "Busca produtos disponíveis no catálogo por nome, categoria ou uso.",
+      description: "Busca produtos no catálogo da loja: preço, disponibilidade em estoque e categoria. Use para perguntas como 'tem X?', 'qual o preço de Y?', 'vocês vendem Z?'.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Termos de busca descritivos" },
+          query: { type: "string", description: "Nome ou descrição do produto" },
         },
         required: ["query"],
       },
@@ -121,11 +121,11 @@ const TOOL_DEFINITIONS: Record<string, OpenAI.Chat.ChatCompletionTool> = {
     type: "function",
     function: {
       name: "buscar_conhecimento",
-      description: "Busca manuais técnicos, instruções de uso e documentação.",
+      description: "Busca em manuais e documentação técnica. Use para qualquer pergunta sobre: tipo de combustível, óleo, manutenção, instalação, peças, como usar, especificações técnicas, resolução de problemas, regulagem — mesmo que o produto não esteja em estoque.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Pergunta técnica ou termo de busca" },
+          query: { type: "string", description: "Pergunta técnica sobre o equipamento" },
         },
         required: ["query"],
       },
@@ -238,7 +238,8 @@ async function runAgentLoop(
       model: config.chatModel,
       messages,
       tools: tools.length ? tools : undefined,
-      tool_choice: tools.length ? "auto" : undefined,
+      // Primeira iteração: força chamada de ferramenta para evitar respostas de memória
+      tool_choice: tools.length ? (i === 0 ? "required" : "auto") : undefined,
       max_tokens: config.maxTokens,
       temperature: config.temperature,
     })
