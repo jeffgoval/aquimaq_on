@@ -66,10 +66,20 @@ export const sendWhatsAppMessage = async (
   conversationId: string,
   content: string
 ): Promise<{ provider_message_id: string; status: string }> => {
-  const { data, error } = await supabase.functions.invoke('whatsapp-send', {
-    body: { conversation_id: conversationId, content },
-  });
-  if (error) throw new Error(error.message || 'Erro ao enviar mensagem WhatsApp');
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-send`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ conversation_id: conversationId, content }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Erro ao enviar mensagem WhatsApp');
   return data as { provider_message_id: string; status: string };
 };
 
