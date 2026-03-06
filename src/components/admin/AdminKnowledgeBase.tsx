@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/services/supabase';
 import { FileText, Upload, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
+
+async function extractPdfText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map((item: any) => item.str).join(' ') + '\n';
+  }
+  return fullText;
+}
 
 interface KnowledgeFile {
   id: string;
@@ -42,25 +58,32 @@ const AdminKnowledgeBase: React.FC = () => {
 
     setUploading(true);
     try {
-      // 1. Upload para o Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `documents/${fileName}`;
+      // 1. Extrair texto no browser (sem deps nativas)
+      const text = await extractPdfText(file);
+      if (!text.trim()) throw new Error('PDF não contém texto extraível');
 
+      // 2. Upload para o Storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `documents/${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from('knowledge-base')
         .upload(filePath, file);
-
       if (uploadError) throw uploadError;
 
-      // 2. Disparar Edge Function de Ingestão
-      const { error: processError } = await supabase.functions.invoke('process-knowledge-base', {
-        body: { file_path: filePath, document_title: file.name }
+      // 3. Enviar texto para Edge Function gerar embeddings
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-knowledge-base`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ text, document_title: file.name, file_path: filePath }),
       });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Erro ao indexar documento');
 
-      if (processError) throw processError;
-
-      addToast('Documento processado e vetorizado com sucesso!', 'success');
+      addToast(`Documento processado: ${result.chunks} blocos indexados.`, 'success');
       loadFiles();
     } catch (err: any) {
       addToast(err.message || 'Erro no processamento', 'error');
