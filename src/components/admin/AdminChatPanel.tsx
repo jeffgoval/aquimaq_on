@@ -222,7 +222,9 @@ const AdminChatPanel: React.FC = () => {
           ) : (
             <ul className="divide-y divide-stone-100 overflow-y-auto flex-1 custom-scrollbar">
               {filtered.map((c) => {
-                const canClaim = c.status === 'waiting_human' && (!c.assignedAgent || c.assignedAgent === user?.id);
+                const canClaim = c.status === 'waiting_human' && (
+                  isAdmin || isGerente || !c.assignedAgent || c.assignedAgent === user?.id
+                );
                 return (
                   <li key={c.id} className="p-2">
                     <div
