@@ -49,10 +49,19 @@ const AdminAISettings: React.FC = () => {
         setError(null);
         setSuccess(null);
         try {
-            const { data, error: fnError } = await supabase.functions.invoke('sync-product-embeddings', {
-                body: { only_missing: true },
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+
+            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-product-embeddings`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ only_missing: true }),
             });
-            if (fnError) throw fnError;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error ?? `Erro ${res.status}`);
             setSuccess(`Embeddings sincronizados: ${data?.updated ?? 0} produtos atualizados de ${data?.total ?? 0}.`);
             setTimeout(() => setSuccess(null), 5000);
         } catch (err) {
