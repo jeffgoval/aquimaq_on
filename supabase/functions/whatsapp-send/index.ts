@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
   }
 
   if (!conversation.contact_phone) return json(400, { error: "Conversation has no contact phone" });
-  if (!waApiUrl || !waApiKey || !waInstance) {
+  if (!waApiUrl || !waApiKey) {
     return json(500, { error: "WhatsApp API is not configured" });
   }
 
@@ -81,21 +81,18 @@ Deno.serve(async (req) => {
   let providerResponse: Record<string, unknown> | null = null;
 
   try {
-    const sendRes = await fetch(
-      `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": waApiKey,
-        },
-        body: JSON.stringify({
-          number: conversation.contact_phone,
-          text: content,
-          delay: 1200,
-        }),
+    const sendRes = await fetch(`${waApiUrl.replace(/\/$/, "")}/message/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": waApiKey,
       },
-    );
+      body: JSON.stringify({
+        phone: conversation.contact_phone,
+        text: content,
+        session: waInstance ?? "aquimaq",
+      }),
+    });
     providerResponse = await sendRes.json().catch(() => ({}));
     providerStatus = sendRes.ok ? "sent" : "failed";
   } catch {
