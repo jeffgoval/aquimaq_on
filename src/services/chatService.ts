@@ -126,11 +126,6 @@ export const handoffConversation = async (
     p_reason: reason,
   });
   if (error) throw new Error(error.message);
-
-  // Keep human mode active on WhatsApp so the bot stays silent after transfer
-  await (supabase.from('whatsapp_sessions') as any)
-    .update({ human_mode: true, assigned_agent: toAgent })
-    .eq('conversation_id', conversationId);
 };
 
 export const closeConversation = async (conversationId: string): Promise<void> => {
