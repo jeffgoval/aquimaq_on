@@ -174,22 +174,41 @@ export default function AdminAtendimentoPage() {
     const content = newMessage.trim();
     setNewMessage('');
     setSending(true);
+
+    // Otimista: aparece imediatamente enquanto aguarda servidor
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMsg: ChatMessage = {
+      id: optimisticId,
+      conversationId: selectedId,
+      senderType: 'human_agent',
+      senderId: user.id,
+      content,
+      externalMessageId: null,
+      deliveryStatus: 'pending',
+      metadata: null,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+
     try {
       await sendAdminMessage(selectedId, user.id, content);
-
-      // Força a atualização da lista local (evita que a msg "suma" se o Realtime falhar/atrasar)
+      // Aguarda DB commitar antes de buscar
+      await new Promise((r) => setTimeout(r, 500));
       const list = await getMessages(selectedId);
       setMessages(list);
-
-      await loadConversations();
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+      await loadConversations();
     } catch (err) {
+      // Remove mensagem otimista em caso de falha
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       const msg = err instanceof Error ? err.message : 'Falha ao enviar. Tente novamente.';
       showToast(msg, 'error');
     } finally {
       setSending(false);
     }
   };
+
 
   const filtered = conversations.filter((c) => {
     if (filter === 'bot') return c.queueState === 'bot';
