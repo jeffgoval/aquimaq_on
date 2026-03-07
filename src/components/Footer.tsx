@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Facebook, Instagram, Youtube, MessageCircle, Clock, HelpCircle, Package } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram, Youtube, Clock, HelpCircle, Package } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { ROUTES } from '@/constants/routes';
 import { maskPhone } from '@/utils/masks';
@@ -123,11 +123,6 @@ const Footer: React.FC = () => {
             : null;
     const addrCEP = formatCEP(addr?.zip ?? null);
 
-    const whatsappNumber = (settings?.whatsapp || settings?.phone || '').replace(/\D/g, '');
-    const whatsappHref = whatsappNumber
-        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá, preciso de ajuda!')}`
-        : null;
-
     const facebookUrl = settings?.socialMedia?.facebook || null;
     const instagramUrl = settings?.socialMedia?.instagram || null;
     const youtubeUrl = settings?.socialMedia?.youtube || null;
@@ -165,19 +160,6 @@ const Footer: React.FC = () => {
                                 <Package size={13} className="text-agro-500 shrink-0" />
                                 Rastrear Pedido
                             </Link></li>
-                            {whatsappHref && (
-                                <li>
-                                    <a
-                                        href={whatsappHref}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="hover:text-white transition-colors inline-flex items-center gap-1.5"
-                                    >
-                                        <MessageCircle size={13} className="text-agro-500 shrink-0" />
-                                        Fale pelo WhatsApp
-                                    </a>
-                                </li>
-                            )}
                             <li><Link to={ROUTES.CONTACT} className="hover:text-white transition-colors">Fale Conosco</Link></li>
                         </ul>
                     </div>
