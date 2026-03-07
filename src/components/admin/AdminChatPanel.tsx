@@ -6,6 +6,7 @@ import {
   getConversations,
   getMessages,
   handoffConversation,
+  releaseConversationToBot,
   sendAdminMessage,
   subscribeToMessages,
 } from '@/services/chatService';
@@ -44,6 +45,7 @@ const AdminChatPanel: React.FC = () => {
   const [handoffTo, setHandoffTo] = useState<string>('');
   const [handoffing, setHandoffing] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
@@ -163,6 +165,20 @@ const AdminChatPanel: React.FC = () => {
     }
   };
 
+  const handleReleaseToBot = async () => {
+    if (!selectedId || releasing) return;
+    try {
+      setReleasing(true);
+      await releaseConversationToBot(selectedId);
+      await loadConversations();
+    } catch (error) {
+      console.error('Error releasing to bot', error);
+      alert('Erro ao devolver ao bot');
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId || !user || !newMessage.trim() || sending) return;
@@ -187,6 +203,7 @@ const AdminChatPanel: React.FC = () => {
   const filtered = conversations.filter((c) => filter === 'all' || c.status === filter);
   const selectedConv = conversations.find((c) => c.id === selectedId);
   const canHandoff = Boolean(selectedConv) && (isAdmin || isGerente);
+  const canReleaseToBot = Boolean(selectedConv) && (isAdmin || isGerente) && selectedConv.channel === 'whatsapp' && selectedConv.assignedAgent != null && selectedConv.status !== 'closed';
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] min-h-[500px] max-h-[900px] border border-stone-200 rounded-xl bg-white overflow-hidden shadow-sm">
@@ -297,8 +314,18 @@ const AdminChatPanel: React.FC = () => {
                 )}
               </div>
 
-              {canHandoff && (
+              {(canHandoff || canReleaseToBot) && (
                 <div className="px-5 py-2 border-b border-stone-100 flex flex-wrap gap-2 items-center bg-stone-50">
+                  {canReleaseToBot && (
+                    <button
+                      type="button"
+                      onClick={handleReleaseToBot}
+                      disabled={releasing}
+                      className="text-xs px-3 py-1.5 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                    >
+                      {releasing ? 'Devolvendo...' : 'Devolver ao bot'}
+                    </button>
+                  )}
                   <select
                     value={handoffTo}
                     onChange={(e) => setHandoffTo(e.target.value)}

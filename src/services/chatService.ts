@@ -143,6 +143,23 @@ export const closeConversation = async (conversationId: string): Promise<void> =
     .eq('conversation_id', conversationId);
 };
 
+/** Devolve a conversa ao bot (agente IA). Só faz sentido para canal WhatsApp. */
+export const releaseConversationToBot = async (conversationId: string): Promise<void> => {
+  const { error } = await (supabase.from('chat_conversations') as any)
+    .update({
+      assigned_agent: null,
+      current_queue_state: 'bot',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId);
+  if (error) throw new Error(error.message);
+
+  await (supabase.from('whatsapp_sessions') as any)
+    .update({ human_mode: false, assigned_agent: null, unread_count: 0 })
+    .eq('conversation_id', conversationId);
+};
+
 export const sendAdminMessage = async (
   conversationId: string,
   adminId: string,

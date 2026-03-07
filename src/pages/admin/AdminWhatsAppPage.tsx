@@ -6,6 +6,7 @@ import {
   getConversations,
   getMessages,
   handoffConversation,
+  releaseConversationToBot,
   sendAdminMessage,
   subscribeToMessages,
 } from '@/services/chatService';
@@ -54,6 +55,7 @@ export default function AdminWhatsAppPage() {
   const [handoffTo, setHandoffTo] = useState('');
   const [handoffing, setHandoffing] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadBotStatus = useCallback(async () => {
@@ -144,15 +146,20 @@ export default function AdminWhatsAppPage() {
     setClosing(true);
     try {
       await closeConversation(selectedId);
-      const conv = conversations.find((c) => c.id === selectedId);
-      if (conv?.contactPhone) {
-        await (supabase.from('whatsapp_sessions') as any)
-          .update({ human_mode: false, assigned_agent: null })
-          .eq('phone', conv.contactPhone);
-      }
       await loadConversations();
     } finally {
       setClosing(false);
+    }
+  };
+
+  const handleReleaseToBot = async () => {
+    if (!selectedId || releasing) return;
+    setReleasing(true);
+    try {
+      await releaseConversationToBot(selectedId);
+      await loadConversations();
+    } finally {
+      setReleasing(false);
     }
   };
 
@@ -289,7 +296,7 @@ export default function AdminWhatsAppPage() {
                       <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full ${queueColor[c.queueState ?? 'bot'] ?? 'bg-stone-100 text-stone-500'}`}>
                         {queueLabel[c.queueState ?? 'bot'] ?? c.queueState}
                       </span>
-                      {isWaiting && canAct && (
+                      {(isWaiting || c.queueState === 'bot') && canAct && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleClaim(c.id); }}
                           className="mt-2 w-full text-center text-[12px] py-1 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -336,12 +343,21 @@ export default function AdminWhatsAppPage() {
               {/* Actions bar */}
               {canAct && selectedConv.status !== 'closed' && (
                 <div className="px-4 py-2 border-b border-stone-100 bg-stone-50 flex flex-wrap gap-2 items-center">
-                  {selectedConv.queueState === 'waiting_human' && (
+                  {(selectedConv.queueState === 'waiting_human' || selectedConv.queueState === 'bot') && (
                     <button
                       onClick={() => handleClaim(selectedId)}
                       className="text-xs px-3 py-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600"
                     >
                       Assumir agora
+                    </button>
+                  )}
+                  {selectedConv.queueState === 'assigned' && (
+                    <button
+                      onClick={handleReleaseToBot}
+                      disabled={releasing}
+                      className="text-xs px-3 py-1.5 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                    >
+                      {releasing ? 'Devolvendo...' : 'Devolver ao bot'}
                     </button>
                   )}
                   <select
