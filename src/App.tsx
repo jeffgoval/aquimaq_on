@@ -37,8 +37,7 @@ const AdminOrdersManagement = lazy(() => import('./components/admin/AdminOrdersM
 const AdminProductsManagement = lazy(() => import('./components/admin/AdminProductsManagement'));
 const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerManagement'));
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
-const AdminChatPanel = lazy(() => import('./components/admin/AdminChatPanel'));
-const AdminChatPage = lazy(() => import('./pages/admin/AdminChatPage'));
+const AdminAtendimentoPage = lazy(() => import('./pages/admin/AdminAtendimentoPage'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
 const AdminKnowledgeBasePage = lazy(() => import('./pages/admin/AdminKnowledgeBasePage'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
@@ -109,7 +108,7 @@ function AdminRoutes() {
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
-                        <AdminChatPage />
+                        <AdminAtendimentoPage />
                     </ProtectedRoute>
                 } />
             </Routes>
