@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
   }
 
   if (!conversation.contact_phone) return json(400, { error: "Conversation has no contact phone" });
-  if (!waApiUrl || !waApiKey) {
-    return json(500, { error: "WhatsApp API is not configured" });
+  if (!waApiUrl || !waApiKey || !waInstance) {
+    return json(500, { error: "WhatsApp API is not configured (WHATSAPP_API_URL, WHATSAPP_API_KEY, WHATSAPP_INSTANCE)" });
   }
 
   const externalMessageId = crypto.randomUUID();
@@ -81,18 +81,22 @@ Deno.serve(async (req) => {
   let providerResponse: Record<string, unknown> | null = null;
 
   try {
-    const sendRes = await fetch(`${waApiUrl.replace(/\/$/, "")}/message/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": waApiKey,
+    // Alinhado ao whatsapp-inbound: Evolution API sendText (number no body, instance no path, apikey header)
+    const sendRes = await fetch(
+      `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": waApiKey,
+        },
+        body: JSON.stringify({
+          number: conversation.contact_phone,
+          text: content,
+          delay: 1200,
+        }),
       },
-      body: JSON.stringify({
-        phone: conversation.contact_phone,
-        text: content,
-        session: waInstance ?? "aquimaq",
-      }),
-    });
+    );
     providerResponse = await sendRes.json().catch(() => ({}));
     providerStatus = sendRes.ok ? "sent" : "failed";
   } catch {
