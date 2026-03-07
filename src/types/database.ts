@@ -88,19 +88,6 @@ export interface PaymentRow {
   updated_at?: string;
 }
 
-export interface WhatsAppSessionRow {
-  id: string;
-  phone: string;
-  human_mode: boolean;
-  conversation_id: string | null;
-  assigned_agent: string | null;
-  last_customer_message_at: string | null;
-  unread_count: number;
-  last_handoff_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ReviewRow {
   id: string;
   product_id: string;
@@ -125,12 +112,6 @@ export interface Database {
         Row: ProductRow;
         Insert: any;
         Update: any;
-        Relationships: [];
-      };
-      whatsapp_sessions: {
-        Row: WhatsAppSessionRow;
-        Insert: Omit<WhatsAppSessionRow, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<WhatsAppSessionRow>;
         Relationships: [];
       };
       reviews: {

@@ -6,7 +6,7 @@ E-commerce especializado em produtos agropecuários, ferramentas, peças e semen
 
 - **Frontend**: React 18, Vite, TypeScript, TailwindCSS, React Query, React Router
 - **Backend/BaaS**: Supabase (Postgres, Auth, Storage, Realtime)
-- **Pagamentos**: combinados após confirmação do pedido (ex.: contato/WhatsApp)
+- **Pagamentos**: combinados após confirmação do pedido (ex.: contato)
 
 ## Setup Local
 
@@ -22,7 +22,6 @@ E-commerce especializado em produtos agropecuários, ferramentas, peças e semen
    VITE_SUPABASE_ANON_KEY=<chave_anonima>
 
    # Opcionais
-   VITE_WHATSAPP_NUMBER=5500000000000   # número padrão para CTAs de WhatsApp
    VITE_OG_IMAGE=https://...            # imagem padrão para Open Graph (SEO)
    ```
 

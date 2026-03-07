@@ -9,29 +9,3 @@ entrypoint = "./functions/melhor-envios-quote/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/melhor-envios-quote/*.html" ]
 
-[functions.ai-chat]
-enabled = true
-verify_jwt = false
-import_map = "./functions/ai-chat/deno.json"
-entrypoint = "./functions/ai-chat/index.ts"
-
-[functions.process-knowledge-base]
-enabled = true
-verify_jwt = true
-import_map = "./functions/process-knowledge-base/deno.json"
-entrypoint = "./functions/process-knowledge-base/index.ts"
-
-[functions.sync-product-embeddings]
-enabled = true
-verify_jwt = true
-entrypoint = "./functions/sync-product-embeddings/index.ts"
-
-[functions.whatsapp-inbound]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/whatsapp-inbound/index.ts"
-
-[functions.whatsapp-send]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/whatsapp-send/index.ts"
