@@ -12,8 +12,6 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from '@/features/catalog/pages/HomePage';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import ChatWidget from './components/ChatWidget';
-
 const ProductPage = lazy(() => import('@/features/catalog/pages/ProductPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage'));
@@ -37,9 +35,6 @@ const AdminOrdersManagement = lazy(() => import('./components/admin/AdminOrdersM
 const AdminProductsManagement = lazy(() => import('./components/admin/AdminProductsManagement'));
 const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerManagement'));
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
-const AdminAtendimentoPage = lazy(() => import('./pages/admin/AdminAtendimentoPage'));
-const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
-const AdminKnowledgeBasePage = lazy(() => import('./pages/admin/AdminKnowledgeBasePage'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 
 const ScrollToTop = () => {
@@ -67,8 +62,6 @@ function AdminRoutes() {
             'PRODUCTS': ROUTES.ADMIN_PRODUCTS,
             'USERS': ROUTES.ADMIN_USERS,
             'DASHBOARD': ROUTES.ADMIN,
-            'KNOWLEDGE_BASE': ROUTES.ADMIN_KNOWLEDGE_BASE,
-            'CHAT': ROUTES.ADMIN_CHAT,
         };
         navigate(paths[view] || ROUTES.ADMIN);
     };
@@ -94,21 +87,6 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_SETTINGS} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <StoreSettings onBack={() => navigate(ROUTES.ADMIN)} />
-                    </ProtectedRoute>
-                } />
-                <Route path={ROUTE_PATHS.ADMIN_AI_SETTINGS} element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                        <AdminAISettings />
-                    </ProtectedRoute>
-                } />
-                <Route path={ROUTE_PATHS.ADMIN_KNOWLEDGE_BASE} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
-                        <AdminKnowledgeBasePage />
-                    </ProtectedRoute>
-                } />
-                <Route path={ROUTE_PATHS.ADMIN_CHAT} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
-                        <AdminAtendimentoPage />
                     </ProtectedRoute>
                 } />
             </Routes>
@@ -173,8 +151,7 @@ function AppContent() {
                 ))}
             </div>
 
-            <ChatWidget />
-        </BrowserRouter>
+            </BrowserRouter>
     );
 }
 

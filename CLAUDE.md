@@ -24,15 +24,9 @@ npx supabase functions deploy checkout --no-verify-jwt
 npx supabase functions deploy mercado-pago-webhook --no-verify-jwt
 npx supabase functions deploy melhor-envios-quote
 npx supabase functions deploy melhor-envios-webhook --no-verify-jwt
-npx supabase functions deploy ai-chat   # Chat RAG (ai_settings + ai_knowledge_base)
-npx supabase functions deploy process-knowledge-base   # Ingestão PDF → ai_knowledge_base
 
 npx supabase link --project-ref <ref>
 npx supabase db push   # apply migrations
-
-# Ingestão RAG: popular ai_knowledge_base com chunks ~1000 chars
-# Requer .env: VITE_SUPABASE_URL (ou SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
-npm run ingest -- <caminho-arquivo> [titulo] [sourceType]
 ```
 
 ## Environment Variables
@@ -50,8 +44,6 @@ Edge Functions secrets (configured in Supabase Project Settings):
 - `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `MELHOR_ENVIOS_TOKEN`, `MELHOR_ENVIOS_FROM_CEP`
-
-For `ai-chat`: API key is stored in `ai_settings` (admin); optionally set `OPENAI_API_KEY` for local ingest script.
 
 ## Architecture
 
@@ -78,7 +70,7 @@ For `ai-chat`: API key is stored in `ai_settings` (admin); optionally set `OPENA
 - `supabase.ts` — typed Supabase client (`Database` generic)
 - `checkoutService.ts` — calls Edge Function `checkout` via raw `fetch` with `session.access_token` (NOT `supabase.functions.invoke()`, which sends anon key instead of user token)
 - `shippingService.ts` — calls Edge Function `melhor-envios-quote` for carrier quotes; always prepends "Retirada no Balcão" option
-- Others: `productService`, `orderService`, `adminService`, `bannerService`, `chatService`, etc.
+- Others: `productService`, `orderService`, `adminService`, `bannerService`, etc.
 
 **Path aliases**: `@/` maps to `src/` (configured in `vite.config.ts` and `tsconfig.json`).
 
@@ -92,26 +84,19 @@ For `ai-chat`: API key is stored in `ai_settings` (admin); optionally set `OPENA
 | `mercado-pago-webhook` | `verify_jwt=false` | Validates HMAC, updates `payments` and `orders.status` |
 | `melhor-envios-quote` | `verify_jwt=true` | Fetches shipping quotes from Melhor Envios API |
 | `melhor-envios-webhook` | `verify_jwt=false` | Handles Melhor Envios shipping events |
-| `ai-chat` | `verify_jwt=true` | RAG: embedding da pergunta, busca em `ai_knowledge_base`, resposta com memória (histórico) |
-| `process-knowledge-base` | `verify_jwt=true` | Ingestão RAG: fetch do PDF por URL, extração de texto, chunking e inserção em `ai_knowledge_base` com embeddings (metadata: file_url, storage_path) |
 
 ### Database (Supabase Postgres)
 
-Key tables: `products`, `profiles`, `orders`, `order_items`, `payments`, `chat_conversations`, `chat_messages`, `ai_knowledge_base`.
+Key tables: `products`, `profiles`, `orders`, `order_items`, `payments`.
 
 RLS policies are in `supabase/migrations/`. Without them, all reads/writes fail. Migrations in `supabase/migrations/` starting with `20260225_fix_linter_*` address Supabase linter warnings.
 
-Storage buckets (must be created manually as **public**): `store-assets`, `product-images`, `knowledge-base`.
-
-**RAG (Base de Conhecimento):**
-1. **Bucket:** No Dashboard → Storage → New bucket → id = `knowledge-base`, público (ou via API).
-2. **Database:** Aplicar a migração `supabase/migrations/20260226000000_ai_knowledge_base_and_bucket.sql` (`npx supabase db push` ou via Dashboard). Garante a tabela `ai_knowledge_base` com coluna `embedding` tipo `vector(1536)` e a função `match_knowledge_base`.
-3. **Deploy da ingestão:** `npx supabase link --project-ref <ref>` (uma vez); depois `npx supabase functions deploy process-knowledge-base`.
+Storage buckets (must be created manually as **public**): `store-assets`, `product-images`.
 
 ### Roles
 `cliente` (default) | `vendedor` | `gerente` | `admin`
 
-Admin panel is accessible to `admin` and `gerente`. Certain sub-routes (users, settings, knowledge base, chat) require `admin` only.
+Admin panel is accessible to `admin` and `gerente`. Certain sub-routes (users, settings) require `admin` or `gerente`.
 
 ## Mercado Pago Integration Notes
 

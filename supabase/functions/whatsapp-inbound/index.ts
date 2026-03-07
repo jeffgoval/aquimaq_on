@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
         subject: "Atendimento WhatsApp",
         contact_phone: phone,
         assigned_agent: null,
-        current_queue_state: "bot",
+        current_queue_state: "waiting_human",
       })
       .select("id")
       .single();
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     await supabase.from("whatsapp_sessions").upsert({
       phone,
       conversation_id: conversationId,
-      human_mode: false,
+      human_mode: true,
       assigned_agent: null,
       last_customer_message_at: timestamp,
       unread_count: 1,
@@ -196,90 +196,14 @@ Deno.serve(async (req) => {
     .from("chat_conversations")
     .update({
       updated_at: new Date().toISOString(),
-      current_queue_state: humanMode ? "assigned" : "bot",
+      current_queue_state: humanMode ? "assigned" : "waiting_human",
       status: "active",
     })
     .eq("id", conversationId);
 
-  let routing: "ai" | "human" = humanMode ? "human" : "ai";
-
-  if (!humanMode) {
-    const internalSecret = Deno.env.get("AI_CHAT_INTERNAL_SECRET");
-    const { data: aiData, error: aiError } = await supabase.functions.invoke("ai-chat", {
-      body: {
-        conversation_id: conversationId,
-        message: text,
-        skip_customer_insert: true,
-        ...(internalSecret ? { _internal_secret: internalSecret } : {}),
-      },
-    });
-    if (aiError) {
-      routing = "human";
-      await supabase
-        .from("chat_conversations")
-        .update({
-          status: "waiting_human",
-          current_queue_state: "waiting_human",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", conversationId);
-    } else {
-      const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
-      const waApiKey = Deno.env.get("WHATSAPP_API_KEY");
-      const waInstance = Deno.env.get("WHATSAPP_INSTANCE");
-      if (waApiUrl && waApiKey && waInstance && typeof aiData?.reply === "string") {
-        let deliveryStatus: "sent" | "failed" = "failed";
-        let providerResponse: unknown = null;
-        try {
-          const sendRes = await fetch(
-            `${waApiUrl.replace(/\/$/, "")}/message/send`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-api-key": waApiKey,
-              },
-              body: JSON.stringify({
-                phone: phone,
-                text: aiData.reply,
-              }),
-            },
-          );
-          providerResponse = await sendRes.json().catch(() => ({}));
-          deliveryStatus = sendRes.ok ? "sent" : "failed";
-        } catch {
-          deliveryStatus = "failed";
-        }
-
-        const { data: lastAi } = await supabase
-          .from("chat_messages")
-          .select("id")
-          .eq("conversation_id", conversationId)
-          .eq("sender_type", "ai_agent")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (lastAi?.id) {
-          await supabase
-            .from("chat_messages")
-            .update({
-              delivery_status: deliveryStatus,
-              metadata: {
-                channel: "whatsapp",
-                provider: "whatsapp_api",
-                provider_response: providerResponse,
-              },
-            })
-            .eq("id", lastAi.id);
-        }
-      }
-    }
-  }
-
   return json(200, {
     conversation_id: conversationId,
-    routing,
+    routing: "human",
     assigned_agent: assignedAgent,
   });
 });

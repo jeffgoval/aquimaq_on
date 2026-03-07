@@ -88,40 +88,6 @@ export interface PaymentRow {
   updated_at?: string;
 }
 
-export interface ChatConversationRow {
-  id: string;
-  customer_id: string | null;
-  status: string;
-  subject: string | null;
-  assigned_agent: string | null;
-  channel: string | null;
-  contact_phone: string | null;
-  current_queue_state: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ChatMessageRow {
-  id: string;
-  conversation_id: string;
-  sender_type: string;
-  sender_id: string | null;
-  content: string;
-  external_message_id: string | null;
-  delivery_status: string;
-  metadata: Json | null;
-  created_at: string;
-}
-
-export interface ChatAssignmentEventRow {
-  id: string;
-  conversation_id: string;
-  from_agent: string | null;
-  to_agent: string | null;
-  reason: string;
-  created_at: string;
-}
-
 export interface WhatsAppSessionRow {
   id: string;
   phone: string;
@@ -146,15 +112,6 @@ export interface ReviewRow {
   updated_at: string | null;
 }
 
-export interface AISettingsRow {
-  id: string;
-  provider: string;
-  api_key: string;
-  model: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Database {
   public: {
     Tables: {
@@ -168,51 +125,6 @@ export interface Database {
         Row: ProductRow;
         Insert: any;
         Update: any;
-        Relationships: [];
-      };
-      ai_settings: {
-        Row: AISettingsRow;
-        Insert: any;
-        Update: any;
-        Relationships: [];
-      };
-      chat_conversations: {
-        Row: ChatConversationRow;
-        Insert: {
-          id?: string;
-          customer_id?: string | null;
-          status?: string;
-          subject?: string | null;
-          assigned_agent?: string | null;
-          channel?: string | null;
-          contact_phone?: string | null;
-          current_queue_state?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: Partial<ChatConversationRow>;
-        Relationships: [];
-      };
-      chat_messages: {
-        Row: ChatMessageRow;
-        Insert: {
-          id?: string;
-          conversation_id: string;
-          sender_type: string;
-          sender_id?: string | null;
-          content: string;
-          external_message_id?: string | null;
-          delivery_status?: string;
-          metadata?: Json | null;
-          created_at?: string;
-        };
-        Update: Partial<ChatMessageRow>;
-        Relationships: [];
-      };
-      chat_assignment_events: {
-        Row: ChatAssignmentEventRow;
-        Insert: Omit<ChatAssignmentEventRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
-        Update: Partial<ChatAssignmentEventRow>;
         Relationships: [];
       };
       whatsapp_sessions: {
