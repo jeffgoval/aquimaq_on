@@ -16,7 +16,6 @@ interface StoreConfig {
     cnpj: string;
     phone: string;
     email: string;
-    whatsapp: string;
     openingHours: string;
     address: {
         zip: string;
@@ -55,7 +54,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         cnpj: '',
         phone: '',
         email: '',
-        whatsapp: '',
         openingHours: '',
         address: {
             zip: '',
@@ -86,7 +84,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 cnpj: maskDocument(settings.cnpj || ''),
                 phone: maskPhone(settings.phone || ''),
                 email: settings.email || '',
-                whatsapp: maskPhone(settings.whatsapp || ''),
                 openingHours: settings.openingHours || '',
                 address: {
                     zip: maskCEP(settings.address.zip || ''),
@@ -118,7 +115,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         const { name, value } = e.target;
         let formattedValue = value;
 
-        if (name === 'phone' || name === 'whatsapp') formattedValue = maskPhone(value);
+        if (name === 'phone') formattedValue = maskPhone(value);
         if (name === 'cnpj') formattedValue = maskDocument(value);
 
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
@@ -197,7 +194,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             cnpj: formData.cnpj.replace(/\D/g, ''),
             phone: formData.phone.replace(/\D/g, ''),
             email: formData.email,
-            whatsapp: formData.whatsapp.replace(/\D/g, ''),
             openingHours: formData.openingHours,
             address: {
                 zip: formData.address.zip.replace(/\D/g, ''),
@@ -341,20 +337,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 type="text"
                                                 name="phone"
                                                 value={formData.phone}
-                                                onChange={handleChange}
-                                                maxLength={15}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">WhatsApp</label>
-                                        <div className="relative">
-                                            <MessageCircle className="absolute left-3.5 top-3 text-gray-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="whatsapp"
-                                                value={formData.whatsapp}
                                                 onChange={handleChange}
                                                 maxLength={15}
                                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
