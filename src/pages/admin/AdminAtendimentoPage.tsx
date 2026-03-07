@@ -11,6 +11,7 @@ import {
   subscribeToMessages,
 } from '@/services/chatService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { ChatConversation, ChatMessage } from '@/types';
 import {
   Wifi,
@@ -50,6 +51,7 @@ const QUEUE_COLOR: Record<string, string> = {
 
 export default function AdminAtendimentoPage() {
   const { user, isAdmin, isGerente } = useAuth();
+  const { showToast } = useToast();
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -174,9 +176,16 @@ export default function AdminAtendimentoPage() {
     setSending(true);
     try {
       await sendAdminMessage(selectedId, user.id, content);
+
+      // Força a atualização da lista local (evita que a msg "suma" se o Realtime falhar/atrasar)
+      const list = await getMessages(selectedId);
+      setMessages(list);
+
       await loadConversations();
-    } catch {
-      setNewMessage(content);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao enviar. Tente novamente.';
+      showToast(msg, 'error');
     } finally {
       setSending(false);
     }
@@ -224,9 +233,8 @@ export default function AdminAtendimentoPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div
-          className={`col-span-2 lg:col-span-1 rounded-xl border p-4 flex items-center gap-3 ${
-            botOnline ? 'bg-emerald-50 border-emerald-200' : 'bg-stone-50 border-stone-200'
-          }`}
+          className={`col-span-2 lg:col-span-1 rounded-xl border p-4 flex items-center gap-3 ${botOnline ? 'bg-emerald-50 border-emerald-200' : 'bg-stone-50 border-stone-200'
+            }`}
         >
           {botOnline ? (
             <Wifi size={22} className="text-emerald-600 shrink-0" />
@@ -285,9 +293,8 @@ export default function AdminAtendimentoPage() {
                 return (
                   <li key={c.id}>
                     <div
-                      className={`p-3 cursor-pointer hover:bg-stone-50 transition-colors ${
-                        selectedId === c.id ? 'bg-agro-50 border-l-2 border-agro-500' : ''
-                      }`}
+                      className={`p-3 cursor-pointer hover:bg-stone-50 transition-colors ${selectedId === c.id ? 'bg-agro-50 border-l-2 border-agro-500' : ''
+                        }`}
                       onClick={() => setSelectedId(c.id)}
                     >
                       <div className="flex justify-between items-start mb-1">
@@ -302,9 +309,8 @@ export default function AdminAtendimentoPage() {
                         </span>
                       </div>
                       <span
-                        className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          QUEUE_COLOR[c.queueState ?? 'bot'] ?? 'bg-stone-100 text-stone-500'
-                        }`}
+                        className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full ${QUEUE_COLOR[c.queueState ?? 'bot'] ?? 'bg-stone-100 text-stone-500'
+                          }`}
                       >
                         {QUEUE_LABEL[c.queueState ?? 'bot'] ?? c.queueState}
                       </span>
@@ -342,9 +348,8 @@ export default function AdminAtendimentoPage() {
                         : selectedConv.customerName ?? `#${selectedId.slice(0, 6)}`}
                     </p>
                     <span
-                      className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-                        QUEUE_COLOR[selectedConv.queueState ?? 'bot']
-                      }`}
+                      className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${QUEUE_COLOR[selectedConv.queueState ?? 'bot']
+                        }`}
                     >
                       {QUEUE_LABEL[selectedConv.queueState ?? 'bot']}
                     </span>
@@ -410,13 +415,12 @@ export default function AdminAtendimentoPage() {
                     className={`flex ${msg.senderType === 'customer' ? 'justify-start' : 'justify-end'}`}
                   >
                     <div
-                      className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-[13.5px] shadow-sm leading-relaxed ${
-                        msg.senderType === 'customer'
-                          ? 'bg-white border border-stone-200 text-stone-800 rounded-bl-sm'
-                          : msg.senderType === 'ai_agent'
-                            ? 'bg-blue-50 border border-blue-100 text-stone-800 rounded-br-sm'
-                            : 'bg-agro-600 text-white rounded-br-sm'
-                      }`}
+                      className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-[13.5px] shadow-sm leading-relaxed ${msg.senderType === 'customer'
+                        ? 'bg-white border border-stone-200 text-stone-800 rounded-bl-sm'
+                        : msg.senderType === 'ai_agent'
+                          ? 'bg-blue-50 border border-blue-100 text-stone-800 rounded-br-sm'
+                          : 'bg-agro-600 text-white rounded-br-sm'
+                        }`}
                     >
                       <span className="text-[11px] font-semibold opacity-80">
                         {msg.senderType === 'customer'

@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: authData, error: authError } = await userClient.auth.getUser();
-  if (authError || !authData?.user) return json(401, { error: "Not authenticated" });
+  if (authError || !authData?.user) return json(401, { error: "Sessão expirada ou inválida. Faça login novamente." });
 
   const adminClient = createClient(supabaseUrl, serviceRole);
   const userId = authData.user.id;
@@ -81,19 +81,17 @@ Deno.serve(async (req) => {
   let providerResponse: Record<string, unknown> | null = null;
 
   try {
-    // Alinhado ao whatsapp-inbound: Evolution API sendText (number no body, instance no path, apikey header)
     const sendRes = await fetch(
-      `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
+      `${waApiUrl.replace(/\/$/, "")}/message/send`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": waApiKey,
+          "x-api-key": waApiKey,
         },
         body: JSON.stringify({
-          number: conversation.contact_phone,
+          phone: conversation.contact_phone,
           text: content,
-          delay: 1200,
         }),
       },
     );
@@ -137,7 +135,14 @@ Deno.serve(async (req) => {
     })
     .eq("conversation_id", conversationId);
 
-  return json(providerStatus === "sent" ? 200 : 502, {
+  if (providerStatus !== "sent") {
+    return json(502, {
+      error: "Falha ao enviar no WhatsApp. Verifique a instância e a conexão.",
+      status: providerStatus,
+      provider_response: providerResponse,
+    });
+  }
+  return json(200, {
     provider_message_id: externalMessageId,
     status: providerStatus,
   });

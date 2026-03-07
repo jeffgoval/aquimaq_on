@@ -84,12 +84,29 @@ export const sendWhatsAppMessage = async (
       body: JSON.stringify({ conversation_id: conversationId, content }),
     }
   );
-  const data = (await res.json()) as { error?: string };
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    // resposta não-JSON (ex: HTML de erro do gateway)
+  }
   if (!res.ok) {
     if (res.status === 401) {
       throw new Error('Sessão expirada. Faça login novamente.');
     }
-    throw new Error(data?.error || 'Erro ao enviar mensagem WhatsApp');
+    if (res.status === 502) {
+      throw new Error(
+        (data?.error as string) ||
+        'Falha ao enviar no WhatsApp. Verifique se a instância está conectada.'
+      );
+    }
+    if (res.status === 500) {
+      throw new Error(
+        (data?.error as string) ||
+        'Erro de configuração do servidor. Verifique os secrets do WhatsApp no Supabase.'
+      );
+    }
+    throw new Error((data?.error as string) || `Erro ao enviar mensagem WhatsApp (${res.status})`);
   }
   return data as { provider_message_id: string; status: string };
 };

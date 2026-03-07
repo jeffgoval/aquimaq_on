@@ -33,5 +33,5 @@ entrypoint = "./functions/whatsapp-inbound/index.ts"
 
 [functions.whatsapp-send]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/whatsapp-send/index.ts"

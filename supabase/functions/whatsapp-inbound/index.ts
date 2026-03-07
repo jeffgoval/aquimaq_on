@@ -232,17 +232,16 @@ Deno.serve(async (req) => {
         let providerResponse: unknown = null;
         try {
           const sendRes = await fetch(
-            `${waApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(waInstance)}`,
+            `${waApiUrl.replace(/\/$/, "")}/message/send`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "apikey": waApiKey,
+                "x-api-key": waApiKey,
               },
               body: JSON.stringify({
-                number: phone,
+                phone: phone,
                 text: aiData.reply,
-                delay: 1200,
               }),
             },
           );
