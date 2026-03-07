@@ -66,20 +66,31 @@ export const sendWhatsAppMessage = async (
   conversationId: string,
   content: string
 ): Promise<{ provider_message_id: string; status: string }> => {
-  const { data: { session } } = await supabase.auth.getSession();
+  // Garantir token fresco (evita 401 por token expirado)
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.access_token) {
+    throw new Error('Sessão expirada ou não autenticado. Faça login novamente.');
+  }
+  const { data: refreshed } = await supabase.auth.refreshSession({ refresh_token: session.refresh_token });
+  const token = refreshed?.session?.access_token ?? session.access_token;
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-send`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session?.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ conversation_id: conversationId, content }),
     }
   );
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Erro ao enviar mensagem WhatsApp');
+  const data = (await res.json()) as { error?: string };
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Sessão expirada. Faça login novamente.');
+    }
+    throw new Error(data?.error || 'Erro ao enviar mensagem WhatsApp');
+  }
   return data as { provider_message_id: string; status: string };
 };
 
