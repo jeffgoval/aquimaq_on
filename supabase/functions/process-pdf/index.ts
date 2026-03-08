@@ -100,17 +100,24 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
 
-    if (!supabaseUrl || !serviceRoleKey || !openaiKey) {
+    if (!supabaseUrl || !serviceRoleKey) {
         return jsonResponse({ error: "Server configuration error" }, 500);
+    }
+    if (!openaiKey) {
+        return jsonResponse({ error: "OPENAI_API_KEY não configurada. Defina em Dashboard > Project Settings > Edge Functions > Secrets." }, 500);
     }
 
     // Verifica Autenticação via JWT (apenas admin/vendedor deve usar)
     const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+        return jsonResponse({ error: "Unauthorized access" }, 401);
+    }
     const authClient = createClient(supabaseUrl, serviceRoleKey, {
         global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
     if (authError || !user) {
         console.error("Auth error:", authError);
         return jsonResponse({ error: "Unauthorized access" }, 401);
@@ -137,7 +144,11 @@ Deno.serve(async (req) => {
         // 2. Extrair o texto
         console.log("Extracting text...");
         const extractedText = await extractTextFromPdf(pdfArrayBuffer);
-        if (!extractedText.trim()) throw new Error("No text found in PDF");
+        if (!extractedText.trim()) {
+            return jsonResponse({
+                error: "O PDF não contém texto extraível. Use um PDF com texto selecionável (não escaneado). Para documentos escaneados seria necessário OCR."
+            }, 400);
+        }
 
         // 3. Fatiar o texto
         console.log("Chunking text...");

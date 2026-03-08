@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    ChevronRight, ShoppingCart, MessageCircle, FileText, ExternalLink,
+    ChevronRight, ShoppingCart, FileText, ExternalLink,
     ShieldCheck, Truck, CreditCard, RefreshCcw, MapPin, Loader2,
     AlertTriangle, Store, Zap, Tag, Users, CheckCircle,
 } from 'lucide-react';
@@ -52,8 +52,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const ctaRef = useRef<HTMLDivElement>(null);
     const { documents: productDocs, loading: docsLoading } = useProductDocuments(product.id);
     const { cultures: availableCultures } = useCropCalendar();
-
-    const whatsappNumber = settings?.phone?.replace(/\D/g, '') ?? import.meta.env.VITE_WHATSAPP_NUMBER ?? '';
 
     // Reset on product change
     useEffect(() => {
@@ -327,21 +325,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             <ShoppingCart size={18} />
                             {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
                         </button>
-
-                        {/* Tertiary CTA: WhatsApp */}
-                        {whatsappNumber && (
-                            <a
-                                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                                    `Olá! Tenho interesse no produto:\n\n📦 *${product.name}*\nPreço: ${formatCurrency(product.price)}\n\nPodemos negociar?`
-                                )}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full bg-[#25D366] hover:bg-[#20c45e] text-white py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-                            >
-                                <MessageCircle size={17} />
-                                Negociar no WhatsApp
-                            </a>
-                        )}
                     </div>
 
                     {/* ── Inline Shipping Estimator ── */}

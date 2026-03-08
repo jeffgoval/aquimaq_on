@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Phone, Mail, MapPin, Clock, MessageCircle, Home } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useStore } from '@/contexts/StoreContext';
@@ -9,15 +9,11 @@ import { maskPhone } from '@/utils/masks';
 const ContactPage: React.FC = () => {
     const { settings } = useStore();
 
-    const whatsapp = settings?.whatsapp || '';
     const phone = settings?.phone || '';
     const email = settings?.email || '';
     const openingHours = settings?.openingHours || '';
     const address = settings?.address;
     const storeName = settings?.storeName || 'Aquimaq';
-
-    const whatsappNumber = whatsapp.replace(/\D/g, '');
-    const whatsappHref = whatsappNumber ? `https://wa.me/55${whatsappNumber}` : '#';
 
     const addressLine = address && address.street
         ? [
@@ -47,7 +43,7 @@ const ContactPage: React.FC = () => {
                     <div className="bg-agro-600 px-6 py-8 md:px-10 md:py-12 text-white">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
-                                <MessageCircle size={32} />
+                                <Phone size={32} />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold">Fale Conosco</h1>
@@ -58,26 +54,6 @@ const ContactPage: React.FC = () => {
 
                     <div className="p-6 md:p-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {whatsapp && (
-                                <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="p-3 bg-green-100 text-green-700 rounded-full shrink-0">
-                                        <MessageCircle size={22} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">WhatsApp</h3>
-                                        <p className="text-gray-500 text-sm mb-2">Atendimento rápido pelo WhatsApp</p>
-                                        <a
-                                            href={whatsappHref}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-green-700 font-semibold hover:underline"
-                                        >
-                                            {maskPhone(whatsapp)}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-
                             {phone && (
                                 <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-xl border border-gray-100">
                                     <div className="p-3 bg-blue-100 text-blue-700 rounded-full shrink-0">

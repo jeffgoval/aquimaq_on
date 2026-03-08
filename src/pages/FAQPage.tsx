@@ -74,7 +74,7 @@ const FAQPage: React.FC = () => {
         {
             question: 'Como entro em contato com o suporte?',
             answer:
-                'Você pode nos contatar pelo WhatsApp, telefone ou e-mail. Acesse a página "Fale Conosco" para ver todos os canais de atendimento e horários disponíveis.',
+                'Você pode nos contatar por telefone ou e-mail. Acesse a página "Fale Conosco" para ver todos os canais de atendimento e horários disponíveis.',
         },
     ];
 

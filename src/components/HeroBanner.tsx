@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Phone } from 'lucide-react';
 import { getActiveBanners } from '@/services/bannerService';
 import { useStore } from '@/contexts/StoreContext';
 
@@ -62,10 +62,8 @@ const HeroBanner: React.FC = () => {
         touchStartXRef.current = null;
     };
 
-    const whatsappNumber = (settings?.whatsapp || settings?.phone || '').replace(/\D/g, '');
-    const whatsappHref = whatsappNumber
-        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá, vim pelo site e gostaria de falar com um consultor!')}`
-        : null;
+    const phoneNumber = settings?.phone?.replace(/\D/g, '');
+    const contactHref = phoneNumber ? `tel:+55${phoneNumber}` : null;
 
     if (loading) return <HeroBannerSkeleton />;
     if (banners.length === 0) return null;
@@ -129,14 +127,12 @@ const HeroBanner: React.FC = () => {
                                             </button>
                                         )
                                     )}
-                                    {whatsappHref && (
+                                    {contactHref && (
                                         <a
-                                            href={whatsappHref}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                            href={contactHref}
                                             className="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-900 font-bold text-lg rounded-lg shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center gap-2"
                                         >
-                                            <MessageCircle size={20} />
+                                            <Phone size={20} />
                                             Falar com Consultor
                                         </a>
                                     )}

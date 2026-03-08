@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
 export interface DashboardStats {
@@ -215,7 +216,15 @@ export const processPdfForRag = async (
     headers: { Authorization: `Bearer ${session.access_token}` },
   });
 
-  if (error) throw error;
+  if (error) {
+    if (error instanceof FunctionsHttpError && error.context) {
+      const res = error.context as Response;
+      const body = await res.json().catch(() => ({}));
+      const msg = (body as { error?: string })?.error;
+      throw new Error(msg || error.message);
+    }
+    throw error;
+  }
   if (data?.error) throw new Error(String(data.error));
   return { chunksCount: data?.chunksCount ?? 0 };
 };

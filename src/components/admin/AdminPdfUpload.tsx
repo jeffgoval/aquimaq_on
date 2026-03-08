@@ -38,14 +38,18 @@ const AdminPdfUpload: React.FC<AdminPdfUploadProps> = ({ productId }) => {
 
             if (uploadError) throw new Error('Falha ao fazer upload do arquivo.');
 
-            const { data: urlData } = supabase.storage
+            // URL assinada (1h) para a Edge Function conseguir descarregar o PDF mesmo com bucket privado
+            const { data: signedData, error: signedError } = await supabase.storage
                 .from('product-manuals')
-                .getPublicUrl(fileName);
+                .createSignedUrl(fileName, 3600);
+            if (signedError || !signedData?.signedUrl) {
+                throw new Error('Não foi possível gerar link de processamento do PDF.');
+            }
 
             setUploading(false);
             setProcessing(true);
 
-            const { chunksCount } = await processPdfForRag(productId, urlData.publicUrl);
+            const { chunksCount } = await processPdfForRag(productId, signedData.signedUrl);
 
             setStatus('success');
             setMessage(`Sucesso! ${chunksCount} trechos vetorizados.`);
@@ -68,7 +72,7 @@ const AdminPdfUpload: React.FC<AdminPdfUploadProps> = ({ productId }) => {
             </h2>
 
             <p className="text-stone-500 text-[13px] mb-4">
-                Faça o upload de um manual ou bula em PDF. O arquivo será processado pela IA e servirá de conhecimento para o Balconista Digital.
+                Faça o upload de um manual ou bula em PDF <strong>com texto selecionável</strong> (não use PDF escaneado/imagem). O conteúdo será vetorizado para o Balconista Digital.
             </p>
 
             <div className="relative">

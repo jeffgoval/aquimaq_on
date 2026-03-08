@@ -26,7 +26,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   onZipValid
 }) => {
   const { settings } = useStore();
-  const whatsappNumber = settings?.phone?.replace(/\D/g, '') ?? import.meta.env.VITE_WHATSAPP_NUMBER ?? '';
+  const phoneNumber = settings?.phone?.replace(/\D/g, '') ?? '';
   const [cep, setCep] = useState(initialZip ? maskCEP(initialZip) : '');
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<ShippingOption[]>([]);
