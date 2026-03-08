@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    ChevronRight, ShoppingCart, FileText, ExternalLink,
-    ShieldCheck, Truck, CreditCard, RefreshCcw, MapPin, Loader2,
+    ChevronRight, ShoppingCart, ShieldCheck, Truck, CreditCard, RefreshCcw, MapPin, Loader2,
     AlertTriangle, Store, Zap, Tag, Users, CheckCircle,
 } from 'lucide-react';
 import { Product } from '@/types';
@@ -17,7 +16,6 @@ import RelatedProducts from './RelatedProducts';
 import RecommendationsByPhase from './RecommendationsByPhase';
 import { useCropCalendar } from '@/hooks/useCropCalendar';
 import { useStore } from '@/contexts/StoreContext';
-import { useProductDocuments } from '@/hooks/useProductDocuments';
 import ProductSEO from './product/ProductSEO';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/format';
@@ -28,7 +26,7 @@ import { maskCEP } from '@/utils/masks';
 const PIX_DISCOUNT = 0.05;
 const LOW_STOCK_THRESHOLD = 5;
 
-type Tab = 'descricao' | 'especificacoes' | 'documentos';
+type Tab = 'descricao' | 'especificacoes';
 
 interface ProductDetailProps {
     product: Product;
@@ -50,7 +48,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const [shippingCalculated, setShippingCalculated] = useState(false);
 
     const ctaRef = useRef<HTMLDivElement>(null);
-    const { documents: productDocs, loading: docsLoading } = useProductDocuments(product.id);
     const { cultures: availableCultures } = useCropCalendar();
 
     // Reset on product change
@@ -120,7 +117,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const tabs: { id: Tab; label: string }[] = [
         { id: 'descricao', label: 'Descrição' },
         ...(product.technicalSpecs ? [{ id: 'especificacoes' as Tab, label: 'Especificações' }] : []),
-        ...(!docsLoading && productDocs.length > 0 ? [{ id: 'documentos' as Tab, label: 'Documentos' }] : []),
     ];
 
     const trustSeals = [
@@ -407,7 +403,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         ))}
                     </div>
 
-                    {/* ── Tabs: Descrição / Especificações / Documentos ── */}
+                    {/* ── Tabs: Descrição / Especificações ── */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                         <div className="flex border-b border-gray-200 bg-gray-50">
                             {tabs.map(tab => (
@@ -456,26 +452,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                                     </p>
                                 );
                             })()}
-                            {activeTab === 'documentos' && (
-                                <ul className="space-y-3">
-                                    {productDocs.map(doc => (
-                                        <li key={doc.id}>
-                                            <a
-                                                href={doc.file_url!}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2.5 text-sm font-medium text-agro-700 hover:text-agro-800 group"
-                                            >
-                                                <span className="w-8 h-8 bg-agro-50 rounded-lg flex items-center justify-center group-hover:bg-agro-100 transition-colors shrink-0">
-                                                    <FileText size={15} className="text-agro-600" />
-                                                </span>
-                                                {doc.doc_type === 'bula' ? 'Bula' : 'Ficha técnica'}: {doc.title}
-                                                <ExternalLink size={13} className="text-agro-400 shrink-0" />
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
                         </div>
                     </div>
                 </div>

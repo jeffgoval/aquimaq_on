@@ -36,7 +36,6 @@ const AdminProductsManagement = lazy(() => import('./components/admin/AdminProdu
 const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerManagement'));
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
-const ChatWidget = lazy(() => import('./components/chat/ChatWidget'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -153,10 +152,6 @@ function AppContent() {
                     ))}
                 </div>
             </BrowserRouter>
-
-            <Suspense fallback={null}>
-                <ChatWidget />
-            </Suspense>
         </>
     );
 }
