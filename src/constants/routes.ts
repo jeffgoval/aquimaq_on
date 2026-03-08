@@ -1,0 +1,54 @@
+/**
+ * Rotas centralizadas do app.
+ * Use ROUTES para Link/navigate; use ROUTE_PATHS para <Route path={...} /> (segmentos relativos ao parent).
+ */
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  PRODUCT: (id: string) => `/produto/${id}`,
+  CART: '/carrinho',
+  WISHLIST: '/favoritos',
+  POLICY_PRIVACY: '/politica-privacidade',
+  POLICY_DELIVERY: '/politica-entrega',
+  POLICY_RETURNS: '/trocas',
+  PAYMENT_SUCCESS: '/pagamento/sucesso',
+  PAYMENT_FAILURE: '/pagamento/falha',
+  PAYMENT_PENDING: '/pagamento/pendente',
+  CONTACT: '/contato',
+  ABOUT: '/sobre',
+  FAQ: '/faq',
+  ADMIN: '/admin',
+  ADMIN_ORDERS: '/admin/pedidos',
+  ADMIN_PRODUCTS: '/admin/produtos',
+  ADMIN_BANNERS: '/admin/banners',
+  ADMIN_USERS: '/admin/usuarios',
+  ADMIN_SETTINGS: '/admin/configuracoes',
+  ACCOUNT: '/conta',
+  ORDERS: '/meus-pedidos',
+} as const;
+
+/** Segmentos de path para <Route path="..." /> (sem barra inicial). */
+export const ROUTE_PATHS = {
+  HOME: '',
+  LOGIN: 'login',
+  ACCOUNT: 'conta',
+  PRODUCT: 'produto/:id',
+  CART: 'carrinho',
+  WISHLIST: 'favoritos',
+  POLICY_PRIVACY: 'politica-privacidade',
+  POLICY_DELIVERY: 'politica-entrega',
+  POLICY_RETURNS: 'trocas',
+  PAYMENT_SUCCESS: 'pagamento/sucesso',
+  PAYMENT_FAILURE: 'pagamento/falha',
+  PAYMENT_PENDING: 'pagamento/pendente',
+  CONTACT: 'contato',
+  ABOUT: 'sobre',
+  FAQ: 'faq',
+  ADMIN: 'admin',
+  ADMIN_ORDERS: 'pedidos',
+  ADMIN_PRODUCTS: 'produtos',
+  ADMIN_BANNERS: 'banners',
+  ADMIN_USERS: 'usuarios',
+  ADMIN_SETTINGS: 'configuracoes',
+  ORDERS: 'meus-pedidos',
+} as const;
