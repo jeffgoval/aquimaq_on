@@ -33,3 +33,4 @@ aquimaq_on/
 
 # Supabase CLI temp files
 supabase/supabase/
+supabase/.temp/

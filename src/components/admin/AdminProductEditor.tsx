@@ -599,7 +599,6 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     </div>
                 </div>
 
-<<<<<<< HEAD
                 {/* Documentos — só exibe ao editar produto existente */}
                 {productId && (
                     <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
@@ -612,8 +611,6 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     </div>
                 )}
 
-=======
->>>>>>> ac5c08c927af929e25b149e4a5215da6f548991f
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 pt-2">
                     <button
