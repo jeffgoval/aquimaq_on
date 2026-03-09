@@ -23,6 +23,8 @@ export const ROUTES = {
   ADMIN_BANNERS: '/admin/banners',
   ADMIN_USERS: '/admin/usuarios',
   ADMIN_SETTINGS: '/admin/configuracoes',
+  ADMIN_KNOWLEDGE_BASE: '/admin/base-conhecimento',
+  ADMIN_AI: '/admin/ia',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -50,5 +52,7 @@ export const ROUTE_PATHS = {
   ADMIN_BANNERS: 'banners',
   ADMIN_USERS: 'usuarios',
   ADMIN_SETTINGS: 'configuracoes',
+  ADMIN_KNOWLEDGE_BASE: 'base-conhecimento',
+  ADMIN_AI: 'ia',
   ORDERS: 'meus-pedidos',
 } as const;
