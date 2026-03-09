@@ -5,6 +5,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore
 import pdfParse from "npm:pdf-parse";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const CHUNK_SIZE = 600;
@@ -50,10 +56,14 @@ async function getEmbeddings(texts: string[]): Promise<number[][]> {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -64,13 +74,13 @@ Deno.serve(async (req: Request) => {
     if (!documentId || typeof documentId !== "string") {
       return new Response(
         JSON.stringify({ error: "document_id is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -87,7 +97,7 @@ Deno.serve(async (req: Request) => {
   if (docError || !doc) {
     return new Response(
       JSON.stringify({ error: "Document not found", detail: docError?.message }),
-      { status: 404, headers: { "Content-Type": "application/json" } }
+      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -95,7 +105,7 @@ Deno.serve(async (req: Request) => {
   if (!pdfRes.ok) {
     return new Response(
       JSON.stringify({ error: "Failed to fetch PDF", status: pdfRes.status }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -110,7 +120,7 @@ Deno.serve(async (req: Request) => {
         error: "PDF text extraction failed",
         detail: e instanceof Error ? e.message : String(e),
       }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -122,7 +132,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", documentId);
     return new Response(
       JSON.stringify({ ok: true, chunks: 0, message: "No text to embed" }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -143,7 +153,7 @@ Deno.serve(async (req: Request) => {
   if (insertError) {
     return new Response(
       JSON.stringify({ error: "Failed to save chunks", detail: insertError.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -154,6 +164,6 @@ Deno.serve(async (req: Request) => {
 
   return new Response(
     JSON.stringify({ ok: true, chunks: chunks.length }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 });
