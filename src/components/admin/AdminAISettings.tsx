@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Key, Save, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bot, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 
 interface AIConfig {
-  openai_api_key: string;
   model: string;
   system_prompt: string;
 }
@@ -18,11 +17,9 @@ const DEFAULT_SYSTEM_PROMPT = `Você é um assistente virtual da loja. Responda 
 
 const AdminAISettings: React.FC = () => {
   const [config, setConfig] = useState<AIConfig>({
-    openai_api_key: '',
     model: 'gpt-4o-mini',
     system_prompt: DEFAULT_SYSTEM_PROMPT,
   });
-  const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [statusMsg, setStatusMsg] = useState('');
@@ -32,7 +29,7 @@ const AdminAISettings: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
         .from('store_settings')
-        .select('id, ai_config')
+        .select('ai_config')
         .limit(1)
         .single();
       if (data?.ai_config) {
@@ -76,34 +73,6 @@ const AdminAISettings: React.FC = () => {
       </div>
 
       <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100">
-
-        {/* OpenAI API Key */}
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Key size={15} className="text-stone-500" />
-            <h2 className="text-sm font-semibold text-stone-700">Chave de API OpenAI</h2>
-          </div>
-          <p className="text-xs text-stone-500">
-            Necessária para geração de embeddings e respostas do assistente. Obtenha em{' '}
-            <span className="font-mono">platform.openai.com</span>.
-          </p>
-          <div className="relative">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={config.openai_api_key}
-              onChange={e => setConfig(prev => ({ ...prev, openai_api_key: e.target.value }))}
-              placeholder="sk-..."
-              className="w-full pr-10 px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300 font-mono"
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey(v => !v)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-            >
-              {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
 
         {/* Model */}
         <div className="p-5 space-y-3">
