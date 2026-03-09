@@ -12,7 +12,7 @@ interface SEOProps {
 }
 
 const DEFAULT_DESCRIPTION = 'Aquimaq - Sua parceira no campo. Ferramentas, peças e insumos com o melhor preço. Entrega rápida para todo o Brasil.';
-const DEFAULT_IMAGE = import.meta.env.VITE_OG_IMAGE ?? '';
+const DEFAULT_IMAGE = 'https://aquimaq.com.br/logo%20aquimaq.png';
 
 const SEO: React.FC<SEOProps> = ({
     title,

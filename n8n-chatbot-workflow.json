@@ -1,0 +1,293 @@
+{
+  "name": "Aquimaq Chat Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aquimaq-chat",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "n_webhook",
+      "name": "Webhook Chatwoot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [80, 300],
+      "webhookId": "aquimaq-chat-001"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "message_created",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.body.message_type }}",
+              "rightValue": "incoming",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n_filter",
+      "name": "Filtra Mensagem",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://bzicdqrbqykypzesxayw.supabase.co/rest/v1/products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUA_SUPABASE_ANON_KEY_AQUI"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUA_SUPABASE_SERVICE_KEY_AQUI"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "is_active", "value": "eq.true" },
+            { "name": "select", "value": "name,price,stock,category,brand,description,technical_specs" },
+            { "name": "order", "value": "name.asc" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n_products",
+      "name": "Buscar Produtos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 180]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://chatwoot.aquimaq.com.br/api/v1/accounts/2/conversations/' + $('Webhook Chatwoot').item.json.body.conversation.id + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api_access_token", "value": "SEU_CHATWOOT_ACCESS_TOKEN_AQUI" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n_history",
+      "name": "Buscar Histórico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookBody = $('Webhook Chatwoot').item.json.body;\nconst products = $('Buscar Produtos').all().map(i => i.json);\nconst messagesPayload = $input.first().json.payload || [];\n\n// Formata lista de produtos para o contexto da IA\nconst productsText = products.length > 0\n  ? products.map(p =>\n      `• ${p.name}` +\n      ` | R$ ${parseFloat(p.price || 0).toFixed(2).replace('.', ',')}` +\n      ` | ${p.stock > 0 ? 'Disponível (' + p.stock + ' un.)' : 'ESGOTADO'}` +\n      `${p.category ? ' | Categoria: ' + p.category : ''}` +\n      `${p.brand ? ' | Marca: ' + p.brand : ''}` +\n      `${p.technical_specs ? ' | ' + String(p.technical_specs).substring(0, 120) : ''}`\n    ).join('\\n')\n  : 'Nenhum produto disponível no momento.';\n\n// Formata histórico da conversa (últimas 8 trocas)\nconst history = messagesPayload\n  .filter(m => (m.message_type === 0 || m.message_type === 1) && m.content && String(m.content).trim())\n  .slice(-8)\n  .map(m => ({ role: m.message_type === 0 ? 'user' : 'assistant', content: m.content }));\n\n// Garante que a mensagem atual está no histórico\nconst currentMsg = webhookBody.content || '';\nif (!history.length || history[history.length - 1].content !== currentMsg) {\n  history.push({ role: 'user', content: currentMsg });\n}\n\nconst systemPrompt = `Você é o assistente virtual da Aquimaq, loja online especializada em produtos agropecuários. Responda APENAS em português brasileiro, seja objetivo e amigável.\n\nPRODUTOS DISPONÍVEIS:\n${productsText}\n\nINSTRUÇÕES:\n1. Responda sobre produtos, preços, disponibilidade em estoque, categorias, marcas e dúvidas gerais da loja.\n2. Para bulas e manuais técnicos, informe que o documento está disponível na página do produto no site.\n3. Se o cliente perguntar sobre status de pedido específico, solicite o número do pedido.\n4. Se o cliente pedir explicitamente para falar com humano, fizer uma reclamação grave, ou você não tiver informação suficiente para responder: escreva EXATAMENTE e SOMENTE a palavra TRANSFERIR_HUMANO (sem pontuação, sem mais nada).\n5. Não invente informações que não estão nos dados acima.\n6. Preços: use formato R$ X,XX.`;\n\nreturn [{\n  json: {\n    conversationId: webhookBody.conversation.id,\n    openaiBody: {\n      model: 'gpt-4o-mini',\n      messages: [{ role: 'system', content: systemPrompt }, ...history],\n      max_tokens: 500,\n      temperature: 0.5\n    }\n  }\n}];"
+      },
+      "id": "n_context",
+      "name": "Preparar Contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SUA_OPENAI_KEY_AQUI"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openaiBody) }}",
+        "options": {}
+      },
+      "id": "n_openai",
+      "name": "OpenAI GPT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const oaiResponse = $input.first().json;\nconst convId = $('Preparar Contexto').item.json.conversationId;\n\nconst aiText = (oaiResponse.choices && oaiResponse.choices[0])\n  ? oaiResponse.choices[0].message.content.trim()\n  : 'Desculpe, ocorreu um erro. Por favor tente novamente em instantes.';\n\nreturn [{\n  json: {\n    aiText,\n    needsHandoff: aiText === 'TRANSFERIR_HUMANO' ? 'true' : 'false',\n    conversationId: convId\n  }\n}];"
+      },
+      "id": "n_extract",
+      "name": "Processar Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1280, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "h1",
+              "leftValue": "={{ $json.needsHandoff }}",
+              "rightValue": "true",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n_checkhandoff",
+      "name": "Precisa de Humano?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://chatwoot.aquimaq.com.br/api/v1/accounts/2/conversations/' + $json.conversationId + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api_access_token", "value": "SEU_CHATWOOT_ACCESS_TOKEN_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.aiText, message_type: 'outgoing', private: false }) }}",
+        "options": {}
+      },
+      "id": "n_reply",
+      "name": "Responder Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://chatwoot.aquimaq.com.br/api/v1/accounts/2/conversations/' + $json.conversationId + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api_access_token", "value": "SEU_CHATWOOT_ACCESS_TOKEN_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"content\": \"Vou transferir você para um de nossos atendentes. Aguarde um momento! 😊\", \"message_type\": \"outgoing\", \"private\": false}",
+        "options": {}
+      },
+      "id": "n_handoffmsg",
+      "name": "Avisar Transferência",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 160]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://chatwoot.aquimaq.com.br/api/v1/accounts/2/conversations/' + $('Processar Resposta').item.json.conversationId + '/toggle_status' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api_access_token", "value": "SEU_CHATWOOT_ACCESS_TOKEN_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"status\": \"pending\"}",
+        "options": {}
+      },
+      "id": "n_pending",
+      "name": "Transferir p/ Pendente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 160]
+    }
+  ],
+  "connections": {
+    "Webhook Chatwoot": {
+      "main": [
+        [{ "node": "Filtra Mensagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filtra Mensagem": {
+      "main": [
+        [{ "node": "Buscar Produtos", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Buscar Produtos": {
+      "main": [
+        [{ "node": "Buscar Histórico", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar Histórico": {
+      "main": [
+        [{ "node": "Preparar Contexto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Preparar Contexto": {
+      "main": [
+        [{ "node": "OpenAI GPT", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenAI GPT": {
+      "main": [
+        [{ "node": "Processar Resposta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Processar Resposta": {
+      "main": [
+        [{ "node": "Precisa de Humano?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Precisa de Humano?": {
+      "main": [
+        [{ "node": "Avisar Transferência", "type": "main", "index": 0 }],
+        [{ "node": "Responder Cliente", "type": "main", "index": 0 }]
+      ]
+    },
+    "Avisar Transferência": {
+      "main": [
+        [{ "node": "Transferir p/ Pendente", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}

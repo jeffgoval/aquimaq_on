@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ENV } from '@/config/env';
 
 export interface ProductDocument {
   id: string;
@@ -76,13 +77,13 @@ export async function processProductDocument(documentId: string): Promise<void> 
   const { data: { session } } = await supabase.auth.getSession();
 
   const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-product-document`,
+    `${ENV.VITE_SUPABASE_URL}/functions/v1/process-product-document`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session?.access_token ?? ''}`,
-        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        apikey: ENV.VITE_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ document_id: documentId }),
     }

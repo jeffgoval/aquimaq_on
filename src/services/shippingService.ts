@@ -14,6 +14,17 @@ export interface CartItemForShipping {
   length?: number;
 }
 
+const SERVICE_NAME_MAP: Record<string, string> = {
+  '.Package': 'Pacote',
+  '.Com': 'Expresso',
+  '.Package Mini': 'Pacote Mini',
+};
+
+function normalizeOption(opt: ShippingOption): ShippingOption {
+  const service = SERVICE_NAME_MAP[opt.service] ?? opt.service;
+  return { ...opt, service };
+}
+
 const PICKUP_OPTION: ShippingOption = {
   id: 'pickup_store',
   carrier: 'Loja Física',
@@ -81,7 +92,7 @@ export const calculateShipping = async (
 
     if (data.options?.length) {
       data.options.forEach((opt) => {
-        if (opt.id !== PICKUP_OPTION.id) resultOptions.push(opt);
+        if (opt.id !== PICKUP_OPTION.id) resultOptions.push(normalizeOption(opt));
       });
     }
 
