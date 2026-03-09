@@ -12,6 +12,24 @@ export interface ProductDocument {
   created_at: string;
 }
 
+export interface ProductDocumentWithProduct extends ProductDocument {
+  product_name: string | null;
+}
+
+export async function getAllDocuments(): Promise<ProductDocumentWithProduct[]> {
+  const { data, error } = await supabase
+    .from('product_documents')
+    .select('*, products(name)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((d: any) => ({
+    ...d,
+    product_name: d.products?.name ?? null,
+    products: undefined,
+  }));
+}
+
 export async function getProductDocuments(productId: string): Promise<ProductDocument[]> {
   const { data, error } = await supabase
     .from('product_documents')
