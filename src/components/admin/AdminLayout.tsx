@@ -12,7 +12,6 @@ import {
     Image,
     BarChart,
     Store,
-    BookOpen,
     Bot,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
@@ -21,7 +20,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'KNOWLEDGE_BASE' | 'AI';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -30,7 +29,6 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_BANNERS]: 'BANNERS',
     [ROUTES.ADMIN_USERS]: 'USERS',
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
-    [ROUTES.ADMIN_KNOWLEDGE_BASE]: 'KNOWLEDGE_BASE',
     [ROUTES.ADMIN_AI]: 'AI',
 };
 
@@ -41,7 +39,6 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     BANNERS: ROUTES.ADMIN_BANNERS,
     USERS: ROUTES.ADMIN_USERS,
     SETTINGS: ROUTES.ADMIN_SETTINGS,
-    KNOWLEDGE_BASE: ROUTES.ADMIN_KNOWLEDGE_BASE,
     AI: ROUTES.ADMIN_AI,
 };
 
@@ -96,7 +93,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
-        { id: 'KNOWLEDGE_BASE', label: 'Base de Conhecimento', icon: <BookOpen size={18} /> },
         { id: 'AI', label: 'Config. IA', icon: <Bot size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
