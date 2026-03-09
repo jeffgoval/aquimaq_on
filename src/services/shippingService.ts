@@ -55,20 +55,20 @@ export const calculateShipping = async (
   try {
     const payload = {
       destination_cep: cepClean,
-      insurance_value: items.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0),
       items:
         items.length > 0
           ? items.flatMap((item) =>
             Array.from({ length: item.quantity }, () => ({
-              id: item.id,                 // required by ME API spec
+              id: item.id,
               weight: item.weight ?? 1,
               width: item.width ?? 16,
               height: item.height ?? 2,
               length: item.length ?? 11,
               quantity: 1,
+              insurance_value: item.price ?? 0,
             }))
           )
-          : [{ id: 'default', weight: 1, width: 16, height: 2, length: 11, quantity: 1 }],
+          : [{ id: 'default', weight: 1, width: 16, height: 2, length: 11, quantity: 1, insurance_value: 0 }],
     };
 
     const response = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-quote`, {

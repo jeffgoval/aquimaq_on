@@ -15,7 +15,7 @@ interface CartItem {
   height: number;
   length: number;
   quantity: number;
-  insurance_value?: number;
+  insurance_value: number;
 }
 
 interface QuoteRequest {
@@ -64,27 +64,20 @@ Deno.serve(async (req) => {
     // Map payload items to format expected by Melhor Envio API
     // Official spec: products[].id is required
     const volumes = items.map((item, idx) => ({
-      id: item.id ?? String(idx + 1),  // required by API spec
+      id: item.id ?? String(idx + 1),
       weight: item.weight,
       width: item.width,
       height: item.height,
       length: item.length,
       quantity: item.quantity,
+      insurance_value: item.insurance_value ?? 0,
     }));
 
-    // Total insurance value (sum of product values for correct rate calculation)
-    const totalInsuranceValue = payload.insurance_value ?? 0;
-
     const calculatePayload = {
-      from: {
-        postal_code: CEP_ORIGEM,
-      },
-      to: {
-        postal_code: destination_cep,
-      },
+      from: { postal_code: CEP_ORIGEM },
+      to: { postal_code: destination_cep },
       products: volumes,
       options: {
-        insurance_value: totalInsuranceValue,
         receipt: false,
         own_hand: false,
       },
