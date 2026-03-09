@@ -64,6 +64,23 @@
     </noscript>
   </div>
   <script type="module" src="/src/index.tsx"></script>
+
+  <!-- Chatwoot Widget -->
+  <script>
+    (function(d,t) {
+      var BASE_URL="https://chatwoot.aquimaq.com.br";
+      var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+      g.src=BASE_URL+"/packs/js/sdk.js";
+      g.async=true;
+      s.parentNode.insertBefore(g,s);
+      g.onload=function(){
+        window.chatwootSDK.run({
+          websiteToken: 'Soh7cspZWdMoRK44Rqt5BNwP',
+          baseUrl: BASE_URL
+        })
+      }
+    })(document,"script");
+  </script>
 </body>
 
 </html>
