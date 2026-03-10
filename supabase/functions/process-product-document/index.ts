@@ -1,9 +1,7 @@
 // @ts-check
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// Extração de PDF: usa pdf-parse. Se o deploy falhar, fazer deploy pelo Dashboard ou usar API externa.
-// @ts-ignore
-import pdfParse from "npm:pdf-parse";
+import { extractText, getDocumentProxy } from "npm:unpdf";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,8 +110,9 @@ Deno.serve(async (req: Request) => {
   const buffer = await pdfRes.arrayBuffer();
   let fullText: string;
   try {
-    const data = await pdfParse(new Uint8Array(buffer));
-    fullText = (data?.text ?? "").trim();
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const { text } = await extractText(pdf, { mergePages: true });
+    fullText = (Array.isArray(text) ? text.join(" ") : String(text ?? "")).trim();
   } catch (e) {
     return new Response(
       JSON.stringify({

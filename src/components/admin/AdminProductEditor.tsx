@@ -370,12 +370,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 Preço *
                             </label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 name="price"
                                 value={formData.price}
                                 onChange={handleChange}
-                                min="0"
-                                step="0.01"
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                             />
                         </div>
@@ -384,13 +383,12 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 Preço Antigo
                             </label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 name="oldPrice"
                                 value={formData.oldPrice || ''}
                                 onChange={handleChange}
                                 onBlur={calculateDiscount}
-                                min="0"
-                                step="0.01"
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 placeholder="Opcional"
                             />
@@ -400,12 +398,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 Desconto %
                             </label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 name="discount"
                                 value={formData.discount || ''}
                                 onChange={handleChange}
-                                min="0"
-                                max="100"
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                 placeholder="Auto"
                             />
@@ -415,11 +412,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 Estoque
                             </label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 name="stock"
                                 value={formData.stock}
                                 onChange={handleChange}
-                                min="0"
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                             />
                         </div>
@@ -460,12 +457,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                         Meta de Valor (R$)
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         name="wholesaleMinAmount"
                                         value={formData.wholesaleMinAmount || ''}
                                         onChange={handleChange}
-                                        min="0"
-                                        step="0.01"
                                         className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                         placeholder="Ex: 2000.00"
                                     />
@@ -476,12 +472,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                         Desconto (% OFF)
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         name="wholesaleDiscountPercent"
                                         value={formData.wholesaleDiscountPercent || ''}
                                         onChange={handleChange}
-                                        min="1"
-                                        max="100"
                                         className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                         placeholder="Ex: 5"
                                     />
