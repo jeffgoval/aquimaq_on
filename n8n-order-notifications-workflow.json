@@ -52,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst config = $('Config').first().json;\n\n// Se não houver eventos, retorna vazio\nconst events = items[0]?.json;\nif (!Array.isArray(events) || events.length === 0) {\n  return [];\n}\n\n// Retorna cada evento como item separado, carregando o config junto\nreturn events.map(event => ({\n  json: {\n    ...event,\n    _config: config\n  }\n}));"
+        "jsCode": "const config = $('Config').first().json;\nconst items = $input.all();\nif (items.length === 0) return [];\n\n// n8n HTTP Request v4 já divide arrays em itens separados automaticamente\n// cada item.json é um evento individual\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    _config: config\n  }\n}));"
       },
       "id": "split-events",
       "name": "Separar eventos",
@@ -177,11 +177,11 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $json._config.supabaseUrl }}/rest/v1/n8n_webhook_logs",
+        "url": "={{ $('Consolidar conversation_id').item.json._config.supabaseUrl }}/rest/v1/n8n_webhook_logs",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "id", "value": "=eq.{{ $('Formatar mensagem').first().json.id }}" }
+            { "name": "id", "value": "=eq.{{ $('Consolidar conversation_id').item.json.id }}" }
           ]
         },
         "sendBody": true,
@@ -190,8 +190,8 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $json._config.supabaseServiceKey }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $json._config.supabaseServiceKey }}" },
+            { "name": "apikey", "value": "={{ $('Consolidar conversation_id').item.json._config.supabaseServiceKey }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $('Consolidar conversation_id').item.json._config.supabaseServiceKey }}" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "return=minimal" }
           ]
