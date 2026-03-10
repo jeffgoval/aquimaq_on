@@ -62,9 +62,6 @@ const HeroBanner: React.FC = () => {
         touchStartXRef.current = null;
     };
 
-    const phoneNumber = settings?.phone?.replace(/\D/g, '');
-    const contactHref = phoneNumber ? `tel:+55${phoneNumber}` : null;
-
     if (loading) return <HeroBannerSkeleton />;
     if (banners.length === 0) return null;
 
@@ -126,15 +123,6 @@ const HeroBanner: React.FC = () => {
                                                 <ArrowRight className="ml-2 h-5 w-5" />
                                             </button>
                                         )
-                                    )}
-                                    {contactHref && (
-                                        <a
-                                            href={contactHref}
-                                            className="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-900 font-bold text-lg rounded-lg shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center gap-2"
-                                        >
-                                            <Phone size={20} />
-                                            Falar com Consultor
-                                        </a>
                                     )}
                                 </div>
                             </div>
