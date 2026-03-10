@@ -31,10 +31,19 @@ interface MPItem {
     currency_id?: string;
 }
 
+/** Payer opcional: melhora taxa de aprovação (checklist MP). Em sandbox pode causar "uma das partes é de teste". */
+interface PayerPayload {
+    email?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    phone?: string | null;
+}
+
 interface CheckoutBody {
     order: OrderPayload;
     items: MPItem[];
     back_url_base: string;
+    payer?: PayerPayload | null;
 }
 
 function parseBody(body: unknown): CheckoutBody | null {
@@ -50,10 +59,21 @@ function parseBody(body: unknown): CheckoutBody | null {
     ) return null;
     if (typeof b.back_url_base !== "string" || !b.back_url_base.trim()) return null;
     const base = (b.back_url_base as string).trim().replace(/\/$/, "");
+    let payer: PayerPayload | undefined;
+    if (b.payer && typeof b.payer === "object") {
+        const p = b.payer as Record<string, unknown>;
+        payer = {
+            email: typeof p.email === "string" ? p.email : null,
+            first_name: typeof p.first_name === "string" ? p.first_name : null,
+            last_name: typeof p.last_name === "string" ? p.last_name : null,
+            phone: typeof p.phone === "string" ? p.phone : null,
+        };
+    }
     return {
         order,
         items: b.items as MPItem[],
         back_url_base: base,
+        payer,
     };
 }
 
@@ -202,7 +222,19 @@ Deno.serve(async (req) => {
     const itemsWithCurrency = payload.items.map((item) => ({
         ...item,
         currency_id: "BRL",
+        description: item.description ?? item.title?.slice(0, 256) ?? undefined,
+        category_id: item.category_id ?? "others",
     }));
+
+    const payer =
+        payload.payer?.email?.trim() || payload.payer?.first_name?.trim()
+            ? {
+                ...(payload.payer.email?.trim() && { email: payload.payer.email.trim() }),
+                ...(payload.payer.first_name?.trim() && { first_name: payload.payer.first_name.trim().slice(0, 80) }),
+                ...(payload.payer.last_name?.trim() && { last_name: payload.payer.last_name.trim().slice(0, 80) }),
+                ...(payload.payer.phone?.trim() && { phone: { number: payload.payer.phone.trim().replace(/\D/g, "").slice(0, 15) } }),
+            }
+            : undefined;
 
     let mpResponse: { id?: string; init_point?: string; sandbox_init_point?: string };
     try {
@@ -217,7 +249,7 @@ Deno.serve(async (req) => {
                     installments: maxInstallments,
                     ...(excludedPaymentTypes.length > 0 && { excluded_payment_types: excludedPaymentTypes }),
                 },
-                // payer omitted — avoids "uma das partes é de teste" sandbox error
+                ...(Object.keys(payer ?? {}).length > 0 && { payer }),
                 // auto_return omitted — requires public HTTPS URLs
             },
         });

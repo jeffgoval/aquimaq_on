@@ -85,14 +85,14 @@ O `supabase.functions.invoke()` envia o **anon key** no header, não o token do 
 2. Valida o usuário com `supabase.auth.getUser()`
 3. Cria registro em `orders`
 4. Insere itens em `order_items` (exclui item de frete)
-5. Cria preferência no Mercado Pago sem `payer` e sem `auto_return`
+5. Cria preferência no Mercado Pago (com `payer` quando enviado pelo frontend)
 6. Usa `init_point` (não `sandbox_init_point`)
 7. Salva registro inicial em `payments`
 8. Retorna `{ order_id, checkout_url }`
 
 ### Decisões importantes
 
-**Sem `payer.email`:** Enviar o e-mail real do usuário com credenciais de teste do MP gera o erro _"Uma das partes é de teste"_. O campo `payer` é omitido na preferência.
+**`payer` opcional:** O frontend envia `payer` (email, nome, telefone) quando o perfil tem dados — melhora a taxa de aprovação (checklist MP). Em sandbox, se aparecer _"Uma das partes é de teste"_, pode-se deixar de enviar `payer` no payload do frontend temporariamente.
 
 **Sem `auto_return`:** O campo `auto_return: "approved"` exige que `back_urls.success` seja uma URL HTTPS pública. Em localhost isso causa erro de validação. Para produção, pode ser reativado.
 
@@ -157,3 +157,36 @@ const response = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/checkout`, {
 2. Reativar `auto_return: "approved"` na preferência (a URL de produção é HTTPS)
 3. Configurar o webhook no painel do MP apontando para a edge function
 4. Verificar RLS das tabelas `orders`, `order_items`, `payments`
+
+---
+
+## Checklist de qualidade (padrão ouro MP)
+
+A integração foi alinhada ao [checklist de qualidade do Mercado Pago](https://www.mercadopago.com.br/developers) e à documentação oficial.
+
+### Requisitos atendidos
+
+| Requisito | Implementação |
+|-----------|----------------|
+| **Quantidade do item** | `items.quantity` enviado na preferência |
+| **Preço unitário** | `items.unit_price` enviado |
+| **Descrição / Fatura do cartão** | `statement_descriptor: "AQUIMAQ"` |
+| **Back URLs** | `back_urls` (success, failure, pending) |
+| **Notificações Webhook** | `notification_url` na preferência + validação HMAC |
+| **Referência externa** | `external_reference: order.id` (UUID do pedido) |
+| **E-mail do comprador** | `payer.email` quando perfil disponível |
+| **Nome / Sobrenome** | `payer.first_name`, `payer.last_name` a partir de `profile.name` |
+| **Categoria do item** | `items.category_id` (ex.: `"others"`) |
+| **Descrição do item** | `items.description` (até 256 caracteres) |
+| **Código do item** | `items.id` (ID do produto ou `"shipping"`) |
+| **Nome do item** | `items.title` |
+| **SDK backend** | SDK oficial `mercadopago` (Node/Deno) na edge function |
+| **Consulta o pagamento notificado** | Webhook busca o pagamento na API do MP e atualiza `orders` e `payments` |
+
+### Boas práticas atendidas
+
+- **Máximo de parcelas:** `payment_methods.installments` a partir de `store_settings`
+- **Exclusão de tipos de pagamento:** `excluded_payment_types` conforme configuração da loja
+- **Validação da notificação:** assinatura HMAC com `x-signature` e `MERCADO_PAGO_WEBHOOK_SECRET`
+- **Status de pagamento:** mapeamento de `approved`, `rejected`, `cancelled`, `charged_back`, `refunded` para status do pedido
+- **Resposta 200 ao webhook:** sempre retornar 200 para evitar reenvios desnecessários; processamento idempotente via `upsert` em `payments` por `external_reference`

@@ -55,6 +55,10 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
     });
   }
 
+  const nameParts = (profile.name ?? '').trim().split(/\s+/).filter(Boolean);
+  const first_name = nameParts[0] ?? '';
+  const last_name = nameParts.slice(1).join(' ') || '';
+
   const payload = {
     order: {
       subtotal,
@@ -71,9 +75,16 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
       },
     },
     items,
-    // payer omitted — sending real email with test seller credentials causes
-    // "Uma das partes é de teste" error in the MP sandbox
     back_url_base: window.location.origin,
+    payer:
+      profile.email || first_name
+        ? {
+            email: profile.email ?? undefined,
+            first_name: first_name || undefined,
+            last_name: last_name || undefined,
+            phone: profile.phone ?? undefined,
+          }
+        : undefined,
   };
 
   // 3. Call edge function directly via fetch with explicit auth token

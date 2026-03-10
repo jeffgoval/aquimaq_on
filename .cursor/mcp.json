@@ -1,7 +1,10 @@
 {
   "mcpServers": {
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp?project_ref=bzicdqrbqykypzesxayw&read_only=true"
+      "url": "https://mcp.supabase.com/mcp?project_ref=bzicdqrbqykypzesxayw&read_only=false"
+    },
+    "mercadopago": {
+      "url": "https://mcp.mercadopago.com/mcp"
     }
   }
 }

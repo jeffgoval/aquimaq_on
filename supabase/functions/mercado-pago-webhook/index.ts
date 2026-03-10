@@ -25,6 +25,7 @@ function mapOrderStatus(paymentStatus: string): string {
         case "rejected":
         case "cancelled":
         case "charged_back":
+        case "refunded":
             return "cancelado";
         case "in_process":
         case "pending":
