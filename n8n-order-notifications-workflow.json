@@ -15,7 +15,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Configurações — ajuste conforme necessário\nreturn [{\n  json: {\n    // URL base do Supabase (sem barra no final)\n    supabaseUrl: 'https://bzicdqrbqykypzesxayw.supabase.co',\n    // Supabase service_role key (salve como variável de ambiente n8n: SUPABASE_SERVICE_ROLE_KEY)\n    supabaseServiceKey: $env.SUPABASE_SERVICE_KEY,\n    // Chatwoot\n    chatwootUrl: 'https://chatwoot.aquimaq.com.br',\n    chatwootToken: $env.CHATWOOT_ACCESS_TOKEN,\n    chatwootAccountId: 2,\n    // ID do inbox \"Site Aquimaq\" no Chatwoot (verifique em Settings > Inboxes)\n    chatwootInboxId: 1,\n    // Contato \"Sistema Aquimaq\" criado via API\n    chatwootContactId: 27\n  }\n}];"
+        "jsCode": "return [{\n  json: {\n    supabaseUrl: 'https://bzicdqrbqykypzesxayw.supabase.co',\n    supabaseServiceKey: $env.SUPABASE_SERVICE_KEY,\n    chatwootUrl: 'https://chatwoot.aquimaq.com.br',\n    chatwootToken: $env.CHATWOOT_ACCESS_TOKEN,\n    chatwootAccountId: 2,\n    // ID da conversa \"Sistema Aquimaq\" no Chatwoot (criada via API, contato_id=27)\n    chatwootConvId: 6\n  }\n}];"
       },
       "id": "config",
       "name": "Config",
@@ -39,8 +39,7 @@
         "headerParameters": {
           "parameters": [
             { "name": "apikey", "value": "={{ $json.supabaseServiceKey }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $json.supabaseServiceKey }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            { "name": "Authorization", "value": "=Bearer {{ $json.supabaseServiceKey }}" }
           ]
         }
       },
@@ -52,7 +51,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').first().json;\nconst items = $input.all();\nif (items.length === 0) return [];\n\n// n8n HTTP Request v4 já divide arrays em itens separados automaticamente\n// cada item.json é um evento individual\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    _config: config\n  }\n}));"
+        "jsCode": "const config = $('Config').first().json;\nconst items = $input.all();\nif (items.length === 0) return [];\n\n// n8n HTTP Request v4 já divide arrays em itens separados automaticamente\nreturn items.map(item => ({\n  json: { ...item.json, _config: config }\n}));"
       },
       "id": "split-events",
       "name": "Separar eventos",
@@ -62,7 +61,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const event = $input.first().json;\nconst payload = event.payload || {};\nconst order = payload.order || {};\n\nconst emojis = {\n  'order.created':          '🛒',\n  'order.pago':             '✅',\n  'order.em_separacao':     '📦',\n  'order.enviado':          '🚚',\n  'order.entregue':         '🏠',\n  'order.cancelado':        '❌',\n  'order.pronto_retirada':  '🏪'\n};\n\nconst labels = {\n  'order.created':          'Novo Pedido',\n  'order.pago':             'Pagamento Confirmado',\n  'order.em_separacao':     'Em Separação',\n  'order.enviado':          'Pedido Enviado',\n  'order.entregue':         'Pedido Entregue',\n  'order.cancelado':        'Pedido Cancelado',\n  'order.pronto_retirada':  'Pronto para Retirada'\n};\n\nconst emoji = emojis[event.event_type] || '📋';\nconst label = labels[event.event_type] || event.event_type;\n\nconst orderId = order.id ? order.id.substring(0, 8).toUpperCase() : 'N/A';\nconst total = order.total != null\n  ? `R$ ${Number(order.total).toFixed(2).replace('.', ',')}`\n  : 'N/A';\nconst cliente = order.cliente_email || order.cliente_nome || order.cliente_id || 'N/A';\nconst shipping = order.shipping_method || 'N/A';\nconst status = order.status || 'N/A';\nconst tracking = order.tracking_code ? `\\n🔍 Rastreio: \\`${order.tracking_code}\\`` : '';\n\nconst message = `${emoji} **${label}**\n\n🆔 Pedido: \\`${orderId}\\`\n👤 Cliente: ${cliente}\n💰 Total: ${total}\n📮 Envio: ${shipping}\n📊 Status: \\`${status}\\`${tracking}\n\n_${new Date(event.created_at).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}_`;\n\nreturn [{\n  json: {\n    ...event,\n    _message: message\n  }\n}];"
+        "jsCode": "const event = $json;\nconst payload = event.payload || {};\nconst order = payload.order || {};\n\nconst emojis = {\n  'order.created':         '🛒',\n  'order.pago':            '✅',\n  'order.em_separacao':    '📦',\n  'order.enviado':         '🚚',\n  'order.entregue':        '🏠',\n  'order.cancelado':       '❌',\n  'order.pronto_retirada': '🏪'\n};\nconst labels = {\n  'order.created':         'Novo Pedido',\n  'order.pago':            'Pagamento Confirmado',\n  'order.em_separacao':    'Em Separação',\n  'order.enviado':         'Pedido Enviado',\n  'order.entregue':        'Pedido Entregue',\n  'order.cancelado':       'Pedido Cancelado',\n  'order.pronto_retirada': 'Pronto para Retirada'\n};\n\nconst emoji = emojis[event.event_type] || '📋';\nconst label = labels[event.event_type] || event.event_type;\nconst orderId = order.id ? String(order.id).substring(0, 8).toUpperCase() : 'N/A';\nconst total = order.total != null ? `R$ ${Number(order.total).toFixed(2).replace('.', ',')}` : 'N/A';\nconst cliente = order.cliente_email || order.cliente_nome || order.cliente_id || 'N/A';\nconst shipping = order.shipping_method || 'N/A';\nconst status = order.status || 'N/A';\nconst tracking = order.tracking_code ? `\\n🔍 Rastreio: ${order.tracking_code}` : '';\nconst dt = new Date(event.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });\n\nconst message = `${emoji} **${label}**\\n\\n🆔 Pedido: ${orderId}\\n👤 Cliente: ${cliente}\\n💰 Total: ${total}\\n📮 Envio: ${shipping}\\n📊 Status: ${status}${tracking}\\n\\n_${dt}_`;\n\nreturn [{ json: { ...event, _message: message } }];"
       },
       "id": "format-message",
       "name": "Formatar mensagem",
@@ -72,94 +71,11 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{ $json._config.chatwootUrl }}/api/v1/accounts/{{ $json._config.chatwootAccountId }}/contacts/{{ $json._config.chatwootContactId }}/conversations",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "api_access_token", "value": "={{ $json._config.chatwootToken }}" }
-          ]
-        }
-      },
-      "id": "get-existing-conversations",
-      "name": "Buscar conversas existentes",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1100, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst config = item._config;\nconst convData = item;\n\n// Preserve dados do evento que vieram antes\nconst prevData = $('Formatar mensagem').first().json;\n\n// Tenta encontrar conversa aberta existente com o sistema\nconst conversations = convData?.payload || [];\nconst openConv = Array.isArray(conversations)\n  ? conversations.find(c => c.status === 'open' || c.status === 'pending')\n  : null;\n\nreturn [{\n  json: {\n    ...prevData,\n    _existingConvId: openConv?.id || null\n  }\n}];"
-      },
-      "id": "check-existing-conv",
-      "name": "Verificar conversa existente",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1320, 300]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "leftValue": "={{ $json._existingConvId }}",
-              "rightValue": "",
-              "operator": { "type": "string", "operation": "isEmpty" }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "needs-new-conv",
-      "name": "Criar nova conversa?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1540, 300]
-    },
-    {
-      "parameters": {
         "method": "POST",
-        "url": "={{ $json._config.chatwootUrl }}/api/v1/accounts/{{ $json._config.chatwootAccountId }}/conversations",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "inbox_id", "value": "={{ $json._config.chatwootInboxId }}" },
-            { "name": "contact_id", "value": "={{ $json._config.chatwootContactId }}" },
-            { "name": "additional_attributes", "value": "={ \"origem\": \"sistema_aquimaq\" }" }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "api_access_token", "value": "={{ $json._config.chatwootToken }}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        }
-      },
-      "id": "create-conversation",
-      "name": "Criar conversa no Chatwoot",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1760, 160]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Merge: pega o conversation_id seja de uma conversa nova ou existente\nconst prevEvent = $('Verificar conversa existente').first().json;\n\n// Se veio do branch \"criar conversa\"\nlet convId;\ntry {\n  const newConv = $('Criar conversa no Chatwoot').first().json;\n  convId = newConv?.id || prevEvent._existingConvId;\n} catch {\n  convId = prevEvent._existingConvId;\n}\n\nreturn [{\n  json: {\n    ...prevEvent,\n    _conversationId: convId\n  }\n}];"
-      },
-      "id": "merge-conv-id",
-      "name": "Consolidar conversation_id",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1980, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $json._config.chatwootUrl }}/api/v1/accounts/{{ $json._config.chatwootAccountId }}/conversations/{{ $json._conversationId }}/messages",
+        "url": "={{ $json._config.chatwootUrl }}/api/v1/accounts/{{ $json._config.chatwootAccountId }}/conversations/{{ $json._config.chatwootConvId }}/messages",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json._message) }},\n  \"message_type\": \"outgoing\",\n  \"private\": true\n}",
+        "jsonBody": "={ \"content\": {{ JSON.stringify($json._message) }}, \"private\": true }",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -172,26 +88,26 @@
       "name": "Enviar nota privada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2200, 300]
+      "position": [1100, 300]
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $('Consolidar conversation_id').item.json._config.supabaseUrl }}/rest/v1/n8n_webhook_logs",
+        "url": "={{ $('Formatar mensagem').item.json._config.supabaseUrl }}/rest/v1/n8n_webhook_logs",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "id", "value": "=eq.{{ $('Consolidar conversation_id').item.json.id }}" }
+            { "name": "id", "value": "=eq.{{ $('Formatar mensagem').item.json.id }}" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"status\": \"processed\",\n  \"processed_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "jsonBody": "={ \"status\": \"processed\", \"processed_at\": \"{{ new Date().toISOString() }}\" }",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $('Consolidar conversation_id').item.json._config.supabaseServiceKey }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $('Consolidar conversation_id').item.json._config.supabaseServiceKey }}" },
+            { "name": "apikey", "value": "={{ $('Formatar mensagem').item.json._config.supabaseServiceKey }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $('Formatar mensagem').item.json._config.supabaseServiceKey }}" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "return=minimal" }
           ]
@@ -201,7 +117,7 @@
       "name": "Marcar como processado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2420, 300]
+      "position": [1320, 300]
     }
   ],
   "connections": {
@@ -218,24 +134,6 @@
       "main": [[{ "node": "Formatar mensagem", "type": "main", "index": 0 }]]
     },
     "Formatar mensagem": {
-      "main": [[{ "node": "Buscar conversas existentes", "type": "main", "index": 0 }]]
-    },
-    "Buscar conversas existentes": {
-      "main": [[{ "node": "Verificar conversa existente", "type": "main", "index": 0 }]]
-    },
-    "Verificar conversa existente": {
-      "main": [[{ "node": "Criar nova conversa?", "type": "main", "index": 0 }]]
-    },
-    "Criar nova conversa?": {
-      "main": [
-        [{ "node": "Criar conversa no Chatwoot", "type": "main", "index": 0 }],
-        [{ "node": "Consolidar conversation_id", "type": "main", "index": 0 }]
-      ]
-    },
-    "Criar conversa no Chatwoot": {
-      "main": [[{ "node": "Consolidar conversation_id", "type": "main", "index": 0 }]]
-    },
-    "Consolidar conversation_id": {
       "main": [[{ "node": "Enviar nota privada", "type": "main", "index": 0 }]]
     },
     "Enviar nota privada": {
