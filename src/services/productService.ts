@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { mapProductRowToProduct } from '@/features/catalog/utils/productAdapter';
-import type { ProductRow, CropCalendarRow } from '@/types/database';
+import type { ProductRow, CropCalendarRow, TablesInsert } from '@/types/database';
 import type { Product, ProductCategory } from '@/types';
 
 export type ProductSortOption =
@@ -153,7 +153,7 @@ export const getProductsAdmin = async (vendedorId?: string): Promise<ProductRow[
 export const createProduct = async (
   payload: Record<string, unknown>
 ): Promise<void> => {
-  const { error } = await supabase.from('products').insert(payload);
+  const { error } = await supabase.from('products').insert(payload as unknown as TablesInsert<'products'>);
   if (error) throw error;
 };
 
@@ -172,7 +172,7 @@ export const updateProduct = async (
 export interface ProductDocument {
   id: string;
   file_url: string | null;
-  doc_type: string;
+  file_type: string;
   title: string;
 }
 
@@ -182,9 +182,9 @@ export const getProductDocuments = async (
 ): Promise<ProductDocument[]> => {
   const { data, error } = await supabase
     .from('product_documents')
-    .select('id, file_url, doc_type, title')
+    .select('id, file_url, file_type, title')
     .eq('product_id', productId)
-    .order('doc_type', { ascending: true });
+    .order('title', { ascending: true });
 
   if (error) {
     console.warn('product_documents:', error.message);

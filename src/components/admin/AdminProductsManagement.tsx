@@ -65,7 +65,7 @@ const AdminProductsManagement: React.FC = () => {
                 price: p.price,
                 category: p.category as ProductCategory,
                 imageUrl: p.image_url,
-                gallery: p.gallery || [],
+                gallery: (p.gallery as string[]) || [],
                 stock: p.stock,
                 rating: p.rating || 0,
                 reviewCount: p.review_count || 0,

@@ -43,7 +43,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const saved = localStorage.getItem('cart');
             if (saved) {
                 const parsed = CartItemsSchema.safeParse(JSON.parse(saved));
-                if (parsed.success) return parsed.data as CartItem[];
+                if (parsed.success) return parsed.data as unknown as CartItem[];
             }
             return [];
         } catch {

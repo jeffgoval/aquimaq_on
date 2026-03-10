@@ -33,7 +33,7 @@ export async function matchKnowledge(
   const { matchCount = 5, productId = null } = options;
 
   const { data, error } = await supabase.rpc('match_knowledge', {
-    query_embedding: queryEmbedding,
+    query_embedding: queryEmbedding as unknown as string,
     match_count: matchCount,
     filter_product_id: productId,
   });

@@ -21,7 +21,7 @@ function composeProviders(...providers: ProviderComponent[]) {
 }
 
 export const AppProviders = composeProviders(
-    HelmetProvider,
+    HelmetProvider as ProviderComponent,
     StoreProvider,
     AuthProvider,
     CartProvider,

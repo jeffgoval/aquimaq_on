@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { TablesUpdate, TablesInsert } from '@/types/database';
 import type { StoreSettings } from '@/types/store';
 import {
   storeSettingsFromDB,
@@ -17,7 +18,7 @@ export const getStoreSettings = async (): Promise<StoreSettings | null> => {
     console.error('Store settings fetch error:', error);
     return null;
   }
-  return storeSettingsFromDB(data as StoreSettingsDB | null);
+  return storeSettingsFromDB(data as unknown as StoreSettingsDB | null);
 };
 
 /** Cria ou atualiza configurações da loja. */
@@ -37,7 +38,7 @@ export const saveStoreSettings = async (
   if (existing?.id) {
     const { error: updateError } = await supabase
       .from('store_settings')
-      .update(payload)
+      .update(payload as unknown as TablesUpdate<'store_settings'>)
       .eq('id', existing.id);
 
     if (updateError) {
@@ -47,7 +48,7 @@ export const saveStoreSettings = async (
   } else {
     const { error: insertError } = await supabase
       .from('store_settings')
-      .insert(payload);
+      .insert(payload as unknown as TablesInsert<'store_settings'>);
 
     if (insertError) {
       console.error('Store settings save error:', insertError);

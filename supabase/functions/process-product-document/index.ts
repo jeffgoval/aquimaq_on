@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: doc, error: docError } = await supabase
     .from("product_documents")
-    .select("id, product_id, file_url")
+    .select("id, product_id, file_url, title")
     .eq("id", documentId)
     .single();
 
@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
     product_id: doc.product_id,
     content,
     embedding: embeddings[i],
-    metadata: { chunk_index: i, total: chunks.length },
+    metadata: { chunk_index: i, total: chunks.length, title: doc.title },
   }));
 
   const { error: insertError } = await supabase

@@ -121,7 +121,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 isBestSeller: data.is_best_seller || false,
                 isActive: data.is_active !== false,
                 imageUrl: data.image_url || '',
-                gallery: data.gallery || [],
+                gallery: (data.gallery as string[]) || [],
                 slug: data.slug || '',
                 seoTitle: data.seo_title || '',
                 seoDescription: data.seo_description || '',
