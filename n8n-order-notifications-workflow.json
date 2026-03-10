@@ -15,7 +15,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Configurações — ajuste conforme necessário\nreturn [{\n  json: {\n    // URL base do Supabase (sem barra no final)\n    supabaseUrl: 'https://bzicdqrbqykypzesxayw.supabase.co',\n    // Supabase service_role key (salve como variável de ambiente n8n: SUPABASE_SERVICE_ROLE_KEY)\n    supabaseServiceKey: $env.SUPABASE_SERVICE_ROLE_KEY,\n    // Chatwoot\n    chatwootUrl: 'https://chatwoot.aquimaq.com.br',\n    chatwootToken: $env.CHATWOOT_ACCESS_TOKEN,\n    chatwootAccountId: 2,\n    // ID do inbox \"Site Aquimaq\" no Chatwoot (verifique em Settings > Inboxes)\n    chatwootInboxId: 1,\n    // Contato \"Sistema Aquimaq\" criado via API\n    chatwootContactId: 27\n  }\n}];"
+        "jsCode": "// Configurações — ajuste conforme necessário\nreturn [{\n  json: {\n    // URL base do Supabase (sem barra no final)\n    supabaseUrl: 'https://bzicdqrbqykypzesxayw.supabase.co',\n    // Supabase service_role key (salve como variável de ambiente n8n: SUPABASE_SERVICE_ROLE_KEY)\n    supabaseServiceKey: $env.SUPABASE_SERVICE_KEY,\n    // Chatwoot\n    chatwootUrl: 'https://chatwoot.aquimaq.com.br',\n    chatwootToken: $env.CHATWOOT_ACCESS_TOKEN,\n    chatwootAccountId: 2,\n    // ID do inbox \"Site Aquimaq\" no Chatwoot (verifique em Settings > Inboxes)\n    chatwootInboxId: 1,\n    // Contato \"Sistema Aquimaq\" criado via API\n    chatwootContactId: 27\n  }\n}];"
       },
       "id": "config",
       "name": "Config",
