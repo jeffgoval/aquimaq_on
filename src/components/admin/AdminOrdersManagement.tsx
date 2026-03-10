@@ -114,7 +114,7 @@ const AdminOrdersManagement: React.FC = () => {
                 setSelectedOrder({ ...selectedOrder, trackingCode: editingTracking.code });
             }
         } catch (error) {
-            console.error('Error updating tracking:', error);
+            if (import.meta.env.DEV) console.error('Error updating tracking:', error);
             setMessage({ type: 'error', text: 'Erro ao atualizar rastreio.' });
         } finally {
             setEditingTracking(null);

@@ -48,7 +48,7 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('fetchOrders error:', error);
+        if (import.meta.env.DEV) console.error('fetchOrders error:', error);
         throw new Error('Erro ao buscar pedidos.');
     }
 

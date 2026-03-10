@@ -75,6 +75,9 @@ export async function uploadProductDocument(
 
 export async function processProductDocument(documentId: string): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Você precisa estar logado para processar documentos.');
+  }
 
   const res = await fetch(
     `${ENV.VITE_SUPABASE_URL}/functions/v1/process-product-document`,
@@ -82,7 +85,7 @@ export async function processProductDocument(documentId: string): Promise<void> 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session?.access_token ?? ''}`,
+        Authorization: `Bearer ${session.access_token}`,
         apikey: ENV.VITE_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ document_id: documentId }),

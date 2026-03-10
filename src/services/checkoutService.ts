@@ -90,12 +90,12 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
   const data = await response.json();
 
   if (!response.ok) {
-    console.error('Checkout error:', response.status, data);
+    if (import.meta.env.DEV) console.error('Checkout error:', response.status, data);
     throw new Error(data?.error || `Erro ao processar pagamento (${response.status}).`);
   }
 
   if (!data?.checkout_url) {
-    console.error('Checkout response missing checkout_url:', data);
+    if (import.meta.env.DEV) console.error('Checkout response missing checkout_url:', data);
     throw new Error('Erro ao gerar link de pagamento.');
   }
 

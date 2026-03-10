@@ -1,6 +1,7 @@
 import { ShippingOption, ShippingResult } from '@/types';
 import { validateCEP } from '@/utils/validators';
 import { ENV } from '@/config/env';
+import { supabase } from '@/services/supabase';
 
 /** Item do carrinho com dados mínimos para frete (id, quantity, price, dimensões opcionais) */
 export interface CartItemForShipping {
@@ -71,12 +72,15 @@ export const calculateShipping = async (
           : [{ id: 'default', weight: 1, width: 16, height: 2, length: 11, quantity: 1, insurance_value: 0 }],
     };
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const bearerToken = session?.access_token ?? ENV.VITE_SUPABASE_ANON_KEY;
+
     const response = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-quote`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': ENV.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${ENV.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${bearerToken}`,
       },
       body: JSON.stringify(payload),
     });
@@ -101,7 +105,7 @@ export const calculateShipping = async (
       error: data.error,
     };
   } catch (e) {
-    console.error('Shipping quote error:', e);
+    if (import.meta.env.DEV) console.error('Shipping quote error:', e);
     return {
       options: [PICKUP_OPTION],
       error: 'Não foi possível calcular o frete. Use retirada no balcão.',

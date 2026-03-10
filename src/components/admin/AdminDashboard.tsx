@@ -129,7 +129,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 }
             } catch (e) {
                 if (mounted) {
-                    console.error('AdminDashboard load:', e);
+                    if (import.meta.env.DEV) console.error('AdminDashboard load:', e);
                     setError('Não foi possível carregar os dados do painel.');
                 }
             } finally {

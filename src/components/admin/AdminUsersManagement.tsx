@@ -17,7 +17,7 @@ const AdminUsersManagement: React.FC = () => {
             const filteredData = isAdmin ? data : data.filter((u) => u.role !== 'admin');
             setUsers(filteredData);
         } catch (error) {
-            console.error('Error loading users:', error);
+            if (import.meta.env.DEV) console.error('Error loading users:', error);
             setMessage({ type: 'error', text: 'Erro ao carregar usuários.' });
         } finally {
             setLoading(false);
