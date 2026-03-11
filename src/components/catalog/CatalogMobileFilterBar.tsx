@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
 import { SortOption } from '@/hooks/useCatalogProducts';
 
@@ -37,11 +37,11 @@ export const CatalogMobileFilterBar: React.FC<CatalogMobileFilterBarProps> = ({
                     onChange={(e) => onSortChange(e.target.value as SortOption)}
                     className="bg-transparent text-sm font-medium text-gray-700 outline-none cursor-pointer"
                 >
-                    <option value="relevance">Relevância</option>
+                    <option value="relevance">RelevÃ¢ncia</option>
                     <option value="best_sellers">Mais Vendidos</option>
                     <option value="newest">Novidades</option>
-                    <option value="price_asc">Menor Preço</option>
-                    <option value="price_desc">Maior Preço</option>
+                    <option value="price_asc">Menor PreÃ§o</option>
+                    <option value="price_desc">Maior PreÃ§o</option>
                 </select>
             </div>
 
@@ -56,7 +56,7 @@ export const CatalogMobileFilterBar: React.FC<CatalogMobileFilterBarProps> = ({
                 Em Estoque
             </button>
 
-            {/* Na Estação chip */}
+            {/* Na EstaÃ§Ã£o chip */}
             {showSeasonFilter && (
                 <button
                     onClick={() => onInSeasonChange(!inSeason)}
@@ -65,7 +65,7 @@ export const CatalogMobileFilterBar: React.FC<CatalogMobileFilterBarProps> = ({
                         : 'bg-white text-gray-600 border-gray-200'
                         }`}
                 >
-                    🌱 Na Estação
+                    ðŸŒ± Na EstaÃ§Ã£o
                 </button>
             )}
 
@@ -79,7 +79,7 @@ export const CatalogMobileFilterBar: React.FC<CatalogMobileFilterBarProps> = ({
                         : 'bg-white text-gray-600 border-gray-200'
                         }`}
                 >
-                    <option value="">Fase do Café</option>
+                    <option value="">Fase do CafÃ©</option>
                     {availableCultures.map((c) => (
                         <option key={c} value={c}>{c}</option>
                     ))}

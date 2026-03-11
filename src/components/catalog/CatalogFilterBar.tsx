@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X } from 'lucide-react';
 import { ProductCategory } from '@/types';
 import { SortOption } from '@/hooks/useCatalogProducts';
@@ -23,11 +23,11 @@ interface CatalogFilterBarProps {
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-    { value: 'relevance', label: 'Relevância' },
+    { value: 'relevance', label: 'RelevÃ¢ncia' },
     { value: 'best_sellers', label: 'Mais Vendidos' },
     { value: 'newest', label: 'Novidades' },
-    { value: 'price_asc', label: 'Menor Preço' },
-    { value: 'price_desc', label: 'Maior Preço' },
+    { value: 'price_asc', label: 'Menor PreÃ§o' },
+    { value: 'price_desc', label: 'Maior PreÃ§o' },
 ];
 
 const getSectionTitle = (searchQuery: string, selectedCategory: ProductCategory | 'ALL'): string => {
@@ -98,13 +98,13 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
                             onClick={() => onInStockChange(!inStock)}
                             className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${inStock
                                 ? 'bg-agro-600 text-white border-agro-600'
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300 hover:text-agro-600'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300 hover:text-agro-700'
                                 }`}
                         >
                             Em Estoque
                         </button>
 
-                        {/* Na Estação chip */}
+                        {/* Na EstaÃ§Ã£o chip */}
                         {showSeasonFilter && (
                             <button
                                 onClick={() => onInSeasonChange(!inSeason)}
@@ -113,7 +113,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600'
                                     }`}
                             >
-                                🌱 Na Estação
+                                ðŸŒ± Na EstaÃ§Ã£o
                             </button>
                         )}
 
@@ -127,7 +127,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300'
                                     }`}
                             >
-                                <option value="">Fase do Café</option>
+                                <option value="">Fase do CafÃ©</option>
                                 {availableCultures.map((c) => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}

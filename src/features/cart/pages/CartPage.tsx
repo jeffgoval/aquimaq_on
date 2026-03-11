@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Cart from '../components/Cart';
 import { useCart } from '../context/CartContext';
@@ -96,7 +96,7 @@ const CartPage: React.FC = () => {
                                 {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-10 h-10 object-contain rounded shrink-0" />}
                                 <div className="min-w-0">
                                     <p className="text-xs font-medium text-gray-800 line-clamp-1">{p.name}</p>
-                                    <p className="text-xs text-agro-600 font-bold">{formatCurrency(p.price)}</p>
+                                    <p className="text-xs text-agro-700 font-bold">{formatCurrency(p.price)}</p>
                                 </div>
                             </Link>
                         ))}

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Product } from '@/types';
 import HeroBanner from '../HeroBanner';
 import RecommendationsByPhase from '../RecommendationsByPhase';

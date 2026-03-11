@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import ProductDetail from '@/components/ProductDetail';
@@ -24,12 +24,12 @@ const ProductPage: React.FC = () => {
     if (error || !product) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Produto não encontrado'}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Produto nÃ£o encontrado'}</h2>
                 <button
                     onClick={() => navigate(ROUTES.HOME)}
-                    className="text-agro-600 hover:underline"
+                    className="text-agro-700 hover:underline"
                 >
-                    Voltar ao catálogo
+                    Voltar ao catÃ¡logo
                 </button>
             </div>
         );

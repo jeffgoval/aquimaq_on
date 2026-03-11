@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, Upload, Trash2, Loader2, CheckCircle, AlertCircle,
   Download, Brain, RefreshCw,
@@ -107,7 +107,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
   }
 
   async function handleDelete(doc: ProductDocument) {
-    if (!confirm(`Remover "${doc.title}"? Esta ação também remove os dados da IA.`)) return;
+    if (!confirm(`Remover "${doc.title}"? Esta aÃ§Ã£o tambÃ©m remove os dados da IA.`)) return;
     setDeleting(doc.id);
     try {
       await deleteProductDocument(doc.id, doc.file_url);
@@ -121,7 +121,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
 
   return (
     <div className="space-y-4">
-      {/* Upload: div em vez de form para não aninhar no form do produto (o Enviar submetia o form errado). */}
+      {/* Upload: div em vez de form para nÃ£o aninhar no form do produto (o Enviar submetia o form errado). */}
       <div className="bg-stone-50 rounded-lg p-4 space-y-3 border border-stone-200 border-dashed">
         <p className="text-[12px] font-medium text-stone-500 uppercase tracking-wide">
           Adicionar documento
@@ -132,7 +132,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            placeholder="Título do documento (ex: Manual do Operador)"
+            placeholder="TÃ­tulo do documento (ex: Manual do Operador)"
             className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
           />
         </div>
@@ -145,7 +145,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
           >
             <Upload size={14} className="text-stone-400 shrink-0" />
             <span className="text-[13px] text-stone-500 truncate">
-              {file ? `${file.name} (${formatBytes(file.size)})` : 'Clique para escolher PDF (máx. 20 MB)'}
+              {file ? `${file.name} (${formatBytes(file.size)})` : 'Clique para escolher PDF (mÃ¡x. 20 MB)'}
             </span>
           </label>
           <input
@@ -175,7 +175,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
         )}
         {!file && !error && (
           <p className="text-[11px] text-stone-400">
-            Clique na área à esquerda para escolher um ficheiro PDF. Depois clique em Enviar.
+            Clique na Ã¡rea Ã  esquerda para escolher um ficheiro PDF. Depois clique em Enviar.
           </p>
         )}
       </div>
@@ -202,7 +202,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
                 <p className="text-[13px] font-medium text-stone-700 truncate">{doc.title}</p>
                 <p className="text-[11px] text-stone-400">
                   {doc.file_name}
-                  {doc.file_size ? ` · ${formatBytes(doc.file_size)}` : ''}
+                  {doc.file_size ? ` Â· ${formatBytes(doc.file_size)}` : ''}
                 </p>
               </div>
 
@@ -221,7 +221,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
                 </span>
               )}
 
-              {/* Ações */}
+              {/* AÃ§Ãµes */}
               <div className="flex items-center gap-1 shrink-0">
                 {!doc.processed && processing !== doc.id && (
                   <button

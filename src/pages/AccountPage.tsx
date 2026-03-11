@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { User, Camera, Bell, MapPin, Pencil, Plus, Loader2, Package } from 'lucide-react';
@@ -73,7 +73,7 @@ const AccountPage: React.FC = () => {
             return;
         }
         if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) {
-            setError(`A foto deve ter no máximo ${MAX_AVATAR_SIZE_MB} MB.`);
+            setError(`A foto deve ter no mÃ¡ximo ${MAX_AVATAR_SIZE_MB} MB.`);
             return;
         }
         setError(null);
@@ -129,7 +129,7 @@ const AccountPage: React.FC = () => {
         <div className="max-w-2xl mx-auto px-4 py-8">
             <Helmet>
                 <title>Minha conta | {storeName}</title>
-                <meta name="description" content="Edite seu perfil e preferências." />
+                <meta name="description" content="Edite seu perfil e preferÃªncias." />
             </Helmet>
 
             <div className="mb-6">
@@ -145,15 +145,15 @@ const AccountPage: React.FC = () => {
             {success && (
                 <div className="mb-4 p-3 rounded-lg bg-agro-50 text-agro-700 text-sm flex items-center gap-2" role="status">
                     <span className="w-1.5 h-1.5 rounded-full bg-agro-500 shrink-0" />
-                    Alterações salvas com sucesso.
+                    AlteraÃ§Ãµes salvas com sucesso.
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ── Perfil ── */}
+                {/* â”€â”€ Perfil â”€â”€ */}
                 <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2">
-                        <User size={18} className="text-agro-600" />
+                        <User size={18} className="text-agro-700" />
                         Perfil
                     </h2>
 
@@ -197,7 +197,7 @@ const AccountPage: React.FC = () => {
                                 <Camera size={16} />
                                 {uploadingPhoto ? 'Enviando...' : 'Alterar foto'}
                             </button>
-                            <p className="text-xs text-slate-400 mt-1.5">JPG, PNG ou WebP · Máx. {MAX_AVATAR_SIZE_MB} MB</p>
+                            <p className="text-xs text-slate-400 mt-1.5">JPG, PNG ou WebP Â· MÃ¡x. {MAX_AVATAR_SIZE_MB} MB</p>
                         </div>
                     </div>
 
@@ -234,13 +234,13 @@ const AccountPage: React.FC = () => {
                             <p className="text-xs text-slate-400 mt-1">Para alterar o e-mail, entre em contato com o suporte.</p>
                         </div>
 
-                        {/* Notificações */}
+                        {/* NotificaÃ§Ãµes */}
                         <label className="flex items-center gap-3 cursor-pointer pt-1">
                             <input
                                 type="checkbox"
                                 checked={emailNotifications}
                                 onChange={(e) => setEmailNotifications(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-agro-600 focus:ring-agro-500"
+                                className="w-4 h-4 rounded border-slate-300 text-agro-700 focus:ring-agro-500"
                             />
                             <span className="text-sm text-slate-700 flex items-center gap-1.5">
                                 <Bell size={14} className="text-slate-400" />
@@ -250,17 +250,17 @@ const AccountPage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* ── Endereço de Entrega ── */}
+                {/* â”€â”€ EndereÃ§o de Entrega â”€â”€ */}
                 <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                            <MapPin size={18} className="text-agro-600" />
-                            Endereço de entrega
+                            <MapPin size={18} className="text-agro-700" />
+                            EndereÃ§o de entrega
                         </h2>
                         <button
                             type="button"
                             onClick={() => setShowAddressModal(true)}
-                            className="flex items-center gap-1.5 text-sm font-medium text-agro-600 hover:text-agro-700 transition-colors"
+                            className="flex items-center gap-1.5 text-sm font-medium text-agro-700 hover:text-agro-700 transition-colors"
                         >
                             {hasAddress ? (
                                 <><Pencil size={14} /> Editar</>
@@ -272,39 +272,39 @@ const AccountPage: React.FC = () => {
 
                     {hasAddress && profile ? (
                         <div className="text-sm text-slate-700 space-y-0.5">
-                            <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` — ${profile.complement}` : ''}</p>
-                            <p className="text-slate-500">{profile.neighborhood} · {profile.city} / {profile.state}</p>
+                            <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` â€” ${profile.complement}` : ''}</p>
+                            <p className="text-slate-500">{profile.neighborhood} Â· {profile.city} / {profile.state}</p>
                             <p className="text-slate-400 font-mono text-xs mt-1">{profile.zip_code}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-6 text-center rounded-lg bg-slate-50 border border-dashed border-slate-200">
                             <MapPin size={28} className="text-slate-300 mb-2" />
-                            <p className="text-sm text-slate-500 mb-3">Nenhum endereço cadastrado</p>
+                            <p className="text-sm text-slate-500 mb-3">Nenhum endereÃ§o cadastrado</p>
                             <button
                                 type="button"
                                 onClick={() => setShowAddressModal(true)}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-agro-600 text-white text-sm font-medium rounded-lg hover:bg-agro-700 transition-colors"
                             >
                                 <Plus size={15} />
-                                Adicionar endereço
+                                Adicionar endereÃ§o
                             </button>
                         </div>
                     )}
                 </section>
 
-                {/* ── Meus Pedidos ── */}
+                {/* â”€â”€ Meus Pedidos â”€â”€ */}
                 <Link
                     to={ROUTES.ORDERS}
                     className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm hover:border-agro-300 hover:bg-agro-50/40 transition-all group"
                 >
                     <div className="flex items-center gap-3">
-                        <Package size={18} className="text-agro-600" />
+                        <Package size={18} className="text-agro-700" />
                         <div>
                             <p className="text-sm font-semibold text-slate-900">Meus Pedidos</p>
-                            <p className="text-xs text-slate-400">Histórico e acompanhamento</p>
+                            <p className="text-xs text-slate-400">HistÃ³rico e acompanhamento</p>
                         </div>
                     </div>
-                    <span className="text-xs font-medium text-agro-600 group-hover:text-agro-700">Ver todos →</span>
+                    <span className="text-xs font-medium text-agro-700 group-hover:text-agro-700">Ver todos â†’</span>
                 </Link>
 
                 {/* Buttons */}

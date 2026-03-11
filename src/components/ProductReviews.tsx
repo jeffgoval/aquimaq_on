@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import StarRating from './StarRating';
 import { CheckCircle, ThumbsUp, User } from 'lucide-react';
@@ -30,7 +30,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
   return (
     <div className="mt-8 border-t border-gray-100 pt-8">
-      <h3 className="text-xl font-bold text-gray-900 mb-6">Avaliações dos Clientes</h3>
+      <h3 className="text-xl font-bold text-gray-900 mb-6">AvaliaÃ§Ãµes dos Clientes</h3>
 
       <div className="flex flex-col md:flex-row gap-8">
         <div className="md:w-1/3 bg-gray-50 p-6 rounded-lg h-fit">
@@ -39,7 +39,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
             <div className="flex justify-center my-2">
               <StarRating rating={product.rating} size={24} showCount={false} />
             </div>
-            <span className="text-sm text-gray-500 block">Baseado em {product.reviewCount} avaliações</span>
+            <span className="text-sm text-gray-500 block">Baseado em {product.reviewCount} avaliaÃ§Ãµes</span>
           </div>
 
           <div className="space-y-2">
@@ -59,13 +59,13 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
           </div>
         </div>
 
-        {/* Lista de Comentários */}
+        {/* Lista de ComentÃ¡rios */}
         <div className="md:w-2/3 space-y-8">
           <div className="space-y-6">
             {loading ? (
-              <p className="text-center text-gray-500">Carregando avaliações...</p>
+              <p className="text-center text-gray-500">Carregando avaliaÃ§Ãµes...</p>
             ) : reviews.length === 0 ? (
-              <p className="text-center text-gray-500 py-4">Este produto ainda não tem avaliações.</p>
+              <p className="text-center text-gray-500 py-4">Este produto ainda nÃ£o tem avaliaÃ§Ãµes.</p>
             ) : (
               reviews.map((review) => (
                 <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0">
@@ -96,7 +96,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
                   <div className="flex items-center gap-4">
                     <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
-                      <ThumbsUp size={12} /> Útil
+                      <ThumbsUp size={12} /> Ãštil
                     </button>
                   </div>
                 </div>

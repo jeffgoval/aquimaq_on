@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Bot, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 
@@ -8,12 +8,12 @@ interface AIConfig {
 }
 
 const MODELS = [
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (rápido e econômico)' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (rÃ¡pido e econÃ´mico)' },
   { value: 'gpt-4o', label: 'GPT-4o (mais capaz)' },
   { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (legado)' },
 ];
 
-const DEFAULT_SYSTEM_PROMPT = `Você é um assistente virtual da loja. Responda dúvidas sobre produtos, pedidos e políticas da loja de forma clara e objetiva. Se não souber a resposta, informe que um atendente irá ajudar em breve.`;
+const DEFAULT_SYSTEM_PROMPT = `VocÃª Ã© um assistente virtual da loja. Responda dÃºvidas sobre produtos, pedidos e polÃ­ticas da loja de forma clara e objetiva. Se nÃ£o souber a resposta, informe que um atendente irÃ¡ ajudar em breve.`;
 
 const AdminAISettings: React.FC = () => {
   const [config, setConfig] = useState<AIConfig>({
@@ -46,7 +46,7 @@ const AdminAISettings: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       const { data: row } = await sb.from('store_settings').select('id').limit(1).single();
-      if (!row) throw new Error('Configurações da loja não encontradas.');
+      if (!row) throw new Error('ConfiguraÃ§Ãµes da loja nÃ£o encontradas.');
 
       const { error } = await sb
         .from('store_settings')
@@ -55,7 +55,7 @@ const AdminAISettings: React.FC = () => {
 
       if (error) throw error;
       setStatus('success');
-      setStatusMsg('Configurações salvas com sucesso.');
+      setStatusMsg('ConfiguraÃ§Ãµes salvas com sucesso.');
     } catch (e: unknown) {
       setStatus('error');
       setStatusMsg(e instanceof Error ? e.message : 'Erro ao salvar');
@@ -69,7 +69,7 @@ const AdminAISettings: React.FC = () => {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-2">
         <Bot size={20} className="text-stone-600" />
-        <h1 className="text-lg font-semibold text-stone-800">Configurações de IA</h1>
+        <h1 className="text-lg font-semibold text-stone-800">ConfiguraÃ§Ãµes de IA</h1>
       </div>
 
       <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100">
@@ -109,7 +109,7 @@ const AdminAISettings: React.FC = () => {
             onClick={() => setConfig(prev => ({ ...prev, system_prompt: DEFAULT_SYSTEM_PROMPT }))}
             className="text-xs text-stone-400 hover:text-stone-600 underline"
           >
-            Restaurar padrão
+            Restaurar padrÃ£o
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@ const AdminAISettings: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-700 disabled:opacity-50 transition-colors"
           >
             <Save size={15} />
-            {saving ? 'Salvando...' : 'Salvar configurações'}
+            {saving ? 'Salvando...' : 'Salvar configuraÃ§Ãµes'}
           </button>
         </div>
       </div>

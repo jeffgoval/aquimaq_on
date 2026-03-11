@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Product, ProductCategory } from '@/types';
 import type { UseCatalogFiltersResult } from '../hooks/useCatalogFilters';
 import { CatalogSEO } from '@/components/catalog/CatalogSEO';

@@ -52,21 +52,28 @@ Deno.serve(async (req) => {
 
     const rawBody = await req.text();
 
-    // Validate X-ME-Signature per official Melhor Envio webhook docs
-    const meSignature = req.headers.get("X-ME-Signature") ?? req.headers.get("x-me-signature");
+    // Validate X-ME-Signature — obrigatória; rejeita se secret não estiver configurado
     const meSecret = Deno.env.get("MELHOR_ENVIOS_WEBHOOK_SECRET");
+    if (!meSecret) {
+        console.error("MELHOR_ENVIOS_WEBHOOK_SECRET not configured");
+        return new Response(JSON.stringify({ error: "Server configuration error" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
 
-    if (meSecret && meSignature) {
-        const valid = await verifySignature(rawBody, meSignature, meSecret);
-        if (!valid) {
-            console.error("Invalid X-ME-Signature");
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
-                status: 401,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-    } else if (meSecret && !meSignature) {
+    const meSignature = req.headers.get("X-ME-Signature") ?? req.headers.get("x-me-signature");
+    if (!meSignature) {
         console.error("Missing X-ME-Signature header");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    const valid = await verifySignature(rawBody, meSignature, meSecret);
+    if (!valid) {
+        console.error("Invalid X-ME-Signature");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { ...corsHeaders, "Content-Type": "application/json" },

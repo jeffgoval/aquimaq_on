@@ -51,42 +51,50 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
     }
 
-    // Signature verification
+    // Signature verification — obrigatória; rejeita se secret não estiver configurado
     const webhookSecret = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");
+    if (!webhookSecret) {
+        console.error("MERCADO_PAGO_WEBHOOK_SECRET not configured");
+        return new Response("Server configuration error", { status: 500 });
+    }
+
     const xSignature = req.headers.get("x-signature");
     const xRequestId = req.headers.get("x-request-id");
 
-    if (webhookSecret && xSignature && xRequestId) {
-        const parts = xSignature.split(",");
-        let ts = "";
-        let hash = "";
-        for (const part of parts) {
-            const [key, value] = part.split("=");
-            const k = key?.trim();
-            const v = value?.trim();
-            if (k === "ts") ts = v ?? "";
-            if (k === "v1") hash = v ?? "";
-        }
-        const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-        const key = await crypto.subtle.importKey(
-            "raw",
-            new TextEncoder().encode(webhookSecret),
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"]
-        );
-        const signature = await crypto.subtle.sign(
-            "HMAC",
-            key,
-            new TextEncoder().encode(manifest)
-        );
-        const generatedHash = Array.from(new Uint8Array(signature))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-        if (generatedHash !== hash) {
-            console.error("Webhook signature mismatch");
-            return new Response("Invalid Signature", { status: 401 });
-        }
+    if (!xSignature || !xRequestId) {
+        console.error("Missing x-signature or x-request-id header");
+        return new Response("Unauthorized", { status: 401 });
+    }
+
+    const parts = xSignature.split(",");
+    let ts = "";
+    let hash = "";
+    for (const part of parts) {
+        const [key, value] = part.split("=");
+        const k = key?.trim();
+        const v = value?.trim();
+        if (k === "ts") ts = v ?? "";
+        if (k === "v1") hash = v ?? "";
+    }
+    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+    const key = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(webhookSecret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signature = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        new TextEncoder().encode(manifest)
+    );
+    const generatedHash = Array.from(new Uint8Array(signature))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    if (generatedHash !== hash) {
+        console.error("Webhook signature mismatch");
+        return new Response("Invalid Signature", { status: 401 });
     }
 
     const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
@@ -156,38 +164,50 @@ Deno.serve(async (req) => {
         console.error("Webhook DB payment error:", paymentError.message);
     }
 
-    // 2. Update order status
+    // 2. Update order status (sempre, independente do status)
     const newOrderStatus = mapOrderStatus(mappedStatus);
-    const { data: orderRow, error: orderError } = await supabase
+    const { error: orderError } = await supabase
         .from("orders")
         .update({
             status: newOrderStatus,
             updated_at: new Date().toISOString(),
         })
-        .eq("id", orderIdUuid)
-        .select("id, stock_decremented")
-        .maybeSingle();
+        .eq("id", orderIdUuid);
 
     if (orderError) {
         console.error("Webhook DB order update error:", orderError.message);
     }
 
-    // 3. Decrement stock when payment is approved (once only)
-    if (mappedStatus === "approved" && orderRow && !orderRow.stock_decremented) {
-        const { error: stockError } = await supabase.rpc("decrement_stock_for_order", {
-            p_order_id: orderIdUuid,
-        });
+    // 3. Decrement stock quando aprovado — bloqueio atômico para evitar race condition.
+    // UPDATE WHERE stock_decremented=false é atômico no Postgres: apenas o webhook que
+    // transicionar false→true com sucesso prossegue; webhooks concorrentes leem 0 linhas e pulam.
+    if (mappedStatus === "approved") {
+        const { data: claimRow } = await supabase
+            .from("orders")
+            .update({ stock_decremented: true })
+            .eq("id", orderIdUuid)
+            .eq("stock_decremented", false)
+            .select("id")
+            .maybeSingle();
 
-        if (stockError) {
-            console.error("Stock decrement error:", stockError.message);
-        } else {
-            await supabase
-                .from("orders")
-                .update({ stock_decremented: true })
-                .eq("id", orderIdUuid);
+        if (claimRow) {
+            // Este webhook ganhou a corrida — decrementar estoque
+            const { error: stockError } = await supabase.rpc("decrement_stock_for_order", {
+                p_order_id: orderIdUuid,
+            });
 
-            console.log("Stock decremented for order:", orderIdUuid);
+            if (stockError) {
+                console.error("Stock decrement error:", stockError.message);
+                // Reverter o bloqueio para que uma nova tentativa possa decrementar
+                await supabase
+                    .from("orders")
+                    .update({ stock_decremented: false })
+                    .eq("id", orderIdUuid);
+            } else {
+                console.log("Stock decremented for order:", orderIdUuid);
+            }
         }
+        // Se claimRow for null, outro webhook já decrementou — nada a fazer
     }
 
     console.log("Webhook processed:", JSON.stringify({

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { CartItem } from '@/types';
 import { Award } from 'lucide-react';
 
@@ -7,16 +7,16 @@ interface CartProgressProps {
 }
 
 const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
-    // 1. Identificar itens com configuração de atacado
+    // 1. Identificar itens com configuraÃ§Ã£o de atacado
     const wholesaleItems = items.filter(i => i.wholesaleMinAmount && i.wholesaleMinAmount > 0);
 
     if (wholesaleItems.length === 0) return null;
 
-    // 2. Encontrar o item mais próximo de atingir a meta (que ainda não atingiu)
+    // 2. Encontrar o item mais prÃ³ximo de atingir a meta (que ainda nÃ£o atingiu)
     let bestCandidate: { item: CartItem; missing: number; goal: number; currentTotal: number } | null = null;
     let minMissingPercent = 100;
 
-    // Conta quantos já atingiram a meta
+    // Conta quantos jÃ¡ atingiram a meta
     let successCount = 0;
 
     wholesaleItems.forEach(item => {
@@ -28,7 +28,7 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
         } else {
             const missing = goal - currentTotal;
             const percentMissing = (missing / goal) * 100;
-            // Prioriza mostrar o que está mais perto (menor percentual faltando)
+            // Prioriza mostrar o que estÃ¡ mais perto (menor percentual faltando)
             if (percentMissing < minMissingPercent) {
                 minMissingPercent = percentMissing;
                 bestCandidate = { item, missing, goal, currentTotal };
@@ -36,12 +36,12 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
         }
     });
 
-    // Se todos os itens elegíveis já atingiram a meta
+    // Se todos os itens elegÃ­veis jÃ¡ atingiram a meta
     if (successCount > 0 && !bestCandidate) {
         return (
             <div className="bg-emerald-50 p-4 rounded-lg shadow-sm border border-emerald-100 mb-4 animate-in slide-in-from-top-2">
                 <p className="text-emerald-700 font-bold text-center flex items-center justify-center gap-2">
-                    <Award size={18} /> Parabéns! Você garantiu preços de atacado nos seus itens!
+                    <Award size={18} /> ParabÃ©ns! VocÃª garantiu preÃ§os de atacado nos seus itens!
                 </p>
                 <p className="text-emerald-600 text-xs text-center mt-1">
                     O desconto foi aplicado automaticamente no subtotal.
@@ -50,7 +50,7 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
         );
     }
 
-    // Se tem um candidato para incentivar (mostra apenas o mais próximo para não poluir)
+    // Se tem um candidato para incentivar (mostra apenas o mais prÃ³ximo para nÃ£o poluir)
     if (bestCandidate) {
         const { item, missing, goal, currentTotal } = bestCandidate;
         const progress = Math.min((currentTotal / goal) * 100, 100);
@@ -64,7 +64,7 @@ const CartProgress: React.FC<CartProgressProps> = ({ items }) => {
                             {item.name}
                         </span>
                     </div>
-                    <span className="text-agro-600 font-bold">{progress.toFixed(0)}%</span>
+                    <span className="text-agro-700 font-bold">{progress.toFixed(0)}%</span>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3 overflow-hidden">

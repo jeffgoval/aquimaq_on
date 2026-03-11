@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
     ShoppingBag,
     Search,
-    Clock,
-    CheckCircle2,
     Package,
     Truck,
-    XCircle,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -14,14 +11,18 @@ import {
     RefreshCw,
     X,
     Download,
-    Printer
+    Printer,
+    CheckSquare,
+    Square,
+    ClipboardList,
 } from 'lucide-react';
 import {
     getOrdersAdmin,
     updateOrderStatus,
+    updateOrderStatusBulk,
     updateOrderTracking,
     printMelhorEnviosLabel,
-    type OrderAdminRow
+    type OrderAdminRow,
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,7 +37,7 @@ const statusOptions = [
     { value: 'all', label: 'Todos os Status' },
     { value: 'aguardando_pagamento', label: 'Aguardando Pagamento' },
     { value: 'pago', label: 'Pago' },
-    { value: 'em_separacao', label: 'Em Separação' },
+    { value: 'em_separacao', label: 'Em SeparaÃ§Ã£o' },
     { value: 'enviado', label: 'Enviado' },
     { value: 'pronto_retirada', label: 'Pronto para Retirada' },
     { value: 'entregue', label: 'Entregue' },
@@ -53,32 +54,136 @@ const statusConfig: Record<string, { label: string; color: string }> = {
     'cancelado': { label: 'Cancelado', color: 'text-stone-500 bg-stone-100' },
 };
 
+const fmtCurrency = (v: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+const fmtDate = (s: string) =>
+    new Date(s).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+
+/** Abre o romaneio de separaÃ§Ã£o numa nova janela e dispara impressÃ£o. */
+const printRomaneio = (orders: PedidoComCliente[]) => {
+    const em = orders.filter(o => o.status === 'em_separacao');
+    if (em.length === 0) { alert('Nenhum pedido em separaÃ§Ã£o no momento.'); return; }
+
+    const rows = em.map(o => `
+    <div class="pedido">
+      <div class="pedido-header">
+        <span class="pedido-id">#${o.id.slice(-8).toUpperCase()}</span>
+        <span class="pedido-cliente">${o.clientName}</span>
+        <span class="pedido-fone">${o.clientPhone || 'â€”'}</span>
+      </div>
+      <div class="pedido-end">${o.clientAddress}</div>
+      <div class="pedido-frete">${o.shippingMethod || 'Retirada'}</div>
+      <table class="itens">
+        <thead><tr><th>Produto</th><th>Qtd</th><th>Unit.</th></tr></thead>
+        <tbody>
+          ${(o.items || []).map(i => `
+          <tr>
+            <td>${i.productName}</td>
+            <td>${i.quantity}</td>
+            <td>${fmtCurrency(i.unitPrice)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="pedido-total">Total: ${fmtCurrency(o.total)}</div>
+    </div>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Romaneio de SeparaÃ§Ã£o</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; color: #111; }
+    h1 { font-size: 16px; margin-bottom: 4px; }
+    .meta { color: #555; font-size: 11px; margin-bottom: 16px; }
+    .pedido { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin-bottom: 14px; page-break-inside: avoid; }
+    .pedido-header { display: flex; gap: 12px; font-weight: bold; margin-bottom: 4px; }
+    .pedido-id { color: #444; font-family: monospace; }
+    .pedido-end, .pedido-frete { font-size: 11px; color: #555; margin-bottom: 2px; }
+    .itens { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .itens th { text-align: left; border-bottom: 1px solid #ddd; padding: 3px 4px; font-size: 11px; }
+    .itens td { padding: 3px 4px; border-bottom: 1px solid #f0f0f0; }
+    .pedido-total { text-align: right; font-weight: bold; margin-top: 6px; }
+    @media print { body { margin: 10px; } }
+  </style>
+</head>
+<body>
+  <h1>Romaneio de SeparaÃ§Ã£o</h1>
+  <div class="meta">${new Date().toLocaleString('pt-BR')} â€” ${em.length} pedido${em.length !== 1 ? 's' : ''}</div>
+  ${rows}
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
+};
+
 const AdminOrdersManagement: React.FC = () => {
     const { user, hasRole } = useAuth();
     const isVendedor = hasRole(['vendedor']);
 
     const [orders, setOrders] = useState<PedidoComCliente[]>([]);
+    const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<PedidoComCliente | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
+    const [editingTracking, setEditingTracking] = useState<{ id: string; code: string } | null>(null);
     const [printingLabel, setPrintingLabel] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
 
+    // Bulk selection
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkStatus, setBulkStatus] = useState('em_separacao');
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+
+    // Debounce search
+    const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchRef.current) clearTimeout(searchRef.current);
+        searchRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+        return () => { if (searchRef.current) clearTimeout(searchRef.current); };
+    }, [searchQuery]);
+
+    // Reset page + selection when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedIds(new Set());
+    }, [debouncedSearch, statusFilter]);
+
+    // Load orders when any server-side param changes
     useEffect(() => {
         loadOrders();
-    }, [isVendedor, user?.id]);
+    }, [isVendedor, user?.id, currentPage, debouncedSearch, statusFilter]);
+
+    // When searching, load all matching records (client-side filter applied below)
+    const isSearching = debouncedSearch.trim().length > 0;
 
     const loadOrders = async () => {
         try {
             setLoading(true);
-            // Vendedor vê apenas seus próprios pedidos
             const vendedorId = isVendedor ? user?.id : undefined;
-            const data = await getOrdersAdmin(vendedorId);
+            // When searching: load all records for the current status (unlimited),
+            // then apply client-side name/phone search below.
+            // When browsing: server-side pagination.
+            const unlimited = isSearching || (statusFilter !== 'all');
+            const { orders: data, total: t } = await getOrdersAdmin({
+                vendedorId,
+                page: currentPage,
+                pageSize: PAGE_SIZE,
+                status: statusFilter,
+                unlimited,
+            });
             setOrders(data as PedidoComCliente[]);
+            setTotal(t);
         } catch (error) {
             if (import.meta.env.DEV) console.error('Error loading orders:', error);
             setMessage({ type: 'error', text: 'Erro ao carregar pedidos.' });
@@ -87,21 +192,65 @@ const AdminOrdersManagement: React.FC = () => {
         }
     };
 
+    // Client-side search within loaded records
+    const filteredOrders: PedidoComCliente[] = isSearching
+        ? orders.filter(o => {
+            const q = debouncedSearch.toLowerCase();
+            return (
+                o.id.toLowerCase().includes(q) ||
+                (o.clientName || '').toLowerCase().includes(q) ||
+                (o.clientPhone || '').includes(debouncedSearch) ||
+                (o.trackingCode || '').toLowerCase().includes(q)
+            );
+        })
+        : orders;
+
+    // Pagination
+    const displayTotal = isSearching ? filteredOrders.length : total;
+    const totalPages = Math.max(1, Math.ceil(
+        isSearching
+            ? filteredOrders.length / PAGE_SIZE
+            : total / PAGE_SIZE
+    ));
+    const safePage = Math.min(currentPage, totalPages);
+    const pagedOrders = isSearching
+        ? filteredOrders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+        : filteredOrders; // already paginated server-side
+
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         try {
             setUpdatingOrderId(orderId);
             await updateOrderStatus(orderId, newStatus);
-
-            setOrders(prev => prev.map(order =>
-                order.id === orderId ? { ...order, status: newStatus as OrderStatus } : order
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: newStatus as OrderStatus } : o
             ));
             setMessage({ type: 'success', text: 'Status atualizado.' });
             setTimeout(() => setMessage(null), 2000);
         } catch (error) {
-            if (import.meta.env.DEV) console.error('Error updating status:', error);
+            if (import.meta.env.DEV) console.error(error);
             setMessage({ type: 'error', text: 'Erro ao atualizar status.' });
         } finally {
             setUpdatingOrderId(null);
+        }
+    };
+
+    const handleBulkStatusChange = async () => {
+        if (selectedIds.size === 0 || bulkUpdating) return;
+        try {
+            setBulkUpdating(true);
+            const ids = Array.from(selectedIds);
+            await updateOrderStatusBulk(ids, bulkStatus);
+            setOrders(prev => prev.map(o =>
+                selectedIds.has(o.id) ? { ...o, status: bulkStatus as OrderStatus } : o
+            ));
+            setSelectedIds(new Set());
+            setMessage({ type: 'success', text: `${ids.length} pedido${ids.length !== 1 ? 's' : ''} atualizados.` });
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error) {
+            if (import.meta.env.DEV) console.error(error);
+            setMessage({ type: 'error', text: 'Erro ao atualizar pedidos.' });
+        } finally {
+            setBulkUpdating(false);
         }
     };
 
@@ -112,14 +261,13 @@ const AdminOrdersManagement: React.FC = () => {
             setOrders(prev => prev.map(o =>
                 o.id === editingTracking.id ? { ...o, trackingCode: editingTracking.code } : o
             ));
-            setMessage({ type: 'success', text: 'Código de rastreio atualizado.' });
+            setMessage({ type: 'success', text: 'CÃ³digo de rastreio atualizado.' });
             setTimeout(() => setMessage(null), 2000);
-
-            if (selectedOrder && selectedOrder.id === editingTracking.id) {
+            if (selectedOrder?.id === editingTracking.id) {
                 setSelectedOrder({ ...selectedOrder, trackingCode: editingTracking.code });
             }
         } catch (error) {
-            if (import.meta.env.DEV) console.error('Error updating tracking:', error);
+            if (import.meta.env.DEV) console.error(error);
             setMessage({ type: 'error', text: 'Erro ao atualizar rastreio.' });
         } finally {
             setEditingTracking(null);
@@ -141,43 +289,26 @@ const AdminOrdersManagement: React.FC = () => {
         }
     };
 
-    const filteredOrders = orders.filter(order => {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-            order.id.toLowerCase().includes(query) ||
-            (order.clientName || '').toLowerCase().includes(query) ||
-            (order.clientPhone || '').includes(searchQuery) ||
-            (order.trackingCode || '').toLowerCase().includes(query);
+    const toggleSelectAll = () => {
+        if (selectedIds.size === pagedOrders.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(pagedOrders.map(o => o.id)));
+        }
+    };
 
-        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
-    const safePage = Math.min(currentPage, totalPages);
-    const pagedOrders = filteredOrders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-    const handleSearchChange = (value: string) => { setSearchQuery(value); setCurrentPage(1); };
-    const handleStatusFilterChange = (value: string) => { setStatusFilter(value); setCurrentPage(1); };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
         });
     };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-    };
-
     const exportToCSV = () => {
+        const src = isSearching ? filteredOrders : orders;
         const header = ['ID', 'Cliente', 'Telefone', 'Status', 'Total (R$)', 'Data', 'Rastreio'];
-        const rows = filteredOrders.map(o => [
+        const rows = src.map(o => [
             o.id,
             o.clientName || '',
             o.clientPhone || '',
@@ -186,7 +317,9 @@ const AdminOrdersManagement: React.FC = () => {
             new Date(o.createdAt).toLocaleDateString('pt-BR'),
             o.trackingCode || '',
         ]);
-        const csv = [header, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
+        const csv = [header, ...rows]
+            .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
+            .join('\n');
         const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -196,6 +329,8 @@ const AdminOrdersManagement: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
+    const allPageSelected = pagedOrders.length > 0 && pagedOrders.every(o => selectedIds.has(o.id));
+
     return (
         <div className="space-y-5 max-w-6xl mx-auto">
             {/* Page Header */}
@@ -204,10 +339,18 @@ const AdminOrdersManagement: React.FC = () => {
                     <h1 className="text-xl font-semibold text-stone-800">Pedidos</h1>
                     <p className="text-stone-400 text-[13px] mt-0.5">Gerencie todos os pedidos</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                        onClick={() => printRomaneio(orders)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-[13px] font-medium"
+                        title="Imprimir romaneio de pedidos em separaÃ§Ã£o"
+                    >
+                        <ClipboardList size={14} />
+                        Romaneio
+                    </button>
                     <button
                         onClick={exportToCSV}
-                        disabled={filteredOrders.length === 0}
+                        disabled={orders.length === 0}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Exportar pedidos filtrados em CSV"
                     >
@@ -226,8 +369,7 @@ const AdminOrdersManagement: React.FC = () => {
 
             {/* Feedback */}
             {message && (
-                <div className={`px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    }`}>
+                <div className={`px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                     {message.text}
                 </div>
             )}
@@ -238,25 +380,55 @@ const AdminOrdersManagement: React.FC = () => {
                     <Search className="absolute left-3 top-2.5 text-stone-300" size={16} />
                     <input
                         type="text"
-                        placeholder="Buscar por ID, cliente ou telefone..."
+                        placeholder="Buscar por ID, cliente, telefone ou rastreio..."
                         className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] placeholder-stone-400 focus:outline-none focus:border-stone-300"
                         value={searchQuery}
-                        onChange={(e) => handleSearchChange(e.target.value)}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 <div className="sm:w-48 relative">
                     <select
                         className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] text-stone-600 focus:outline-none focus:border-stone-300 appearance-none cursor-pointer"
                         value={statusFilter}
-                        onChange={(e) => handleStatusFilterChange(e.target.value)}
+                        onChange={(e) => setStatusFilter(e.target.value)}
                     >
-                        {statusOptions.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
+                        {statusOptions.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-2.5 text-stone-400 pointer-events-none" size={16} />
                 </div>
             </div>
+
+            {/* Bulk action bar */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 bg-stone-800 text-white px-4 py-2.5 rounded-xl text-[13px]">
+                    <span className="font-medium">{selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}</span>
+                    <span className="text-stone-400">â†’</span>
+                    <select
+                        value={bulkStatus}
+                        onChange={e => setBulkStatus(e.target.value)}
+                        className="bg-stone-700 border border-stone-600 rounded-lg px-2 py-1 text-white text-[12px] focus:outline-none cursor-pointer"
+                    >
+                        {statusOptions.slice(1).map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={handleBulkStatusChange}
+                        disabled={bulkUpdating}
+                        className="bg-white text-stone-800 px-3 py-1 rounded-lg text-[12px] font-semibold hover:bg-stone-100 disabled:opacity-50 transition-colors"
+                    >
+                        {bulkUpdating ? 'Atualizando...' : 'Aplicar'}
+                    </button>
+                    <button
+                        onClick={() => setSelectedIds(new Set())}
+                        className="ml-auto text-stone-400 hover:text-white p-1"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
 
             {/* Orders Table */}
             <div className="bg-white rounded-xl border border-stone-100 overflow-hidden">
@@ -270,25 +442,36 @@ const AdminOrdersManagement: React.FC = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-stone-100">
+                                    <th className="px-3 py-3 w-8">
+                                        <button onClick={toggleSelectAll} className="text-stone-400 hover:text-stone-600">
+                                            {allPageSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                                        </button>
+                                    </th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Pedido</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Cliente</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Total</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Status</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Data</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide text-right">Ações</th>
+                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide text-right">AÃ§Ãµes</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-50">
-                                {filteredOrders.length === 0 ? (
+                                {pagedOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="px-4 py-8 text-center text-stone-400 text-[13px]">
+                                        <td colSpan={7} className="px-4 py-8 text-center text-stone-400 text-[13px]">
                                             Nenhum pedido encontrado.
                                         </td>
                                     </tr>
                                 ) : pagedOrders.map((order) => {
                                     const config = statusConfig[order.status] || statusConfig['aguardando_pagamento'];
+                                    const isSelected = selectedIds.has(order.id);
                                     return (
-                                        <tr key={order.id} className="hover:bg-stone-25">
+                                        <tr key={order.id} className={`${isSelected ? 'bg-stone-50' : 'hover:bg-stone-25'}`}>
+                                            <td className="px-3 py-3">
+                                                <button onClick={() => toggleSelect(order.id)} className="text-stone-400 hover:text-stone-600">
+                                                    {isSelected ? <CheckSquare size={16} className="text-stone-700" /> : <Square size={16} />}
+                                                </button>
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <span className="font-mono text-[12px] text-stone-500">
                                                     #{order.id.slice(-8).toUpperCase()}
@@ -301,9 +484,7 @@ const AdminOrdersManagement: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="text-[13px] font-medium text-stone-700">
-                                                    {formatCurrency(order.total)}
-                                                </span>
+                                                <span className="text-[13px] font-medium text-stone-700">{fmtCurrency(order.total)}</span>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <select
@@ -317,17 +498,13 @@ const AdminOrdersManagement: React.FC = () => {
                                                         ${updatingOrderId === order.id ? 'opacity-50' : ''}
                                                     `}
                                                 >
-                                                    {statusOptions.slice(1).map(option => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
+                                                    {statusOptions.slice(1).map(o => (
+                                                        <option key={o.value} value={o.value}>{o.label}</option>
                                                     ))}
                                                 </select>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="text-[12px] text-stone-400">
-                                                    {formatDate(order.createdAt)}
-                                                </span>
+                                                <span className="text-[12px] text-stone-400">{fmtDate(order.createdAt)}</span>
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <button
@@ -349,18 +526,18 @@ const AdminOrdersManagement: React.FC = () => {
             </div>
 
             {/* Pagination */}
-            {!loading && filteredOrders.length > PAGE_SIZE && (
+            {!loading && displayTotal > PAGE_SIZE && (
                 <div className="flex items-center justify-between text-[13px] text-stone-500">
                     <span>
-                        {filteredOrders.length} pedido{filteredOrders.length !== 1 ? 's' : ''} —
-                        página {safePage} de {totalPages}
+                        {displayTotal} pedido{displayTotal !== 1 ? 's' : ''} â€”
+                        pÃ¡gina {safePage} de {totalPages}
                     </span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={safePage === 1}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Página anterior"
+                            aria-label="PÃ¡gina anterior"
                         >
                             <ChevronLeft size={16} />
                         </button>
@@ -373,7 +550,7 @@ const AdminOrdersManagement: React.FC = () => {
                             }, [])
                             .map((p, idx) =>
                                 p === '...'
-                                    ? <span key={`ellipsis-${idx}`} className="px-1">…</span>
+                                    ? <span key={`e-${idx}`} className="px-1">â€¦</span>
                                     : <button
                                         key={p}
                                         onClick={() => setCurrentPage(p as number)}
@@ -387,7 +564,7 @@ const AdminOrdersManagement: React.FC = () => {
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={safePage === totalPages}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Próxima página"
+                            aria-label="PrÃ³xima pÃ¡gina"
                         >
                             <ChevronRight size={16} />
                         </button>
@@ -406,16 +583,14 @@ const AdminOrdersManagement: React.FC = () => {
                             <button
                                 onClick={() => setSelectedOrder(null)}
                                 className="text-stone-400 hover:text-stone-600 p-1"
-                                aria-label="Fechar detalhes do pedido"
+                                aria-label="Fechar"
                             >
                                 <X size={18} />
                             </button>
                         </div>
                         <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
-
-                            {/* Address details */}
                             <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
-                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Truck size={14} /> Endereço de Entrega</h4>
+                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Truck size={14} /> EndereÃ§o de Entrega</h4>
                                 <p className="text-stone-600 text-[13px]">{selectedOrder.clientAddress}</p>
                             </div>
 
@@ -430,15 +605,15 @@ const AdminOrdersManagement: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Subtotal</p>
-                                    <p className="text-stone-700">{formatCurrency(selectedOrder.subtotal)}</p>
+                                    <p className="text-stone-700">{fmtCurrency(selectedOrder.subtotal)}</p>
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Frete</p>
-                                    <p className="text-stone-700">{formatCurrency(selectedOrder.shippingCost)}</p>
+                                    <p className="text-stone-700">{fmtCurrency(selectedOrder.shippingCost)}</p>
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Total</p>
-                                    <p className="text-stone-800 font-semibold">{formatCurrency(selectedOrder.total)}</p>
+                                    <p className="text-stone-800 font-semibold">{fmtCurrency(selectedOrder.total)}</p>
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Envio</p>
@@ -446,9 +621,8 @@ const AdminOrdersManagement: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Tracking code Editor */}
                             <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
-                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Package size={14} /> Código de Rastreio</h4>
+                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Package size={14} /> CÃ³digo de Rastreio</h4>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -467,7 +641,6 @@ const AdminOrdersManagement: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Imprimir Etiqueta Melhor Envios */}
                             {selectedOrder.meOrderId && (
                                 <button
                                     onClick={() => handlePrintLabel(selectedOrder)}
@@ -475,11 +648,10 @@ const AdminOrdersManagement: React.FC = () => {
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-medium transition-colors"
                                 >
                                     <Printer size={15} />
-                                    {printingLabel ? 'Gerando etiqueta...' : 'Imprimir Etiqueta Térmica (10×15)'}
+                                    {printingLabel ? 'Gerando etiqueta...' : 'Imprimir Etiqueta TÃ©rmica (10Ã—15)'}
                                 </button>
                             )}
 
-                            {/* Items list */}
                             <div>
                                 <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-3 flex items-center gap-2"><ShoppingBag size={14} /> Itens do Pedido</h4>
                                 <div className="space-y-3 bg-white border border-stone-100 rounded-xl p-4">
@@ -487,9 +659,9 @@ const AdminOrdersManagement: React.FC = () => {
                                         <div key={idx} className="flex justify-between items-center pb-3 border-b border-stone-100 last:border-0 last:pb-0">
                                             <div>
                                                 <p className="text-[13px] text-stone-700 font-medium">{item.productName}</p>
-                                                <p className="text-[12px] text-stone-500 mt-0.5">{item.quantity}x {formatCurrency(item.unitPrice)}</p>
+                                                <p className="text-[12px] text-stone-500 mt-0.5">{item.quantity}x {fmtCurrency(item.unitPrice)}</p>
                                             </div>
-                                            <p className="text-[13px] font-medium text-stone-800">{formatCurrency(item.quantity * item.unitPrice)}</p>
+                                            <p className="text-[13px] font-medium text-stone-800">{fmtCurrency(item.quantity * item.unitPrice)}</p>
                                         </div>
                                     )) : (
                                         <p className="text-stone-500 text-[13px] text-center py-2">Nenhum item encontrado.</p>
@@ -505,4 +677,3 @@ const AdminOrdersManagement: React.FC = () => {
 };
 
 export default AdminOrdersManagement;
-

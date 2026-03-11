@@ -3,11 +3,13 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { extractText, getDocumentProxy } from "npm:unpdf";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+/** Retorna o origin permitido: domínio de produção ou localhost em desenvolvimento. */
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get("Origin") ?? "";
+  const prodOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
+  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  return (isLocalhost || origin === prodOrigin) ? origin : prodOrigin;
+}
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -54,6 +56,13 @@ async function getEmbeddings(texts: string[]): Promise<number[][]> {
 }
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": getAllowedOrigin(req),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

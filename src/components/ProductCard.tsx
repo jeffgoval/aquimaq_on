@@ -34,12 +34,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const isLowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
     const pixPrice = product.price * (1 - PIX_DISCOUNT);
 
+    const [showSavedFeedback, setShowSavedFeedback] = React.useState(false);
+
+    const handleWishlistClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const wasAdded = !isFavorite;
+        toggleWishlist(product.id);
+        
+        if (wasAdded) {
+            setShowSavedFeedback(true);
+            setTimeout(() => setShowSavedFeedback(false), 2000);
+        }
+    };
+
     return (
         <article
             className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group relative"
             aria-label={`Produto: ${product.name}`}
         >
-            {/* ── Image area ── */}
+            {/* â”€â”€ Image area â”€â”€ */}
             <Link
                 to={ROUTES.PRODUCT(product.id)}
                 className="relative h-52 w-full bg-gray-50 overflow-hidden block shrink-0"
@@ -50,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {isOutOfStock && (
                     <div className="absolute inset-0 bg-white/75 z-10 flex items-center justify-center">
                         <span className="text-xs font-bold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
-                            Indisponível
+                            IndisponÃ­vel
                         </span>
                     </div>
                 )}
@@ -85,12 +100,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
                             seasonalStatus === 'pre_safra' ? 'bg-sky-500 text-white' :
                             'bg-amber-600 text-white'
                         }`}>
-                            🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
+                            ðŸŒ± {SEASONAL_STATUS_LABEL[seasonalStatus]}
                         </span>
                     )}
                 </div>
 
-                {/* Bottom-left: low stock (não colide com ♥) */}
+                {/* Bottom-left: low stock (nÃ£o colide com â™¥) */}
                 {isLowStock && (
                     <span className="absolute bottom-2 left-2 z-10 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full pointer-events-none">
                         Restam {product.stock}
@@ -98,30 +113,36 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 )}
             </Link>
 
-            {/* ♥ Wishlist — fora do Link, sem colisão com badges */}
-            <button
-                className="absolute top-2 right-2 z-20 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors shadow-sm"
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleWishlist(product.id);
-                }}
-                aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-            >
-                <Heart
-                    size={16}
-                    className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-400'} transition-colors`}
-                />
-            </button>
+            {/* â™¥ Wishlist â€” fora do Link, sem colisÃ£o com badges */}
+            <div className="absolute top-2 right-2 z-20 flex flex-col items-end">
+                <button
+                    className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors shadow-sm relative group"
+                    onClick={handleWishlistClick}
+                    aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                >
+                    <Heart
+                        size={16}
+                        className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400 group-hover:text-red-400'} transition-all duration-300 ${showSavedFeedback ? 'scale-125' : 'scale-100'}`}
+                    />
+                </button>
+                {/* Inline Saved Feedback */}
+                <div
+                    className={`mt-1 px-2 py-0.5 bg-black/75 text-white text-[10px] font-bold rounded-md transition-all duration-300 pointer-events-none origin-top ${
+                        showSavedFeedback ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-1'
+                    }`}
+                >
+                    Salvo
+                </div>
+            </div>
 
-            {/* ── Info area ── */}
+            {/* â”€â”€ Info area â”€â”€ */}
             <div className="px-4 pt-3 pb-0 flex flex-col flex-1">
                 {/* Category + brand */}
-                <p className="text-[10px] font-bold text-agro-600 uppercase tracking-widest truncate mb-1">
+                <p className="text-[10px] font-bold text-agro-700 uppercase tracking-widest truncate mb-1">
                     {product.category}
                     {product.brand && (
                         <span className="text-gray-400 font-normal normal-case tracking-normal ml-1.5">
-                            · {product.brand}
+                            Â· {product.brand}
                         </span>
                     )}
                 </p>
@@ -140,7 +161,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Price block — sticky to bottom of info area */}
+                {/* Price block â€” sticky to bottom of info area */}
                 <div className="mt-auto pt-3 border-t border-gray-100">
                     {product.oldPrice && (
                         <span className="text-xs text-gray-400 line-through block leading-none mb-0.5">
@@ -157,16 +178,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
             </div>
 
-            {/* ── Add to cart — full-width ── */}
+            {/* â”€â”€ Add to cart â€” full-width â”€â”€ */}
             <div className="px-4 py-3">
                 <button
                     onClick={() => onAddToCart(product)}
                     disabled={isOutOfStock}
                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-agro-600 hover:bg-agro-700 active:bg-agro-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    aria-label={isOutOfStock ? 'Produto indisponível' : `Adicionar ${product.name} ao carrinho`}
+                    aria-label={isOutOfStock ? 'Produto indisponÃ­vel' : `Adicionar ${product.name} ao carrinho`}
                 >
                     <ShoppingCart size={15} />
-                    {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
+                    {isOutOfStock ? 'IndisponÃ­vel' : 'Adicionar ao Carrinho'}
                 </button>
             </div>
         </article>

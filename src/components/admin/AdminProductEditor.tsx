@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useCropCalendar } from '@/hooks/useCropCalendar';
 import {
     ArrowLeft,
@@ -58,14 +58,14 @@ interface ProductFormData {
 }
 
 const categoryOptions = [
-    { value: 'Máquinas e Equipamentos', label: 'Máquinas e Equipamentos' },
-    { value: 'Peças de Reposição', label: 'Peças de Reposição' },
-    { value: 'Insumos Agrícolas', label: 'Insumos Agrícolas' },
+    { value: 'MÃ¡quinas e Equipamentos', label: 'MÃ¡quinas e Equipamentos' },
+    { value: 'PeÃ§as de ReposiÃ§Ã£o', label: 'PeÃ§as de ReposiÃ§Ã£o' },
+    { value: 'Insumos AgrÃ­colas', label: 'Insumos AgrÃ­colas' },
     { value: 'Colheita e Ferramentas', label: 'Colheita e Ferramentas' },
     { value: 'Linha Pet', label: 'Linha Pet' },
-    { value: 'EPI e Segurança', label: 'EPI e Segurança' },
+    { value: 'EPI e SeguranÃ§a', label: 'EPI e SeguranÃ§a' },
     { value: 'Ferramentas Manuais', label: 'Ferramentas Manuais' },
-    { value: 'Acessórios', label: 'Acessórios' },
+    { value: 'AcessÃ³rios', label: 'AcessÃ³rios' },
     { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
 ];
 
@@ -87,7 +87,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         price: 0,
         oldPrice: null,
         discount: null,
-        category: 'Máquinas e Equipamentos',
+        category: 'MÃ¡quinas e Equipamentos',
         stock: 0,
         isNew: false,
         isBestSeller: false,
@@ -128,7 +128,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 price: data.price || 0,
                 oldPrice: data.old_price || null,
                 discount: data.discount || null,
-                category: data.category || 'Máquinas e Equipamentos',
+                category: data.category || 'MÃ¡quinas e Equipamentos',
                 stock: data.stock || 0,
                 isNew: data.is_new || false,
                 isBestSeller: data.is_best_seller || false,
@@ -195,7 +195,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         e.preventDefault();
 
         if (!formData.name.trim()) {
-            setMessage({ type: 'error', text: 'Nome é obrigatório.' });
+            setMessage({ type: 'error', text: 'Nome Ã© obrigatÃ³rio.' });
             return;
         }
 
@@ -272,7 +272,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                         {productId ? 'Editar Produto' : 'Novo Produto'}
                     </h1>
                     <p className="text-stone-400 text-[13px]">
-                        {productId ? 'Atualize as informações do produto' : 'Preencha as informações do produto'}
+                        {productId ? 'Atualize as informaÃ§Ãµes do produto' : 'Preencha as informaÃ§Ãµes do produto'}
                     </p>
                 </div>
             </div>
@@ -304,7 +304,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                     <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
                         <FileText size={16} className="text-stone-400" />
-                        Informações Básicas
+                        InformaÃ§Ãµes BÃ¡sicas
                     </h2>
 
                     <div>
@@ -324,7 +324,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 
                     <div>
                         <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Descrição
+                            DescriÃ§Ã£o
                         </label>
                         <textarea
                             name="description"
@@ -332,13 +332,13 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                             onChange={handleChange}
                             rows={3}
                             className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 resize-none"
-                            placeholder="Descrição detalhada do produto..."
+                            placeholder="DescriÃ§Ã£o detalhada do produto..."
                         />
                     </div>
 
                     <div>
                         <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Especificações Técnicas
+                            EspecificaÃ§Ãµes TÃ©cnicas
                         </label>
                         <textarea
                             name="technicalSpecs"
@@ -346,7 +346,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                             onChange={handleChange}
                             rows={3}
                             className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 resize-none font-mono"
-                            placeholder="Peso: 2,5kg | Material: Aço Carbono | ..."
+                            placeholder="Peso: 2,5kg | Material: AÃ§o Carbono | ..."
                         />
                     </div>
 
@@ -375,7 +375,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
                         >
-                            <option value="">— Nenhuma —</option>
+                            <option value="">â€” Nenhuma â€”</option>
                             {availableCultures.map((c) => (
                                 <option key={c} value={c}>{c}</option>
                             ))}
@@ -383,11 +383,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     </div>
                 </div>
 
-                {/* Controle de Estoque Agrícola */}
+                {/* Controle de Estoque AgrÃ­cola */}
                 <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                     <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
                         <Warehouse size={16} className="text-stone-400" />
-                        Controle de Estoque Agrícola
+                        Controle de Estoque AgrÃ­cola
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -405,7 +405,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                         </div>
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Localização no Depósito
+                                LocalizaÃ§Ã£o no DepÃ³sito
                             </label>
                             <input
                                 type="text"
@@ -418,7 +418,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                         </div>
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Número do Lote
+                                NÃºmero do Lote
                             </label>
                             <input
                                 type="text"
@@ -466,13 +466,13 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                     <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
                         <DollarSign size={16} className="text-stone-400" />
-                        Preço e Estoque
+                        PreÃ§o e Estoque
                     </h2>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Preço *
+                                PreÃ§o *
                             </label>
                             <input
                                 type="text"
@@ -485,7 +485,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                         </div>
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Preço Antigo
+                                PreÃ§o Antigo
                             </label>
                             <input
                                 type="text"
@@ -570,7 +570,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                         className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
                                         placeholder="Ex: 2000.00"
                                     />
-                                    <p className="text-[11px] text-stone-400 mt-1">Valor mín. deste produto no carrinho</p>
+                                    <p className="text-[11px] text-stone-400 mt-1">Valor mÃ­n. deste produto no carrinho</p>
                                 </div>
                                 <div>
                                     <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
@@ -608,7 +608,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 onChange={handleChange}
                                 className="w-4 h-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500"
                             />
-                            <span className="text-[13px] text-stone-600">Ativo (visível na loja)</span>
+                            <span className="text-[13px] text-stone-600">Ativo (visÃ­vel na loja)</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -672,7 +672,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     <div className="grid md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Título SEO
+                                TÃ­tulo SEO
                             </label>
                             <input
                                 type="text"
@@ -680,12 +680,12 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 value={formData.seoTitle}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
-                                placeholder="Título para motores de busca"
+                                placeholder="TÃ­tulo para motores de busca"
                             />
                         </div>
                         <div>
                             <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Descrição SEO
+                                DescriÃ§Ã£o SEO
                             </label>
                             <input
                                 type="text"
@@ -699,13 +699,13 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     </div>
                 </div>
 
-                {/* Documentos — só exibe ao editar produto existente */}
+                {/* Documentos â€” sÃ³ exibe ao editar produto existente */}
                 {productId && (
                     <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
                         <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
                             <BookOpen size={16} className="text-stone-400" />
                             Bulas e Manuais
-                            <span className="ml-auto text-[11px] font-normal text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full">RAG · IA de Atendimento</span>
+                            <span className="ml-auto text-[11px] font-normal text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full">RAG Â· IA de Atendimento</span>
                         </h2>
                         <ProductDocumentsManager productId={productId} />
                     </div>

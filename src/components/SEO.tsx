@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 interface SEOProps {
@@ -11,7 +11,7 @@ interface SEOProps {
     children?: React.ReactNode;
 }
 
-const DEFAULT_DESCRIPTION = 'Aquimaq - Sua parceira no campo. Ferramentas, peças e insumos com o melhor preço. Entrega rápida para todo o Brasil.';
+const DEFAULT_DESCRIPTION = 'Aquimaq - Sua parceira no campo. Ferramentas, peÃ§as e insumos com o melhor preÃ§o. Entrega rÃ¡pida para todo o Brasil.';
 const DEFAULT_IMAGE = 'https://aquimaq.com.br/logo%20aquimaq.png';
 
 const SEO: React.FC<SEOProps> = ({

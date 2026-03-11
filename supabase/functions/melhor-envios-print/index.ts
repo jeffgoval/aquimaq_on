@@ -1,10 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+/** Retorna o origin permitido: domínio de produção ou localhost em desenvolvimento. */
+function getAllowedOrigin(req: Request): string {
+    const origin = req.headers.get("Origin") ?? "";
+    const prodOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    return (isLocalhost || origin === prodOrigin) ? origin : prodOrigin;
+}
 
 const IS_PRODUCTION = Deno.env.get("PRODUCTION_MELHOR_ENVIO") === "true";
 const ME_API_BASE = IS_PRODUCTION
@@ -12,6 +15,12 @@ const ME_API_BASE = IS_PRODUCTION
     : "https://sandbox.melhorenvio.com.br/api/v2";
 
 Deno.serve(async (req) => {
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": getAllowedOrigin(req),
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+        "Vary": "Origin",
+    };
+
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }

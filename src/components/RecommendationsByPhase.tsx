@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
@@ -7,17 +7,17 @@ import ProductCard from './ProductCard';
 import { CalendarDays } from 'lucide-react';
 
 export interface RecommendationsByPhaseProps {
-  /** Fase da lavoura para filtrar (ex.: Floração, Colheita). Se null, mostra selector. */
+  /** Fase da lavoura para filtrar (ex.: FloraÃ§Ã£o, Colheita). Se null, mostra selector. */
   phase: string | null;
   /** Lista de fases para o dropdown */
   availablePhases: string[];
-  /** Callback quando o usuário seleciona outra fase no dropdown */
+  /** Callback quando o usuÃ¡rio seleciona outra fase no dropdown */
   onPhaseChange?: (phase: string | null) => void;
   /** Excluir este produto da lista (ex.: na PDP) */
   excludeProductId?: string;
   onAddToCart: (product: Product, quantity?: number) => void;
   limit?: number;
-  /** Se true, mostra selector de fase mesmo quando phase está preenchido (ex.: na Home) */
+  /** Se true, mostra selector de fase mesmo quando phase estÃ¡ preenchido (ex.: na Home) */
   showPhaseSelector?: boolean;
 }
 
@@ -48,7 +48,7 @@ const RecommendationsByPhase: React.FC<RecommendationsByPhaseProps> = ({
     <div className="mb-12 animate-fade-in border-b border-gray-100 pb-8">
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <CalendarDays size={26} className="text-agro-600" />
+          <CalendarDays size={26} className="text-agro-700" />
           {phase
             ? `Recomendados para a fase de ${phase}`
             : 'Fases de Cultivo'}
@@ -76,7 +76,7 @@ const RecommendationsByPhase: React.FC<RecommendationsByPhaseProps> = ({
             Acompanhe o ciclo da sua lavoura
           </h3>
           <p className="text-gray-500 max-w-sm">
-            Selecione a fase da lavoura acima para descobrir os melhores equipamentos e insumos recomendados para o período.
+            Selecione a fase da lavoura acima para descobrir os melhores equipamentos e insumos recomendados para o perÃ­odo.
           </p>
         </div>
       ) : isLoading ? (

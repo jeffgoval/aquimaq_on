@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+﻿import React, { useMemo, useCallback } from 'react';
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -39,7 +39,7 @@ const MainLayout: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20" style={{ minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '5rem' }}>
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-agro-600 focus:text-white focus:rounded">
-                Pular para conteúdo principal
+                Pular para conteÃºdo principal
             </a>
 
             <Header

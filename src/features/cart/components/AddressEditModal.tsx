@@ -75,18 +75,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 
     document.addEventListener('keydown', handleKeyDown);
 
-    const timer = setTimeout(() => {
-      const firstInput = containerRef.current?.querySelector('input');
-      if (firstInput) {
-        (firstInput as HTMLElement).focus();
-      } else {
-        const closeBtn = containerRef.current?.querySelector('button[aria-label="Fechar"]');
-        (closeBtn as HTMLElement)?.focus();
-      }
-    }, 50);
-
     return () => {
-      clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
@@ -134,7 +123,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       return;
     }
     if (!address.number?.trim()) {
-      setError('O número do endereço é obrigatório para entrega.');
+      setError('O nÃºmero do endereÃ§o Ã© obrigatÃ³rio para entrega.');
       return;
     }
     setIsLoading(true);
@@ -154,7 +143,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       });
       onClose();
     } catch (err) {
-      setError('Erro ao salvar endereço. Tente novamente.');
+      setError('Erro ao salvar endereÃ§o. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -165,8 +154,8 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       <div ref={containerRef} className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h2 id="address-modal-title" className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <MapPin className="text-agro-600" size={20} />
-            Endereço de Entrega
+            <MapPin className="text-agro-700" size={20} />
+            EndereÃ§o de Entrega
           </h2>
           <button
             type="button"
@@ -189,6 +178,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
             <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
             <div className="relative">
               <input
+                autoFocus
                 type="text"
                 value={address.zip}
                 onChange={(e) => handleChange('zip', e.target.value)}
@@ -198,7 +188,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
               />
               {isLoadingCep && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="w-5 h-5 text-agro-600 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-agro-700 animate-spin" />
                 </div>
               )}
             </div>
@@ -216,7 +206,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">NÃºmero</label>
               <input
                 type="text"
                 value={address.number}
@@ -287,7 +277,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
                   Salvando...
                 </>
               ) : (
-                'Salvar endereço'
+                'Salvar endereÃ§o'
               )}
             </button>
           </div>

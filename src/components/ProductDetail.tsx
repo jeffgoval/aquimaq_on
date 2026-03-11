@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     ChevronRight, ShoppingCart, ShieldCheck, Truck, CreditCard, RefreshCcw, MapPin, Loader2,
@@ -113,7 +113,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
         e.preventDefault();
         const rawCep = cep.replace(/\D/g, '');
         if (!validateCEP(cep)) {
-            setShippingError('CEP inválido. Digite 8 dígitos.');
+            setShippingError('CEP invÃ¡lido. Digite 8 dÃ­gitos.');
             return;
         }
         setShippingLoading(true);
@@ -134,22 +134,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
             setShippingCalculated(true);
             if (error) setShippingError(error);
         } catch {
-            setShippingError('Não foi possível calcular o frete.');
+            setShippingError('NÃ£o foi possÃ­vel calcular o frete.');
         } finally {
             setShippingLoading(false);
         }
     }, [cep, product, quantity]);
 
     const tabs: { id: Tab; label: string }[] = [
-        { id: 'descricao', label: 'Descrição' },
-        ...(product.technicalSpecs ? [{ id: 'especificacoes' as Tab, label: 'Especificações' }] : []),
+        { id: 'descricao', label: 'DescriÃ§Ã£o' },
+        ...(product.technicalSpecs ? [{ id: 'especificacoes' as Tab, label: 'EspecificaÃ§Ãµes' }] : []),
     ];
 
     const trustSeals = [
         { icon: ShieldCheck, label: 'Compra Segura' },
         { icon: Truck, label: 'Entrega Brasil' },
         { icon: CreditCard, label: `${maxInstallments}x Sem Juros` },
-        { icon: RefreshCcw, label: 'Troca Fácil' },
+        { icon: RefreshCcw, label: 'Troca FÃ¡cil' },
     ];
 
     return (
@@ -158,28 +158,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
 
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500 mb-6 flex-wrap">
-                <Link to={ROUTES.HOME} className="hover:text-agro-600 transition-colors shrink-0">Início</Link>
+                <Link to={ROUTES.HOME} className="hover:text-agro-700 transition-colors shrink-0">InÃ­cio</Link>
                 <ChevronRight size={14} className="text-gray-300 shrink-0" />
-                <Link to={ROUTES.HOME} className="hover:text-agro-600 transition-colors truncate max-w-[160px]">
+                <Link to={ROUTES.HOME} className="hover:text-agro-700 transition-colors truncate max-w-[160px]">
                     {product.category}
                 </Link>
                 <ChevronRight size={14} className="text-gray-300 shrink-0" />
                 <span className="text-gray-800 font-medium truncate max-w-[240px]">{product.name}</span>
             </nav>
 
-            {/* ─── Main product grid ─── */}
+            {/* â”€â”€â”€ Main product grid â”€â”€â”€ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
 
-                {/* ── LEFT: Gallery (sticky on desktop) ── */}
+                {/* â”€â”€ LEFT: Gallery (sticky on desktop) â”€â”€ */}
                 <div className="lg:sticky lg:top-24 lg:self-start">
                     <ProductGallery images={galleryImages} productName={product.name} />
 
-                    {/* Trust seals — desktop only, below gallery */}
+                    {/* Trust seals â€” desktop only, below gallery */}
                     <div className="hidden lg:grid grid-cols-4 gap-3 mt-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
                         {trustSeals.map(({ icon: Icon, label }) => (
                             <div key={label} className="flex flex-col items-center gap-1.5 text-center">
                                 <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100">
-                                    <Icon size={16} className="text-agro-600" />
+                                    <Icon size={16} className="text-agro-700" />
                                 </div>
                                 <span className="text-[11px] font-medium text-gray-600 leading-tight">{label}</span>
                             </div>
@@ -187,7 +187,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                     </div>
                 </div>
 
-                {/* ── RIGHT: Product info ── */}
+                {/* â”€â”€ RIGHT: Product info â”€â”€ */}
                 <div className="flex flex-col gap-5">
 
                     {/* Badges */}
@@ -210,7 +210,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             )}
                             {seasonalStatus && (
                                 <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${SEASONAL_STATUS_COLORS[seasonalStatus]}`}>
-                                    🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
+                                    ðŸŒ± {SEASONAL_STATUS_LABEL[seasonalStatus]}
                                 </span>
                             )}
                         </div>
@@ -218,7 +218,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
 
                     {/* Category + Brand */}
                     <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-bold text-agro-600 uppercase tracking-widest">
+                        <span className="text-xs font-bold text-agro-700 uppercase tracking-widest">
                             {product.category}
                         </span>
                         {product.brand && (
@@ -229,13 +229,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         {cropRow && (
                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-sm text-gray-500">
                                 <span>
-                                    🌱 Plantio:{' '}
+                                    ðŸŒ± Plantio:{' '}
                                     <span className="font-semibold text-gray-700">
                                         {formatMonthRange(cropRow.month_plant_start, cropRow.month_plant_end)}
                                     </span>
                                 </span>
                                 <span>
-                                    🌾 Colheita:{' '}
+                                    ðŸŒ¾ Colheita:{' '}
                                     <span className="font-semibold text-gray-700">
                                         {formatMonthRange(cropRow.month_harvest_start, cropRow.month_harvest_end)}
                                     </span>
@@ -255,12 +255,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             <StarRating rating={product.rating} count={product.reviewCount} size={16} />
                             <span className="text-xs text-gray-300">|</span>
                             <span className="text-xs text-gray-500 flex items-center gap-1">
-                                <Users size={12} /> {product.reviewCount} avaliações
+                                <Users size={12} /> {product.reviewCount} avaliaÃ§Ãµes
                             </span>
                         </div>
                     )}
 
-                    {/* ── Price block ── */}
+                    {/* â”€â”€ Price block â”€â”€ */}
                     <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
                         {product.oldPrice && (
                             <div className="flex items-center gap-2 mb-1">
@@ -307,7 +307,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
                                 <AlertTriangle size={16} />
-                                <span className="text-sm font-semibold">Produto indisponível no momento</span>
+                                <span className="text-sm font-semibold">Produto indisponÃ­vel no momento</span>
                             </div>
                             <button
                                 onClick={handleNotify}
@@ -315,10 +315,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                                 className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-agro-500 text-agro-700 text-sm font-semibold rounded-lg hover:bg-agro-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {notifyState === 'done'
-                                    ? <><BellOff size={15} /> Você será avisado!</>
+                                    ? <><BellOff size={15} /> VocÃª serÃ¡ avisado!</>
                                     : notifyState === 'loading'
                                     ? <><Loader2 size={15} className="animate-spin" /> Registrando...</>
-                                    : <><Bell size={15} /> Avise-me quando disponível</>}
+                                    : <><Bell size={15} /> Avise-me quando disponÃ­vel</>}
                             </button>
                             {notifyState === 'error' && (
                                 <p className="text-xs text-red-500 text-center">Erro ao registrar. Tente novamente.</p>
@@ -334,14 +334,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                     ) : (
                         <div className="flex items-center gap-1.5 text-emerald-700">
                             <CheckCircle size={15} />
-                            <span className="text-sm font-medium">Em estoque ({product.stock} disponíveis)</span>
+                            <span className="text-sm font-medium">Em estoque ({product.stock} disponÃ­veis)</span>
                         </div>
                     )}
 
                     {/* Wholesale info */}
                     {hasWholesale && (
                         <div className="flex items-start gap-3 bg-agro-50 border border-agro-100 rounded-xl p-4">
-                            <Users size={18} className="text-agro-600 mt-0.5 shrink-0" />
+                            <Users size={18} className="text-agro-700 mt-0.5 shrink-0" />
                             <div>
                                 <p className="text-sm font-bold text-agro-800">Desconto Atacado</p>
                                 <p className="text-sm text-agro-700">
@@ -352,7 +352,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         </div>
                     )}
 
-                    {/* ── Quantity + CTAs ── */}
+                    {/* â”€â”€ Quantity + CTAs â”€â”€ */}
                     <div ref={ctaRef} className="flex flex-col gap-3">
                         <div className="flex items-center gap-3">
                             <span className="text-sm font-semibold text-gray-700">Quantidade</span>
@@ -372,7 +372,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             disabled={isOutOfStock}
                             className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white py-4 rounded-xl font-bold text-base transition-all shadow-lg shadow-orange-200/60 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
                         >
-                            {isOutOfStock ? 'Indisponível' : 'Comprar Agora'}
+                            {isOutOfStock ? 'IndisponÃ­vel' : 'Comprar Agora'}
                         </button>
 
                         {/* Secondary CTA: Adicionar ao Carrinho */}
@@ -382,14 +382,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             className="w-full bg-white border-2 border-agro-600 text-agro-700 hover:bg-agro-50 active:bg-agro-100 py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                         >
                             <ShoppingCart size={18} />
-                            {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
+                            {isOutOfStock ? 'IndisponÃ­vel' : 'Adicionar ao Carrinho'}
                         </button>
                     </div>
 
-                    {/* ── Inline Shipping Estimator ── */}
+                    {/* â”€â”€ Inline Shipping Estimator â”€â”€ */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                            <Truck size={16} className="text-agro-600" />
+                            <Truck size={16} className="text-agro-700" />
                             <span className="text-sm font-semibold text-gray-800">Calcular Frete e Prazo</span>
                         </div>
                         <div className="p-4">
@@ -426,24 +426,24 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                                             className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-3 py-2.5"
                                         >
                                             <div className="flex items-center gap-2.5">
-                                                {option.carrier === 'Loja Física'
+                                                {option.carrier === 'Loja FÃ­sica'
                                                     ? <Store size={14} className="text-gray-400 shrink-0" />
                                                     : <Truck size={14} className="text-gray-400 shrink-0" />
                                                 }
                                                 <div>
                                                     <p className="text-sm font-medium text-gray-800">
-                                                        {option.carrier} — {option.service}
+                                                        {option.carrier} â€” {option.service}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
                                                         {option.estimatedDays === 0
-                                                            ? 'Disponível imediatamente'
-                                                            : `Até ${option.estimatedDays} dias úteis`}
+                                                            ? 'DisponÃ­vel imediatamente'
+                                                            : `AtÃ© ${option.estimatedDays} dias Ãºteis`}
                                                     </p>
                                                 </div>
                                             </div>
                                             <span className="text-sm font-bold shrink-0 ml-2">
                                                 {option.price === 0
-                                                    ? <span className="text-emerald-600">Grátis</span>
+                                                    ? <span className="text-emerald-600">GrÃ¡tis</span>
                                                     : <span className="text-gray-900">{formatCurrency(option.price)}</span>
                                                 }
                                             </span>
@@ -454,19 +454,19 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                         </div>
                     </div>
 
-                    {/* Trust seals — mobile only */}
+                    {/* Trust seals â€” mobile only */}
                     <div className="lg:hidden grid grid-cols-4 gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                         {trustSeals.map(({ icon: Icon, label }) => (
                             <div key={label} className="flex flex-col items-center gap-1 text-center">
                                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100">
-                                    <Icon size={14} className="text-agro-600" />
+                                    <Icon size={14} className="text-agro-700" />
                                 </div>
                                 <span className="text-[10px] font-medium text-gray-500 leading-tight">{label}</span>
                             </div>
                         ))}
                     </div>
 
-                    {/* ── Tabs: Descrição / Especificações ── */}
+                    {/* â”€â”€ Tabs: DescriÃ§Ã£o / EspecificaÃ§Ãµes â”€â”€ */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                         <div className="flex border-b border-gray-200 bg-gray-50">
                             {tabs.map(tab => (
@@ -520,7 +520,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                 </div>
             </div>
 
-            {/* ─── Below-fold sections ─── */}
+            {/* â”€â”€â”€ Below-fold sections â”€â”€â”€ */}
             <div className="mt-16 space-y-0">
                 <SectionErrorBoundary>
                     <ProductReviews product={product} />
@@ -541,7 +541,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                 )}
             </div>
 
-            {/* ─── Sticky mobile footer (appears when CTAs scroll out of view) ─── */}
+            {/* â”€â”€â”€ Sticky mobile footer (appears when CTAs scroll out of view) â”€â”€â”€ */}
             {showStickyFooter && (
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">

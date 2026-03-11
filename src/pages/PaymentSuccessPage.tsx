@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
@@ -33,7 +33,7 @@ const PaymentSuccessPage: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Pagamento aprovado</h1>
         <p className="text-gray-600 mb-6">
-          Obrigado pela sua compra. O pedido foi confirmado e você pode acompanhar o envio em Meus Pedidos.
+          Obrigado pela sua compra. O pedido foi confirmado e vocÃª pode acompanhar o envio em Meus Pedidos.
           {orderId && (
             <span className="block mt-2 text-sm text-gray-500">Pedido #{orderId.slice(0, 8)}</span>
           )}
@@ -54,7 +54,7 @@ const PaymentSuccessPage: React.FC = () => {
         </div>
         {products.length > 0 && (
           <div className="mt-12 text-left">
-            <h2 className="text-base font-semibold text-gray-800 mb-4 text-center">Outros clientes também compraram</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-4 text-center">Outros clientes tambÃ©m compraram</h2>
             <div className="grid grid-cols-2 gap-3">
               {products.map(p => (
                 <Link key={p.id} to={ROUTES.PRODUCT(p.id)}
@@ -63,7 +63,7 @@ const PaymentSuccessPage: React.FC = () => {
                   {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-12 h-12 object-contain rounded-lg shrink-0 bg-gray-50" />}
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-800 line-clamp-2 leading-snug">{p.name}</p>
-                    <p className="text-sm font-bold text-agro-600 mt-1">{formatCurrency(p.price)}</p>
+                    <p className="text-sm font-bold text-agro-700 mt-1">{formatCurrency(p.price)}</p>
                   </div>
                 </Link>
               ))}

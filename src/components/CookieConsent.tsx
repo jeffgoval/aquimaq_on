@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 const CookieConsent: React.FC = () => {
@@ -29,9 +29,9 @@ const CookieConsent: React.FC = () => {
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex-1 text-sm text-gray-300 text-center sm:text-left">
                     <p>
-                        Utilizamos cookies para melhorar sua experiência e oferecer ofertas personalizadas,
-                        conforme nossa <span className="underline cursor-pointer hover:text-white">Política de Privacidade</span>.
-                        Ao continuar, você concorda com nossas condições.
+                        Utilizamos cookies para melhorar sua experiÃªncia e oferecer ofertas personalizadas,
+                        conforme nossa <span className="underline cursor-pointer hover:text-white">PolÃ­tica de Privacidade</span>.
+                        Ao continuar, vocÃª concorda com nossas condiÃ§Ãµes.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

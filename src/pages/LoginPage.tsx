@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/services/supabase';
@@ -98,7 +98,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     if (!email.trim() || !password) return;
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+      setError('As senhas nÃ£o coincidem.');
       return;
     }
     if (password.length < 6) {
@@ -122,7 +122,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     if (data.session) {
-      // Ensure profile exists immediately — don't rely solely on the DB trigger
+      // Ensure profile exists immediately â€” don't rely solely on the DB trigger
       await supabase.from('profiles').upsert(
         { id: data.user!.id, email: data.user!.email, name, role: 'cliente' } as any,
         { onConflict: 'id' }
@@ -168,7 +168,7 @@ const LoginPage: React.FC = () => {
         <Helmet>
           <title>Erro | Aquimaq</title>
         </Helmet>
-        <p className="text-red-600 font-medium">Falha na confirmação</p>
+        <p className="text-red-600 font-medium">Falha na confirmaÃ§Ã£o</p>
         <p className="text-slate-600 text-sm mt-2 text-center">{error}</p>
         <button
           type="button"
@@ -196,21 +196,21 @@ const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => { setMode('login'); resetForm(); }}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'login' ? 'text-agro-600 border-b-2 border-agro-600' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'login' ? 'text-agro-700 border-b-2 border-agro-600' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Entrar
           </button>
           <button
             type="button"
             onClick={() => { setMode('signup'); resetForm(); }}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'signup' ? 'text-agro-600 border-b-2 border-agro-600' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'signup' ? 'text-agro-700 border-b-2 border-agro-600' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Criar conta
           </button>
         </div>
 
         {successMessage && (
-          <p className="text-agro-600 text-sm mb-4" role="status">{successMessage}</p>
+          <p className="text-agro-700 text-sm mb-4" role="status">{successMessage}</p>
         )}
         {error && (
           <p className="text-red-600 text-sm mb-4" role="alert">{error}</p>
@@ -218,7 +218,7 @@ const LoginPage: React.FC = () => {
 
         {mode === 'forgot' ? (
           <form onSubmit={handleForgotPassword} className="space-y-4">
-            <p className="text-slate-600 text-sm">Digite seu e-mail para receber o link de redefinição de senha.</p>
+            <p className="text-slate-600 text-sm">Digite seu e-mail para receber o link de redefiniÃ§Ã£o de senha.</p>
             <div>
               <label htmlFor="auth-email" className="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
               <input
@@ -279,7 +279,7 @@ const LoginPage: React.FC = () => {
               <input
                 id="signup-password"
                 type="password"
-                placeholder="Mín. 6 caracteres"
+                placeholder="MÃ­n. 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -341,7 +341,7 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => { setMode('forgot'); resetForm(); }}
-              className="text-sm text-slate-500 hover:text-agro-600"
+              className="text-sm text-slate-500 hover:text-agro-700"
             >
               Esqueci a senha
             </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
@@ -9,7 +9,7 @@ interface StoreSettingsProps {
     onBack: () => void;
 }
 
-/** Formulário alinhado a StoreSettings (camelCase) para evitar duplicação */
+/** FormulÃ¡rio alinhado a StoreSettings (camelCase) para evitar duplicaÃ§Ã£o */
 interface StoreConfig {
     storeName: string;
     razaoSocial: string;
@@ -41,8 +41,8 @@ interface StoreConfig {
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
-    credit_card: 'Cartão de Crédito',
-    debit_card: 'Cartão de Débito',
+    credit_card: 'CartÃ£o de CrÃ©dito',
+    debit_card: 'CartÃ£o de DÃ©bito',
     bank_transfer: 'PIX',
     ticket: 'Boleto',
 };
@@ -226,10 +226,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         setIsLoading(false);
 
         if (result.success) {
-            setMessage({ type: 'success', text: 'Configurações da loja salvas com sucesso!' });
+            setMessage({ type: 'success', text: 'ConfiguraÃ§Ãµes da loja salvas com sucesso!' });
             setTimeout(() => setMessage(null), 3000);
         } else {
-            setMessage({ type: 'error', text: result.error || 'Erro ao salvar configurações.' });
+            setMessage({ type: 'error', text: result.error || 'Erro ao salvar configuraÃ§Ãµes.' });
         }
     };
 
@@ -239,7 +239,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 <div className="flex items-center justify-center py-32">
                     <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-agro-600 mb-4"></div>
-                        <p className="text-gray-600 font-medium">Carregando configurações...</p>
+                        <p className="text-gray-600 font-medium">Carregando configuraÃ§Ãµes...</p>
                     </div>
                 </div>
             ) : (
@@ -247,10 +247,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-                                <Store className="text-agro-600" size={32} />
-                                Configurações da Loja
+                                <Store className="text-agro-700" size={32} />
+                                ConfiguraÃ§Ãµes da Loja
                             </h1>
-                            <p className="text-gray-500 mt-2">Defina os dados da empresa e endereço de origem para frete.</p>
+                            <p className="text-gray-500 mt-2">Defina os dados da empresa e endereÃ§o de origem para frete.</p>
                         </div>
                         <button
                             onClick={onBack}
@@ -271,7 +271,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
                             {/* Dados da Empresa */}
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Informações da Empresa</h3>
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">InformaÃ§Ãµes da Empresa</h3>
 
                                 <div className="flex flex-col items-center sm:flex-row gap-6 mb-6">
                                     <div className="relative group">
@@ -313,7 +313,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Razão Social</label>
+                                        <label className="text-sm font-semibold text-gray-700">RazÃ£o Social</label>
                                         <div className="relative">
                                             <FileText className="absolute left-3.5 top-3 text-gray-400" size={18} />
                                             <input
@@ -321,11 +321,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 name="razaoSocial"
                                                 value={formData.razaoSocial}
                                                 onChange={handleChange}
-                                                placeholder="Ex: Aquimaq Comércio de Máquinas Ltda."
+                                                placeholder="Ex: Aquimaq ComÃ©rcio de MÃ¡quinas Ltda."
                                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">Exibida no rodapé (exigência CDC).</p>
+                                        <p className="text-xs text-gray-400">Exibida no rodapÃ© (exigÃªncia CDC).</p>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">CNPJ</label>
@@ -369,7 +369,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Horário de Atendimento</label>
+                                        <label className="text-sm font-semibold text-gray-700">HorÃ¡rio de Atendimento</label>
                                         <div className="relative">
                                             <Clock className="absolute left-3.5 top-3 text-gray-400" size={18} />
                                             <input
@@ -377,11 +377,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 name="openingHours"
                                                 value={formData.openingHours}
                                                 onChange={handleChange}
-                                                placeholder="Ex: Seg a Sex, 8h às 18h | Sáb, 8h às 12h"
+                                                placeholder="Ex: Seg a Sex, 8h Ã s 18h | SÃ¡b, 8h Ã s 12h"
                                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">Exibido no rodapé na seção de atendimento.</p>
+                                        <p className="text-xs text-gray-400">Exibido no rodapÃ© na seÃ§Ã£o de atendimento.</p>
                                     </div>
                                 </div>
                             </section>
@@ -432,14 +432,14 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
 
-                            {/* Endereço de Origem (Frete) */}
+                            {/* EndereÃ§o de Origem (Frete) */}
                             <section className="space-y-6">
                                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <MapPin className="text-agro-600" size={20} />
-                                        Endereço de Origem (Estoque)
+                                        <MapPin className="text-agro-700" size={20} />
+                                        EndereÃ§o de Origem (Estoque)
                                     </h3>
-                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Usado para cálculo de frete</span>
+                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Usado para cÃ¡lculo de frete</span>
                                 </div>
 
                                 <div className="grid grid-cols-12 gap-x-4 gap-y-6">
@@ -473,9 +473,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         />
                                     </div>
 
-                                    {/* Número */}
+                                    {/* NÃºmero */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Número</label>
+                                        <label className="text-sm font-semibold text-gray-700">NÃºmero</label>
                                         <input
                                             type="text"
                                             value={formData.address.number}
@@ -534,24 +534,24 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             {/* Pagamento */}
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <CreditCard className="text-agro-600" size={20} />
-                                    Configurações de Pagamento
+                                    <CreditCard className="text-agro-700" size={20} />
+                                    ConfiguraÃ§Ãµes de Pagamento
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Max installments */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Máximo de Parcelas</label>
+                                        <label className="text-sm font-semibold text-gray-700">MÃ¡ximo de Parcelas</label>
                                         <select
                                             value={formData.maxInstallments}
                                             onChange={(e) => setFormData(prev => ({ ...prev, maxInstallments: Number(e.target.value) }))}
                                             className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                         >
                                             {[1, 2, 3, 4, 6, 9, 12].map(n => (
-                                                <option key={n} value={n}>{n === 1 ? 'Somente à vista' : `Até ${n}x`}</option>
+                                                <option key={n} value={n}>{n === 1 ? 'Somente Ã  vista' : `AtÃ© ${n}x`}</option>
                                             ))}
                                         </select>
-                                        <p className="text-xs text-gray-400">Número máximo de parcelas exibidas no Mercado Pago.</p>
+                                        <p className="text-xs text-gray-400">NÃºmero mÃ¡ximo de parcelas exibidas no Mercado Pago.</p>
                                     </div>
 
                                     {/* Accepted payment types */}
@@ -571,7 +571,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                                     : prev.acceptedPaymentTypes.filter(t => t !== type),
                                                             }));
                                                         }}
-                                                        className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
+                                                        className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
                                                     />
                                                     <span className="text-sm text-gray-700">{PAYMENT_TYPE_LABELS[type]}</span>
                                                 </label>
@@ -581,11 +581,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
 
-                            {/* Conversão */}
+                            {/* ConversÃ£o */}
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <TrendingUp className="text-agro-600" size={20} />
-                                    Conversão e Vendas
+                                    <TrendingUp className="text-agro-700" size={20} />
+                                    ConversÃ£o e Vendas
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -593,7 +593,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                                             <Truck size={15} className="text-agro-500" />
-                                            Frete Grátis a partir de (R$)
+                                            Frete GrÃ¡tis a partir de (R$)
                                         </label>
                                         <input
                                             type="text"
@@ -612,16 +612,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                                             <TrendingUp size={15} className="text-agro-500" />
-                                            Cross-sell após pagamento
+                                            Cross-sell apÃ³s pagamento
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
                                             <input
                                                 type="checkbox"
                                                 checked={formData.crossSellEnabled}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, crossSellEnabled: e.target.checked }))}
-                                                className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
+                                                className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
                                             />
-                                            <span className="text-sm text-gray-700">Mostrar "Outros clientes também compraram" na página de sucesso</span>
+                                            <span className="text-sm text-gray-700">Mostrar "Outros clientes tambÃ©m compraram" na pÃ¡gina de sucesso</span>
                                         </label>
                                         <div className="space-y-1 pt-1">
                                             <label className="text-xs font-semibold text-gray-600">Categoria (deixe vazio = mais vendidos)</label>
@@ -631,24 +631,24 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 disabled={!formData.crossSellEnabled}
                                                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50"
                                             >
-                                                <option value="">Mais vendidos (padrão)</option>
+                                                <option value="">Mais vendidos (padrÃ£o)</option>
                                                 <option value="Ferramentas Manuais">Ferramentas Manuais</option>
-                                                <option value="Peças de Reposição">Peças de Reposição</option>
-                                                <option value="Acessórios">Acessórios</option>
+                                                <option value="PeÃ§as de ReposiÃ§Ã£o">PeÃ§as de ReposiÃ§Ã£o</option>
+                                                <option value="AcessÃ³rios">AcessÃ³rios</option>
                                                 <option value="Sementes Fracionadas">Sementes Fracionadas</option>
-                                                <option value="Insumos Agrícolas">Insumos Agrícolas</option>
-                                                <option value="Máquinas e Equipamentos">Máquinas e Equipamentos</option>
+                                                <option value="Insumos AgrÃ­colas">Insumos AgrÃ­colas</option>
+                                                <option value="MÃ¡quinas e Equipamentos">MÃ¡quinas e Equipamentos</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
-                            {/* Rodapé & Confiança */}
+                            {/* RodapÃ© & ConfianÃ§a */}
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <Star className="text-agro-600" size={20} />
-                                    Rodapé &amp; Confiança
+                                    <Star className="text-agro-700" size={20} />
+                                    RodapÃ© &amp; ConfianÃ§a
                                 </h3>
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-gray-700">URL do Reclame Aqui</label>
@@ -663,7 +663,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                             className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
                                         />
                                     </div>
-                                    <p className="text-xs text-gray-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
+                                    <p className="text-xs text-gray-400">Se preenchido, exibe o badge do Reclame Aqui no rodapÃ©. Deixe em branco para ocultar.</p>
                                 </div>
                             </section>
 
@@ -673,7 +673,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     disabled={isLoading}
                                     className="px-8 py-3 bg-agro-600 text-white rounded-xl font-bold hover:bg-agro-700 shadow-lg shadow-agro-600/20 transition-all flex items-center hover:-translate-y-0.5"
                                 >
-                                    {isLoading ? 'Salvando...' : <><Save size={20} className="mr-2" /> Salvar Configurações</>}
+                                    {isLoading ? 'Salvando...' : <><Save size={20} className="mr-2" /> Salvar ConfiguraÃ§Ãµes</>}
                                 </button>
                             </div>
 

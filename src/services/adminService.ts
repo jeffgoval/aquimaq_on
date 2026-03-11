@@ -16,6 +16,7 @@ export interface DashboardStats {
   totalOrders: number;
   pendingOrders: number;
   totalClientes: number;
+  revenueChange?: number; // % vs mês anterior (undefined se sem dados)
 }
 
 export interface RecentOrderRow {
@@ -34,11 +35,8 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
   recentOrders: RecentOrderRow[];
 }> => {
   const now = new Date();
-  const startOfMonth = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1
-  ).toISOString();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
   // Helper para aplicar filtro de vendedor quando necessário
   const applyVendedorFilter = (query: any) =>
@@ -50,6 +48,7 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
     { count: pendingCount },
     { data: monthOrders },
     clientesResult,
+    { data: prevMonthOrders },
   ] = await Promise.all([
     applyVendedorFilter(
       supabase
@@ -83,14 +82,31 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
       // Admin/gerente: total de perfis com role cliente
       : supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('role', 'cliente'),
+    applyVendedorFilter(
+      supabase
+        .from('orders')
+        .select('total')
+        .gte('created_at', startOfPrevMonth)
+        .lt('created_at', startOfMonth)
+        .neq('status', 'cancelado')
+    ),
   ]);
 
   const totalRevenue = (monthOrders ?? []).reduce(
     (acc: number, o: { total: number }) => acc + (o.total ?? 0),
     0
   );
+
+  const prevRevenue = (prevMonthOrders ?? []).reduce(
+    (acc: number, o: { total: number }) => acc + (o.total ?? 0),
+    0
+  );
+
+  const revenueChange = prevRevenue > 0
+    ? Math.round(((totalRevenue - prevRevenue) / prevRevenue) * 100)
+    : undefined;
 
   const totalClientes = vendedorId
     ? new Set((clientesResult.data ?? []).map((r: any) => r.cliente_id)).size
@@ -101,6 +117,7 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
     totalOrders: totalOrders ?? 0,
     pendingOrders: pendingCount ?? 0,
     totalClientes,
+    revenueChange,
   };
 
   const rows = (recentData ?? []) as Array<{
@@ -159,25 +176,43 @@ export interface OrderAdminRow {
   meOrderId?: string | null;
 }
 
-/** Lista pedidos para admin (com nome/telefone do cliente).
- *  @param vendedorId - quando informado, filtra apenas pedidos deste vendedor
- */
-export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow[]> => {
-  let query = supabase
-    .from('orders')
-    .select(`
-      *,
-      profiles:cliente_id(name, email, phone, street, number, complement, neighborhood, city, state, zip_code),
-      order_items(product_id, product_name, quantity, unit_price)
-    `)
-    .order('created_at', { ascending: false });
+export interface GetOrdersAdminParams {
+  vendedorId?: string;
+  page?: number;
+  pageSize?: number;
+  status?: string;    // 'all' ou undefined = sem filtro
+  unlimited?: boolean; // ignora paginação (carrega tudo p/ busca client-side)
+}
 
-  if (vendedorId) {
-    query = (query as any).eq('vendedor_id', vendedorId);
+/** Lista pedidos para admin (com nome/telefone do cliente).
+ *  Com paginação server-side e filtro por status.
+ *  Quando `unlimited=true`, ignora paginação (p/ busca client-side dentro de um status).
+ */
+export const getOrdersAdmin = async (
+  params: GetOrdersAdminParams = {}
+): Promise<{ orders: OrderAdminRow[]; total: number }> => {
+  const { vendedorId, page = 1, pageSize = 20, status, unlimited = false } = params;
+
+  const selectCols = `
+    *,
+    profiles:cliente_id(name, email, phone, street, number, complement, neighborhood, city, state, zip_code),
+    order_items(product_id, product_name, quantity, unit_price)
+  `;
+
+  let query = (supabase
+    .from('orders')
+    .select(selectCols, unlimited ? {} : { count: 'exact' })
+    .order('created_at', { ascending: false }) as any);
+
+  if (vendedorId) query = query.eq('vendedor_id', vendedorId);
+  if (status && status !== 'all') query = query.eq('status', status);
+
+  if (!unlimited) {
+    const from = (page - 1) * pageSize;
+    query = query.range(from, from + pageSize - 1);
   }
 
-  const { data, error } = await query;
-
+  const { data, error, count } = await query;
   if (error) throw error;
 
   type ProfileRow = {
@@ -186,7 +221,7 @@ export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow
     neighborhood?: string; city?: string; state?: string; zip_code?: string;
   };
 
-  return (data ?? []).map((order: any) => {
+  const orders = (data ?? []).map((order: any) => {
     const p = order.profiles as ProfileRow | undefined;
     const addressParts = [
       p?.street, p?.number, p?.complement, p?.neighborhood,
@@ -214,8 +249,10 @@ export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow
       paymentMethod: order.payment_method,
       trackingCode: order.tracking_code,
       meOrderId: order.me_order_id ?? null,
-    };
+    } as OrderAdminRow;
   });
+
+  return { orders, total: unlimited ? orders.length : (count ?? 0) };
 };
 
 /** Atualiza status de um pedido. */
@@ -226,6 +263,18 @@ export const updateOrderStatus = async (
   const { error } = await (supabase.from('orders') as any)
     .update({ status })
     .eq('id', orderId);
+  if (error) throw error;
+};
+
+/** Atualiza status de múltiplos pedidos em uma única operação. */
+export const updateOrderStatusBulk = async (
+  orderIds: string[],
+  status: string
+): Promise<void> => {
+  if (orderIds.length === 0) return;
+  const { error } = await (supabase.from('orders') as any)
+    .update({ status })
+    .in('id', orderIds);
   if (error) throw error;
 };
 

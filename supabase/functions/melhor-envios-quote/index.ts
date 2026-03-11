@@ -1,12 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// CORS headers for browser requests
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+/** Retorna o origin permitido: domínio de produção ou localhost em desenvolvimento. */
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get("Origin") ?? "";
+  const prodOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
+  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  return (isLocalhost || origin === prodOrigin) ? origin : prodOrigin;
+}
 
 interface CartItem {
   id?: string;
@@ -24,9 +25,14 @@ interface QuoteRequest {
   insurance_value?: number;
 }
 
-// Handler for the Edge Function
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": getAllowedOrigin(req),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

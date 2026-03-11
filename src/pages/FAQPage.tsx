@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { HelpCircle, ChevronDown, ChevronUp, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -6,10 +6,10 @@ import { ROUTES } from '@/constants/routes';
 import { useStore } from '@/contexts/StoreContext';
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
-    credit_card: 'cartão de crédito',
-    debit_card: 'cartão de débito',
-    bank_transfer: 'transferência bancária',
-    ticket: 'boleto bancário',
+    credit_card: 'cartÃ£o de crÃ©dito',
+    debit_card: 'cartÃ£o de dÃ©bito',
+    bank_transfer: 'transferÃªncia bancÃ¡ria',
+    ticket: 'boleto bancÃ¡rio',
     pix: 'PIX',
 };
 
@@ -25,56 +25,56 @@ const FAQPage: React.FC = () => {
 
     const paymentAnswer = (() => {
         if (paymentLabels.length === 0) {
-            return 'O processamento é feito pelo Mercado Pago, com total segurança para seus dados.';
+            return 'O processamento Ã© feito pelo Mercado Pago, com total seguranÃ§a para seus dados.';
         }
         const list = paymentLabels.length > 1
             ? `${paymentLabels.slice(0, -1).join(', ')} e ${paymentLabels[paymentLabels.length - 1]}`
             : paymentLabels[0];
-        const installmentText = hasCredit ? ` (parcelado em até ${maxInstallments}x no cartão de crédito)` : '';
-        return `Aceitamos ${list}${installmentText}. O processamento é feito pelo Mercado Pago, com total segurança para seus dados.`;
+        const installmentText = hasCredit ? ` (parcelado em atÃ© ${maxInstallments}x no cartÃ£o de crÃ©dito)` : '';
+        return `Aceitamos ${list}${installmentText}. O processamento Ã© feito pelo Mercado Pago, com total seguranÃ§a para seus dados.`;
     })();
 
     const storeName = settings?.storeName || 'Aquimaq';
 
     const faqs = [
         {
-            question: 'Quais são os prazos de entrega?',
+            question: 'Quais sÃ£o os prazos de entrega?',
             answer:
-                'Os prazos variam conforme a transportadora e a região de destino. No momento do checkout, você pode consultar as opções de frete com prazos e valores exatos. Em geral, entregamos em todo o Brasil em 3 a 10 dias úteis após a confirmação do pagamento.',
+                'Os prazos variam conforme a transportadora e a regiÃ£o de destino. No momento do checkout, vocÃª pode consultar as opÃ§Ãµes de frete com prazos e valores exatos. Em geral, entregamos em todo o Brasil em 3 a 10 dias Ãºteis apÃ³s a confirmaÃ§Ã£o do pagamento.',
         },
         {
-            question: 'Quais formas de pagamento são aceitas?',
+            question: 'Quais formas de pagamento sÃ£o aceitas?',
             answer: paymentAnswer,
         },
         {
-            question: 'Como faço para rastrear meu pedido?',
+            question: 'Como faÃ§o para rastrear meu pedido?',
             answer:
-                'Após o envio, você receberá o código de rastreamento por e-mail. Também é possível consultar diretamente em "Minha Conta → Meus Pedidos" no nosso site.',
+                'ApÃ³s o envio, vocÃª receberÃ¡ o cÃ³digo de rastreamento por e-mail. TambÃ©m Ã© possÃ­vel consultar diretamente em "Minha Conta â†’ Meus Pedidos" no nosso site.',
         },
         {
-            question: 'Posso retirar meu pedido no balcão?',
+            question: 'Posso retirar meu pedido no balcÃ£o?',
             answer:
-                'Sim! Selecione a opção "Retirada no Balcão" na etapa de frete durante o checkout. O prazo para retirada é de 1 a 2 dias úteis após a confirmação do pagamento. Nosso endereço está disponível na página de Contato.',
+                'Sim! Selecione a opÃ§Ã£o "Retirada no BalcÃ£o" na etapa de frete durante o checkout. O prazo para retirada Ã© de 1 a 2 dias Ãºteis apÃ³s a confirmaÃ§Ã£o do pagamento. Nosso endereÃ§o estÃ¡ disponÃ­vel na pÃ¡gina de Contato.',
         },
         {
-            question: 'Como funciona a política de troca e devolução?',
+            question: 'Como funciona a polÃ­tica de troca e devoluÃ§Ã£o?',
             answer:
-                'Seguindo o Código de Defesa do Consumidor, você tem até 7 dias corridos após o recebimento para solicitar a devolução por arrependimento. Para produtos com defeito, o prazo é de 30 dias para bens não duráveis e 90 dias para bens duráveis. Consulte nossa Política de Trocas para mais detalhes.',
+                'Seguindo o CÃ³digo de Defesa do Consumidor, vocÃª tem atÃ© 7 dias corridos apÃ³s o recebimento para solicitar a devoluÃ§Ã£o por arrependimento. Para produtos com defeito, o prazo Ã© de 30 dias para bens nÃ£o durÃ¡veis e 90 dias para bens durÃ¡veis. Consulte nossa PolÃ­tica de Trocas para mais detalhes.',
         },
         {
-            question: 'Os produtos têm garantia?',
+            question: 'Os produtos tÃªm garantia?',
             answer:
-                'Sim. Todos os produtos possuem garantia do fabricante. O prazo varia de acordo com cada produto e marca. Em caso de defeito, entre em contato com nossa Central de Atendimento informando o número do pedido.',
+                'Sim. Todos os produtos possuem garantia do fabricante. O prazo varia de acordo com cada produto e marca. Em caso de defeito, entre em contato com nossa Central de Atendimento informando o nÃºmero do pedido.',
         },
         {
-            question: 'É possível emitir nota fiscal?',
+            question: 'Ã‰ possÃ­vel emitir nota fiscal?',
             answer:
-                `Sim, todas as compras realizadas na ${storeName} incluem nota fiscal eletrônica (NF-e), enviada por e-mail após a confirmação do pagamento.`,
+                `Sim, todas as compras realizadas na ${storeName} incluem nota fiscal eletrÃ´nica (NF-e), enviada por e-mail apÃ³s a confirmaÃ§Ã£o do pagamento.`,
         },
         {
             question: 'Como entro em contato com o suporte?',
             answer:
-                'Você pode nos contatar por telefone ou e-mail. Acesse a página "Fale Conosco" para ver todos os canais de atendimento e horários disponíveis.',
+                'VocÃª pode nos contatar por telefone ou e-mail. Acesse a pÃ¡gina "Fale Conosco" para ver todos os canais de atendimento e horÃ¡rios disponÃ­veis.',
         },
     ];
 
@@ -86,13 +86,13 @@ const FAQPage: React.FC = () => {
         <div className="bg-gray-50 min-h-screen py-12">
             <Helmet>
                 <title>Perguntas Frequentes | {storeName}</title>
-                <meta name="description" content={`Tire suas dúvidas sobre pedidos, entregas, pagamentos e mais na ${storeName}.`} />
+                <meta name="description" content={`Tire suas dÃºvidas sobre pedidos, entregas, pagamentos e mais na ${storeName}.`} />
             </Helmet>
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <nav className="flex mb-8 text-sm text-gray-500 items-center gap-1">
-                    <Link to={ROUTES.HOME} className="hover:text-agro-600 flex items-center gap-1">
-                        <Home size={14} /> Início
+                    <Link to={ROUTES.HOME} className="hover:text-agro-700 flex items-center gap-1">
+                        <Home size={14} /> InÃ­cio
                     </Link>
                     <span>/</span>
                     <span className="font-semibold text-gray-900">Perguntas Frequentes</span>
@@ -106,7 +106,7 @@ const FAQPage: React.FC = () => {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold">Perguntas Frequentes</h1>
-                                <p className="mt-1 text-white/80">Encontre respostas para as dúvidas mais comuns.</p>
+                                <p className="mt-1 text-white/80">Encontre respostas para as dÃºvidas mais comuns.</p>
                             </div>
                         </div>
                     </div>
@@ -121,7 +121,7 @@ const FAQPage: React.FC = () => {
                                 >
                                     <span className="font-semibold text-gray-900 pr-4">{faq.question}</span>
                                     {openIndex === index ? (
-                                        <ChevronUp size={18} className="text-agro-600 shrink-0" />
+                                        <ChevronUp size={18} className="text-agro-700 shrink-0" />
                                     ) : (
                                         <ChevronDown size={18} className="text-gray-400 shrink-0" />
                                     )}
@@ -136,8 +136,8 @@ const FAQPage: React.FC = () => {
                     </div>
 
                     <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
-                        <span>Não encontrou o que precisava?</span>
-                        <Link to={ROUTES.CONTACT} className="text-agro-600 font-semibold hover:underline">
+                        <span>NÃ£o encontrou o que precisava?</span>
+                        <Link to={ROUTES.CONTACT} className="text-agro-700 font-semibold hover:underline">
                             Fale com nosso atendimento
                         </Link>
                     </div>

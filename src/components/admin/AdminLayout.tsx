@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -92,13 +92,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} /> },
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
-        { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
+        { id: 'USERS', label: 'UsuÃ¡rios', icon: <Users size={18} /> },
         { id: 'AI', label: 'Config. IA', icon: <Bot size={18} /> },
-        { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
+        { id: 'SETTINGS', label: 'ConfiguraÃ§Ãµes', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
         // Vendedor: dashboard, pedidos e produtos
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
-        // Gerente: oculta itens exclusivos de admin (analytics, ia, configurações)
+        // Gerente: oculta itens exclusivos de admin (analytics, ia, configuraÃ§Ãµes)
         if (!isAdmin && !isVendedor && ['ANALYTICS', 'AI', 'SETTINGS'].includes(item.id)) return false;
         return true;
     });
@@ -224,7 +224,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
                     {/* Breadcrumb / Title */}
                     <div className="hidden lg:flex items-center gap-1.5 text-[13px]">
-                        <span className="text-stone-400">Gestão</span>
+                        <span className="text-stone-400">GestÃ£o</span>
                         <ChevronRight size={12} className="text-stone-300" />
                         <span className="text-stone-600 font-medium">
                             {navItems.find(item => item.id === activeView)?.label || 'Dashboard'}

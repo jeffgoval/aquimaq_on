@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+﻿import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -54,8 +54,8 @@ class ErrorBoundary extends Component<Props, State> {
             <div className="bg-red-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Algo deu errado nesta seção</h3>
-            <p className="text-gray-500 text-sm mb-4">Não foi possível carregar este conteúdo.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Algo deu errado nesta seÃ§Ã£o</h3>
+            <p className="text-gray-500 text-sm mb-4">NÃ£o foi possÃ­vel carregar este conteÃºdo.</p>
             <button
               onClick={this.handleReset}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
@@ -81,7 +81,7 @@ class ErrorBoundary extends Component<Props, State> {
                   Algo deu errado
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Ocorreu um erro inesperado na aplicação
+                  Ocorreu um erro inesperado na aplicaÃ§Ã£o
                 </p>
               </div>
             </div>
@@ -100,7 +100,7 @@ class ErrorBoundary extends Component<Props, State> {
             {import.meta.env.DEV && this.state.errorInfo && (
               <details className="mb-6 p-4 bg-gray-100 border border-gray-300 rounded-lg">
                 <summary className="cursor-pointer font-semibold text-gray-700 mb-2">
-                  Detalhes técnicos (modo desenvolvimento)
+                  Detalhes tÃ©cnicos (modo desenvolvimento)
                 </summary>
                 <pre className="text-xs text-gray-600 overflow-auto max-h-64 mt-2">
                   {this.state.errorInfo.componentStack}
@@ -121,7 +121,7 @@ class ErrorBoundary extends Component<Props, State> {
                 className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 <Home size={18} />
-                Ir para Início
+                Ir para InÃ­cio
               </button>
             </div>
 

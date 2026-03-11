@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
@@ -32,7 +32,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
     <div className="mt-12 border-t border-gray-100 pt-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
-          Quem comprou, também levou
+          Quem comprou, tambÃ©m levou
         </h3>
         {/* Decorative arrow implies flow */}
         <ArrowRight className="text-gray-300 hidden sm:block" />
@@ -56,7 +56,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
             </Link>
 
             <div className="p-3 flex-1 flex flex-col">
-              <span className="text-[10px] text-agro-600 font-bold uppercase tracking-wider mb-1 truncate">
+              <span className="text-[10px] text-agro-700 font-bold uppercase tracking-wider mb-1 truncate">
                 {product.category}
               </span>
               <Link
@@ -76,7 +76,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
                     e.stopPropagation();
                     onAddToCart(product);
                   }}
-                  className="w-8 h-8 rounded-full bg-gray-50 text-agro-600 hover:bg-agro-600 hover:text-white flex items-center justify-center transition-colors border border-gray-200 hover:border-agro-600"
+                  className="w-8 h-8 rounded-full bg-gray-50 text-agro-700 hover:bg-agro-600 hover:text-white flex items-center justify-center transition-colors border border-gray-200 hover:border-agro-600"
                   title="Adicionar ao carrinho"
                 >
                   <ShoppingCart size={14} />

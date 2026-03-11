@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
@@ -24,12 +24,12 @@ const getAvatarInitials = (user: SupabaseUser): string => {
 };
 
 const NAV_CATEGORIES: { label: string; value: ProductCategory }[] = [
-    { label: 'Nutrição Animal',     value: ProductCategory.NUTRITION },
-    { label: 'Defensivos Agrícolas', value: ProductCategory.DEFENSIVES },
+    { label: 'NutriÃ§Ã£o Animal',     value: ProductCategory.NUTRITION },
+    { label: 'Defensivos AgrÃ­colas', value: ProductCategory.DEFENSIVES },
     { label: 'Sementes',            value: ProductCategory.SEEDS },
     { label: 'Equipamentos',        value: ProductCategory.EQUIPMENT },
-    { label: 'Peças de Reposição',  value: ProductCategory.PARTS },
-    { label: 'EPI e Segurança',     value: ProductCategory.PPE },
+    { label: 'PeÃ§as de ReposiÃ§Ã£o',  value: ProductCategory.PARTS },
+    { label: 'EPI e SeguranÃ§a',     value: ProductCategory.PPE },
 ];
 
 interface HeaderProps {
@@ -262,7 +262,7 @@ const Header: React.FC<HeaderProps> = ({
                                 ) : (
                                     <Link
                                         to={ROUTES.LOGIN}
-                                        className={`hidden md:flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all ${isActive(ROUTES.LOGIN) ? 'text-agro-600 bg-agro-50' : 'text-slate-600 hover:bg-agro-50 hover:text-agro-700'}`}
+                                        className={`hidden md:flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all ${isActive(ROUTES.LOGIN) ? 'text-agro-700 bg-agro-50' : 'text-slate-600 hover:bg-agro-50 hover:text-agro-700'}`}
                                     >
                                         <LogIn size={17} />
                                         Entrar
@@ -270,7 +270,7 @@ const Header: React.FC<HeaderProps> = ({
                                 )
                             )}
 
-                            {/* Wishlist icon — desktop */}
+                            {/* Wishlist icon â€” desktop */}
                             <Link
                                 to={ROUTES.WISHLIST}
                                 className={`hidden md:flex p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.WISHLIST) ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-400'}`}
@@ -282,7 +282,7 @@ const Header: React.FC<HeaderProps> = ({
                             {/* Cart */}
                             <Link
                                 to={ROUTES.CART}
-                                className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-600 bg-agro-50' : 'text-slate-600'}`}
+                                className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-700 bg-agro-50' : 'text-slate-600'}`}
                                 aria-label="Carrinho"
                             >
                                 <ShoppingCart size={22} />
@@ -310,7 +310,7 @@ const Header: React.FC<HeaderProps> = ({
                             }`}
                         >
                             <Store size={16} className="mr-1.5" />
-                            Início
+                            InÃ­cio
                         </button>
 
                         {/* Mega Menu */}
