@@ -38,11 +38,11 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
         <ArrowRight className="text-gray-300 hidden sm:block" />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 hide-scrollbar">
         {related.map(product => (
           <div
             key={product.id}
-            className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+            className="w-[75vw] md:w-auto flex-shrink-0 snap-start bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col"
           >
             <Link
               to={ROUTES.PRODUCT(product.id)}

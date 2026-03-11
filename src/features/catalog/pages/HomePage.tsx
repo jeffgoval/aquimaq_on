@@ -125,20 +125,23 @@ const HomePage: React.FC = () => {
                         Cuidado com seus Pets
                     </h2>
                     {isPetLoading ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:pb-0 hide-scrollbar">
                             {[1, 2, 3, 4].map((n) => (
-                                <div key={n} className="bg-gray-100 rounded-xl h-64 animate-pulse" />
+                                <div key={n} className="w-[75vw] sm:w-auto flex-shrink-0 snap-start bg-gray-100 rounded-xl h-64 animate-pulse" />
                             ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:pb-0 hide-scrollbar">
                             {petProducts.map((product) => (
-                                <ProductCard
-                                    key={product.id}
-                                    product={product}
-                                    onViewDetails={(p) => navigate(ROUTES.PRODUCT(p.id))}
-                                    onAddToCart={addToCart}
-                                />
+                                <div key={product.id} className="w-[75vw] sm:w-auto flex-shrink-0 snap-start flex">
+                                    <div className="w-full">
+                                        <ProductCard
+                                            product={product}
+                                            onViewDetails={(p) => navigate(ROUTES.PRODUCT(p.id))}
+                                            onAddToCart={addToCart}
+                                        />
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
