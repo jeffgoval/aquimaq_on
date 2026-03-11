@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCropCalendar } from '@/hooks/useCropCalendar';
 import {
     ArrowLeft,
     Save,
@@ -68,6 +69,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
     onBack,
     onSave
 }) => {
+    const { cultures: availableCultures } = useCropCalendar();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -346,14 +348,17 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                         <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
                             Cultura (safra)
                         </label>
-                        <input
-                            type="text"
+                        <select
                             name="culture"
                             value={formData.culture}
                             onChange={handleChange}
-                            placeholder="Ex.: Café - Pré-Florada e Florada"
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
-                        />
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
+                        >
+                            <option value="">— Nenhuma —</option>
+                            {availableCultures.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

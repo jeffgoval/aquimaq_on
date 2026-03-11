@@ -7,6 +7,8 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import StarRating from './StarRating';
 import Image from './Image';
 import { formatCurrency } from '@/utils/format';
+import type { SeasonalStatus } from '@/utils/cropCalendar';
+import { SEASONAL_STATUS_LABEL } from '@/utils/cropCalendar';
 
 const PIX_DISCOUNT = 0.05;
 const LOW_STOCK_THRESHOLD = 5;
@@ -16,12 +18,14 @@ interface ProductCardProps {
     onAddToCart: (product: Product, quantity?: number) => void;
     onViewDetails?: (product: Product) => void;
     imageLoading?: 'eager' | 'lazy';
+    seasonalStatus?: SeasonalStatus | null;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
     product,
     onAddToCart,
     imageLoading = 'lazy',
+    seasonalStatus = null,
 }) => {
     const { isInWishlist, toggleWishlist } = useWishlist();
     const isFavorite = isInWishlist(product.id);
@@ -73,6 +77,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     {product.isBestSeller && (
                         <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                             + VENDIDO
+                        </span>
+                    )}
+                    {seasonalStatus && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
+                            seasonalStatus === 'em_safra' ? 'bg-emerald-600 text-white' :
+                            seasonalStatus === 'pre_safra' ? 'bg-sky-500 text-white' :
+                            'bg-amber-600 text-white'
+                        }`}>
+                            🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
                         </span>
                     )}
                 </div>

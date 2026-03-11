@@ -3,6 +3,7 @@ import { Product } from '@/types';
 import HeroBanner from '../HeroBanner';
 import RecommendationsByPhase from '../RecommendationsByPhase';
 import { CatalogFeaturedSection } from './CatalogFeaturedSection';
+import SeasonalSection from './SeasonalSection';
 
 interface CatalogHeroProps {
     show: boolean;
@@ -30,6 +31,12 @@ export const CatalogHero: React.FC<CatalogHeroProps> = ({
     return (
         <>
             <HeroBanner />
+            {culturesInSeasonThisMonth.length > 0 && (
+                <SeasonalSection
+                    culturesInSeason={culturesInSeasonThisMonth}
+                    onAddToCart={onAddToCart}
+                />
+            )}
             {featuredProducts.length > 0 && (
                 <CatalogFeaturedSection
                     products={featuredProducts}

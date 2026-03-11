@@ -5,6 +5,7 @@ import type { CropCalendarRow } from '@/types/database';
 export interface UseCropCalendarResult {
   cultures: string[];
   culturesInSeasonThisMonth: string[];
+  rows: CropCalendarRow[];
   isLoading: boolean;
   error: string | null;
 }
@@ -103,6 +104,7 @@ export function useCropCalendar(): UseCropCalendarResult {
   return {
     cultures,
     culturesInSeasonThisMonth,
+    rows,
     isLoading,
     error,
   };

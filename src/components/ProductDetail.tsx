@@ -24,6 +24,7 @@ import { formatCurrency } from '@/utils/format';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
 import { maskCEP } from '@/utils/masks';
+import { getSeasonalStatus, formatMonthRange, SEASONAL_STATUS_LABEL, SEASONAL_STATUS_COLORS } from '@/utils/cropCalendar';
 
 const PIX_DISCOUNT = 0.05;
 const LOW_STOCK_THRESHOLD = 5;
@@ -52,7 +53,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const [shippingCalculated, setShippingCalculated] = useState(false);
 
     const ctaRef = useRef<HTMLDivElement>(null);
-    const { cultures: availableCultures } = useCropCalendar();
+    const { cultures: availableCultures, rows: calendarRows } = useCropCalendar();
 
     // Reset on product change
     useEffect(() => {
@@ -101,6 +102,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
     const maxInstallments = settings?.maxInstallments ?? 12;
     const installmentValue = product.price / maxInstallments;
     const hasWholesale = product.wholesaleMinAmount != null && product.wholesaleDiscountPercent != null;
+
+    const cropRow = product.culture
+        ? calendarRows.find((r) => r.culture === product.culture)
+        : undefined;
+    const currentMonth = new Date().getMonth() + 1;
+    const seasonalStatus = getSeasonalStatus(cropRow, currentMonth);
 
     const handleCalculateShipping = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -184,7 +191,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                 <div className="flex flex-col gap-5">
 
                     {/* Badges */}
-                    {(product.isNew || product.isBestSeller || product.discount) && (
+                    {(product.isNew || product.isBestSeller || product.discount || seasonalStatus) && (
                         <div className="flex flex-wrap gap-2">
                             {product.isNew && (
                                 <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">
@@ -201,6 +208,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                                     -{product.discount}% OFF
                                 </span>
                             )}
+                            {seasonalStatus && (
+                                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${SEASONAL_STATUS_COLORS[seasonalStatus]}`}>
+                                    🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
+                                </span>
+                            )}
                         </div>
                     )}
 
@@ -213,6 +225,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
                             <span className="text-sm text-gray-500">
                                 Marca: <span className="font-semibold text-gray-700">{product.brand}</span>
                             </span>
+                        )}
+                        {cropRow && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-sm text-gray-500">
+                                <span>
+                                    🌱 Plantio:{' '}
+                                    <span className="font-semibold text-gray-700">
+                                        {formatMonthRange(cropRow.month_plant_start, cropRow.month_plant_end)}
+                                    </span>
+                                </span>
+                                <span>
+                                    🌾 Colheita:{' '}
+                                    <span className="font-semibold text-gray-700">
+                                        {formatMonthRange(cropRow.month_harvest_start, cropRow.month_harvest_end)}
+                                    </span>
+                                </span>
+                            </div>
                         )}
                     </div>
 
