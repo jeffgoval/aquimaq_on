@@ -36,6 +36,9 @@ export interface StoreSettings {
   acceptedPaymentTypes: string[];
   bannerSlideIntervalMs?: number;
   reclameAquiUrl: string;
+  freeShippingThreshold: number;
+  crossSellEnabled: boolean;
+  crossSellCategory: string | null;
 }
 
 /** Formato da tabela store_settings no Supabase (snake_case). Endereço de origem apenas em origin_* (Melhor Envios / Mercado Pago). */
@@ -63,6 +66,9 @@ export interface StoreSettingsDB {
   accepted_payment_types?: string[] | null;
   banner_slide_interval_ms?: number | null;
   reclame_aqui_url?: string | null;
+  free_shipping_threshold?: number | null;
+  cross_sell_enabled?: boolean | null;
+  cross_sell_category?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -117,6 +123,9 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     acceptedPaymentTypes: r.accepted_payment_types ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
     bannerSlideIntervalMs: r.banner_slide_interval_ms ?? 5000,
     reclameAquiUrl: r.reclame_aqui_url ?? '',
+    freeShippingThreshold: Number(r.free_shipping_threshold ?? 350),
+    crossSellEnabled: r.cross_sell_enabled ?? true,
+    crossSellCategory: r.cross_sell_category ?? null,
   };
 };
 
@@ -148,5 +157,8 @@ export const storeSettingsToDB = (
   if (s.acceptedPaymentTypes !== undefined) out.accepted_payment_types = s.acceptedPaymentTypes;
   if (s.bannerSlideIntervalMs !== undefined) out.banner_slide_interval_ms = s.bannerSlideIntervalMs;
   if (s.reclameAquiUrl !== undefined) out.reclame_aqui_url = s.reclameAquiUrl || null;
+  if (s.freeShippingThreshold !== undefined) out.free_shipping_threshold = s.freeShippingThreshold;
+  if (s.crossSellEnabled !== undefined) out.cross_sell_enabled = s.crossSellEnabled;
+  if (s.crossSellCategory !== undefined) out.cross_sell_category = s.crossSellCategory || null;
   return out;
 };

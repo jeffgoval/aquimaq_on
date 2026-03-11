@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
+import { getProducts } from '@/services/productService';
+import { formatCurrency } from '@/utils/format';
+import { useStore } from '@/contexts/StoreContext';
+import { ProductCategory } from '@/types';
 
 const PaymentSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('external_reference') ?? searchParams.get('order_id') ?? '';
+  const { settings } = useStore();
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (settings && settings.crossSellEnabled === false) return;
+    const params: Record<string, unknown> = { sortBy: 'best_sellers', pageSize: 4 };
+    if (settings?.crossSellCategory) params.category = settings.crossSellCategory as ProductCategory;
+    getProducts(params).then(({ data }) => setProducts(data)).catch(() => {});
+  }, [settings?.crossSellEnabled, settings?.crossSellCategory]);
 
   return (
     <>
@@ -39,6 +52,24 @@ const PaymentSuccessPage: React.FC = () => {
             Continuar comprando
           </Link>
         </div>
+        {products.length > 0 && (
+          <div className="mt-12 text-left">
+            <h2 className="text-base font-semibold text-gray-800 mb-4 text-center">Outros clientes também compraram</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {products.map(p => (
+                <Link key={p.id} to={ROUTES.PRODUCT(p.id)}
+                  className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-3 hover:border-agro-300 transition-colors"
+                >
+                  {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-12 h-12 object-contain rounded-lg shrink-0 bg-gray-50" />}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 line-clamp-2 leading-snug">{p.name}</p>
+                    <p className="text-sm font-bold text-agro-600 mt-1">{formatCurrency(p.price)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     ChevronRight, ShoppingCart, ShieldCheck, Truck, CreditCard, RefreshCcw, MapPin, Loader2,
-    AlertTriangle, Store, Zap, Tag, Users, CheckCircle,
+    AlertTriangle, Store, Zap, Tag, Users, CheckCircle, Bell, BellOff,
 } from 'lucide-react';
 import { Product } from '@/types';
 import type { CartItemForShipping } from '@/services/shippingService';
@@ -16,6 +16,8 @@ import RelatedProducts from './RelatedProducts';
 import RecommendationsByPhase from './RecommendationsByPhase';
 import { useCropCalendar } from '@/hooks/useCropCalendar';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/services/supabase';
 import ProductSEO from './product/ProductSEO';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/format';
@@ -36,7 +38,9 @@ interface ProductDetailProps {
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) => {
     const navigate = useNavigate();
     const { settings } = useStore();
+    const { user, profile } = useAuth();
     const [quantity, setQuantity] = useState(1);
+    const [notifyState, setNotifyState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [activeTab, setActiveTab] = useState<Tab>('descricao');
     const [showStickyFooter, setShowStickyFooter] = useState(false);
 
@@ -58,7 +62,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
         setShippingOptions([]);
         setShippingError(null);
         setCep('');
+        setNotifyState('idle');
     }, [product.id]);
+
+    const handleNotify = async () => {
+        if (!user || !profile?.email) {
+            navigate(ROUTES.LOGIN);
+            return;
+        }
+        setNotifyState('loading');
+        const { error } = await supabase.from('stock_notifications').upsert({
+            product_id: product.id,
+            user_id: user.id,
+            email: profile.email,
+        }, { onConflict: 'product_id,user_id' });
+        setNotifyState(error ? 'error' : 'done');
+    };
 
     // Sticky mobile footer via IntersectionObserver
     useEffect(() => {
@@ -257,9 +276,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
 
                     {/* Stock status */}
                     {isOutOfStock ? (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
-                            <AlertTriangle size={16} />
-                            <span className="text-sm font-semibold">Produto indisponível no momento</span>
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
+                                <AlertTriangle size={16} />
+                                <span className="text-sm font-semibold">Produto indisponível no momento</span>
+                            </div>
+                            <button
+                                onClick={handleNotify}
+                                disabled={notifyState === 'loading' || notifyState === 'done'}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-agro-500 text-agro-700 text-sm font-semibold rounded-lg hover:bg-agro-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {notifyState === 'done'
+                                    ? <><BellOff size={15} /> Você será avisado!</>
+                                    : notifyState === 'loading'
+                                    ? <><Loader2 size={15} className="animate-spin" /> Registrando...</>
+                                    : <><Bell size={15} /> Avise-me quando disponível</>}
+                            </button>
+                            {notifyState === 'error' && (
+                                <p className="text-xs text-red-500 text-center">Erro ao registrar. Tente novamente.</p>
+                            )}
                         </div>
                     ) : isLowStock ? (
                         <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">

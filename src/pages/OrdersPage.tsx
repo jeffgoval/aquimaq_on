@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
     Package, ChevronDown, ChevronUp, ExternalLink,
-    ShoppingBag, AlertCircle, Truck, CheckCircle2,
+    ShoppingBag, AlertCircle, Truck, CheckCircle2, ShoppingCart,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStore } from '@/contexts/StoreContext';
@@ -12,6 +12,10 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ROUTES } from '@/constants/routes';
 import { OrderStatus, type Order } from '@/types';
 import { formatCurrency } from '@/utils/format';
+import { useCart } from '@/features/cart';
+import { supabase } from '@/services/supabase';
+import { mapProductRowToProduct } from '@/features/catalog/utils/productAdapter';
+import type { ProductRow } from '@/types/database';
 
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 type FilterKey = 'all' | 'pending' | 'active' | 'delivered' | 'cancelled';
@@ -58,6 +62,23 @@ const OrderSkeleton: React.FC = () => (
 // ─── Single order card ────────────────────────────────────────────────────────
 const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     const [open, setOpen] = useState(false);
+    const [reordering, setReordering] = useState(false);
+    const { addToCart } = useCart();
+
+    const handleReorder = async () => {
+        setReordering(true);
+        try {
+            const ids = order.items.map(i => i.productId).filter(Boolean);
+            const { data } = await supabase.from('products').select('*').in('id', ids);
+            const found = (data ?? []) as ProductRow[];
+            for (const item of order.items) {
+                const row = found.find(r => r.id === item.productId);
+                if (row) addToCart(mapProductRowToProduct(row), item.quantity);
+            }
+        } finally {
+            setReordering(false);
+        }
+    };
 
     const formattedDate = new Date(order.createdAt).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'short', year: 'numeric',
@@ -172,6 +193,16 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                             Pedido entregue com sucesso!
                         </div>
                     )}
+
+                    {/* Recomprar */}
+                    <button
+                        onClick={handleReorder}
+                        disabled={reordering}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        <ShoppingCart size={15} />
+                        {reordering ? 'Adicionando ao carrinho...' : 'Recomprar tudo'}
+                    </button>
                 </div>
             )}
         </div>

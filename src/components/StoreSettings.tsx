@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
@@ -35,6 +35,9 @@ interface StoreConfig {
     maxInstallments: number;
     acceptedPaymentTypes: string[];
     reclameAquiUrl: string;
+    freeShippingThreshold: number;
+    crossSellEnabled: boolean;
+    crossSellCategory: string;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -73,6 +76,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         maxInstallments: 12,
         acceptedPaymentTypes: ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
         reclameAquiUrl: '',
+        freeShippingThreshold: 350,
+        crossSellEnabled: true,
+        crossSellCategory: '',
     });
 
     // Sync formData with loaded settings (camelCase)
@@ -103,6 +109,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 maxInstallments: settings.maxInstallments ?? 12,
                 acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
                 reclameAquiUrl: settings.reclameAquiUrl || '',
+                freeShippingThreshold: settings.freeShippingThreshold ?? 350,
+                crossSellEnabled: settings.crossSellEnabled ?? true,
+                crossSellCategory: settings.crossSellCategory ?? '',
             });
         }
     }, [settings]);
@@ -209,6 +218,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             maxInstallments: formData.maxInstallments,
             acceptedPaymentTypes: formData.acceptedPaymentTypes,
             reclameAquiUrl: formData.reclameAquiUrl,
+            freeShippingThreshold: formData.freeShippingThreshold,
+            crossSellEnabled: formData.crossSellEnabled,
+            crossSellCategory: formData.crossSellCategory || null,
         });
 
         setIsLoading(false);
@@ -564,6 +576,69 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                     <span className="text-sm text-gray-700">{PAYMENT_TYPE_LABELS[type]}</span>
                                                 </label>
                                             ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Conversão */}
+                            <section className="space-y-6">
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                    <TrendingUp className="text-agro-600" size={20} />
+                                    Conversão e Vendas
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Free shipping threshold */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <Truck size={15} className="text-agro-500" />
+                                            Frete Grátis a partir de (R$)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formData.freeShippingThreshold}
+                                            onChange={(e) => {
+                                                const v = e.target.value.replace(/\D/g, '');
+                                                setFormData(prev => ({ ...prev, freeShippingThreshold: v === '' ? 0 : Number(v) }));
+                                            }}
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                        />
+                                        <p className="text-xs text-gray-400">Exibido como barra de progresso no carrinho. Coloque 0 para desativar.</p>
+                                    </div>
+
+                                    {/* Cross-sell enabled */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <TrendingUp size={15} className="text-agro-500" />
+                                            Cross-sell após pagamento
+                                        </label>
+                                        <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.crossSellEnabled}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, crossSellEnabled: e.target.checked }))}
+                                                className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
+                                            />
+                                            <span className="text-sm text-gray-700">Mostrar "Outros clientes também compraram" na página de sucesso</span>
+                                        </label>
+                                        <div className="space-y-1 pt-1">
+                                            <label className="text-xs font-semibold text-gray-600">Categoria (deixe vazio = mais vendidos)</label>
+                                            <select
+                                                value={formData.crossSellCategory}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, crossSellCategory: e.target.value }))}
+                                                disabled={!formData.crossSellEnabled}
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50"
+                                            >
+                                                <option value="">Mais vendidos (padrão)</option>
+                                                <option value="Ferramentas Manuais">Ferramentas Manuais</option>
+                                                <option value="Peças de Reposição">Peças de Reposição</option>
+                                                <option value="Acessórios">Acessórios</option>
+                                                <option value="Sementes Fracionadas">Sementes Fracionadas</option>
+                                                <option value="Insumos Agrícolas">Insumos Agrícolas</option>
+                                                <option value="Máquinas e Equipamentos">Máquinas e Equipamentos</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

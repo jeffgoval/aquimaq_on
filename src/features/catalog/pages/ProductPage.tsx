@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import ProductDetail from '@/components/ProductDetail';
 import { useCart } from '@/features/cart';
 import { useProduct } from '../hooks/useProduct';
 import ProductSkeleton from '@/components/ProductSkeleton';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 const ProductPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { track } = useRecentlyViewed();
 
     const { product, isLoading, error } = useProduct(id);
+
+    useEffect(() => { if (product?.id) track(product.id); }, [product?.id]);
 
     if (isLoading) {
         return <ProductSkeleton />;

@@ -4,6 +4,8 @@ import {
     Search,
     Plus,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Pencil,
     Sparkles,
     TrendingUp,
@@ -16,6 +18,8 @@ import { Product, ProductCategory } from '@/types';
 import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
 import { useAuth } from '@/contexts/AuthContext';
+
+const PAGE_SIZE = 20;
 
 interface ProductWithFlags extends Product {
     is_new?: boolean;
@@ -47,6 +51,7 @@ const AdminProductsManagement: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [savedScroll, setSavedScroll] = useState(0);
     const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         loadProducts();
@@ -90,6 +95,13 @@ const AdminProductsManagement: React.FC = () => {
             return matchesSearch && matchesCategory;
         });
     }, [products, searchQuery, categoryFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+    const pagedProducts = filteredProducts.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    const handleSearchChange = (value: string) => { setSearchQuery(value); setCurrentPage(1); };
+    const handleCategoryFilterChange = (value: string) => { setCategoryFilter(value); setCurrentPage(1); };
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -191,14 +203,14 @@ const AdminProductsManagement: React.FC = () => {
                         placeholder="Buscar por nome..."
                         className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] placeholder-stone-400 focus:outline-none focus:border-stone-300"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                     />
                 </div>
                 <div className="sm:w-48 relative">
                     <select
                         className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] text-stone-600 focus:outline-none focus:border-stone-300 appearance-none cursor-pointer"
                         value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        onChange={(e) => handleCategoryFilterChange(e.target.value)}
                     >
                         {categoryOptions.map(option => (
                             <option key={option.value} value={option.value}>{option.label}</option>
@@ -235,7 +247,7 @@ const AdminProductsManagement: React.FC = () => {
                                             Nenhum produto encontrado.
                                         </td>
                                     </tr>
-                                ) : filteredProducts.map((product) => {
+                                ) : pagedProducts.map((product) => {
                                     const stockStatus = getStockStatus(product.stock);
 
                                     return (
@@ -319,6 +331,53 @@ const AdminProductsManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {!loading && filteredProducts.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between text-[13px] text-stone-500">
+                    <span>
+                        {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} —
+                        página {safePage} de {totalPages}
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={safePage === 1}
+                            className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Página anterior"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                            .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                                if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) acc.push('...');
+                                acc.push(p);
+                                return acc;
+                            }, [])
+                            .map((p, idx) =>
+                                p === '...'
+                                    ? <span key={`ellipsis-${idx}`} className="px-1">…</span>
+                                    : <button
+                                        key={p}
+                                        onClick={() => setCurrentPage(p as number)}
+                                        className={`w-7 h-7 rounded-lg text-[12px] font-medium transition-colors ${safePage === p ? 'bg-stone-800 text-white' : 'hover:bg-stone-100'}`}
+                                    >
+                                        {p}
+                                    </button>
+                            )
+                        }
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={safePage === totalPages}
+                            className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Próxima página"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* Modal de confirmação de desativação */}

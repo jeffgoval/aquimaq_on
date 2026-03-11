@@ -13,6 +13,7 @@ import { ROUTES } from '@/constants/routes';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStore } from '@/contexts/StoreContext';
 import AddressEditModal from './AddressEditModal';
 import { ProfileRow } from '@/types/database';
 
@@ -50,6 +51,8 @@ const Cart: React.FC<CartProps> = ({
 }) => {
     const navigate = useNavigate();
     const { profile, refreshProfile } = useAuth();
+    const { settings } = useStore();
+    const FREE_SHIPPING_THRESHOLD = settings?.freeShippingThreshold ?? 350;
     const { showToast } = useToast();
     const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
     const [showAddressModal, setShowAddressModal] = useState(false);
@@ -289,6 +292,27 @@ const Cart: React.FC<CartProps> = ({
                             <span className="text-sm font-semibold text-gray-800">Resumo do Pedido</span>
                         </div>
                         <div className="p-4 space-y-3">
+
+                            {/* Free shipping progress */}
+                            {cartSubtotal < FREE_SHIPPING_THRESHOLD && (
+                                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 mb-1">
+                                    <div className="flex justify-between text-xs text-blue-700 mb-1.5">
+                                        <span>Frete grátis a partir de {formatCurrency(FREE_SHIPPING_THRESHOLD)}</span>
+                                        <span className="font-bold">faltam {formatCurrency(FREE_SHIPPING_THRESHOLD - cartSubtotal)}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (cartSubtotal / FREE_SHIPPING_THRESHOLD) * 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {cartSubtotal >= FREE_SHIPPING_THRESHOLD && (
+                                <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-1 text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
+                                    <span>🎉</span> Você ganhou frete grátis!
+                                </div>
+                            )}
 
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Subtotal ({totalItems} {totalItems === 1 ? 'item' : 'itens'})</span>

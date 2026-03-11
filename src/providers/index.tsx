@@ -24,7 +24,7 @@ export const AppProviders = composeProviders(
     HelmetProvider as ProviderComponent,
     StoreProvider,
     AuthProvider,
-    CartProvider,
     ToastProvider,
+    CartProvider,
     WishlistProvider
 );

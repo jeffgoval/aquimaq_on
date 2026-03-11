@@ -38,6 +38,7 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
     { count: totalOrders },
     { count: pendingCount },
     { data: monthOrders },
+    clientesResult,
   ] = await Promise.all([
     applyVendedorFilter(
       supabase
@@ -62,6 +63,17 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
         .gte('created_at', startOfMonth)
         .neq('status', 'cancelado')
     ),
+    vendedorId
+      // Vendedor: clientes únicos nos seus pedidos
+      ? supabase
+          .from('orders')
+          .select('cliente_id')
+          .eq('vendedor_id', vendedorId)
+      // Admin/gerente: total de perfis com role cliente
+      : supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'cliente'),
   ]);
 
   const totalRevenue = (monthOrders ?? []).reduce(
@@ -69,11 +81,15 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
     0
   );
 
+  const totalClientes = vendedorId
+    ? new Set((clientesResult.data ?? []).map((r: any) => r.cliente_id)).size
+    : (clientesResult.count ?? 0);
+
   const stats: DashboardStats = {
     totalRevenue,
     totalOrders: totalOrders ?? 0,
     pendingOrders: pendingCount ?? 0,
-    totalClientes: 0,
+    totalClientes,
   };
 
   const rows = (recentData ?? []) as Array<{

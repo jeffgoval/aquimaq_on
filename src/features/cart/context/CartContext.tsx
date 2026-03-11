@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { Product, CartItem, ShippingOption } from '@/types';
 import { CartItemsSchema } from '../schemas/cartSchema';
 import { getCartSubtotal, getCartItemCount, getShippingCost, getGrandTotal } from '@/utils/cart-calculations';
+import { useToast } from '@/contexts/ToastContext';
 
 const CART_SHIPPING_KEY = 'cart_shipping';
 
@@ -38,6 +39,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { showToast } = useToast();
     const [cart, setCart] = useState<CartItem[]>(() => {
         try {
             const saved = localStorage.getItem('cart');
@@ -67,8 +69,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addToCart = useCallback((product: Product, quantity: number = 1) => {
         const qty = Math.max(1, Math.floor(quantity));
+        let isNew = false;
         setCart(prev => {
             const existing = prev.find(item => item.id === product.id);
+            isNew = !existing;
             if (existing) {
                 return prev.map(item =>
                     item.id === product.id ? { ...item, quantity: item.quantity + qty } : item
@@ -76,7 +80,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return [...prev, { ...product, quantity: qty }];
         });
-    }, []);
+        showToast(
+            isNew
+                ? `"${product.name}" adicionado ao carrinho!`
+                : `Quantidade de "${product.name}" atualizada.`,
+            'success'
+        );
+    }, [showToast]);
 
     const removeFromCart = useCallback((productId: string) => {
         setCart(prev => prev.filter(item => item.id !== productId));

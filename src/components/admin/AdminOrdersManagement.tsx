@@ -8,6 +8,8 @@ import {
     Truck,
     XCircle,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Eye,
     RefreshCw,
     X,
@@ -23,6 +25,8 @@ import {
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+
+const PAGE_SIZE = 20;
 
 interface PedidoComCliente extends OrderAdminRow {
     status: OrderStatus;
@@ -62,6 +66,7 @@ const AdminOrdersManagement: React.FC = () => {
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
     const [printingLabel, setPrintingLabel] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         loadOrders();
@@ -149,6 +154,13 @@ const AdminOrdersManagement: React.FC = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+    const pagedOrders = filteredOrders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    const handleSearchChange = (value: string) => { setSearchQuery(value); setCurrentPage(1); };
+    const handleStatusFilterChange = (value: string) => { setStatusFilter(value); setCurrentPage(1); };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('pt-BR', {
             day: '2-digit',
@@ -229,14 +241,14 @@ const AdminOrdersManagement: React.FC = () => {
                         placeholder="Buscar por ID, cliente ou telefone..."
                         className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] placeholder-stone-400 focus:outline-none focus:border-stone-300"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                     />
                 </div>
                 <div className="sm:w-48 relative">
                     <select
                         className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] text-stone-600 focus:outline-none focus:border-stone-300 appearance-none cursor-pointer"
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => handleStatusFilterChange(e.target.value)}
                     >
                         {statusOptions.map(option => (
                             <option key={option.value} value={option.value}>{option.label}</option>
@@ -273,7 +285,7 @@ const AdminOrdersManagement: React.FC = () => {
                                             Nenhum pedido encontrado.
                                         </td>
                                     </tr>
-                                ) : filteredOrders.map((order) => {
+                                ) : pagedOrders.map((order) => {
                                     const config = statusConfig[order.status] || statusConfig['aguardando_pagamento'];
                                     return (
                                         <tr key={order.id} className="hover:bg-stone-25">
@@ -335,6 +347,53 @@ const AdminOrdersManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {!loading && filteredOrders.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between text-[13px] text-stone-500">
+                    <span>
+                        {filteredOrders.length} pedido{filteredOrders.length !== 1 ? 's' : ''} —
+                        página {safePage} de {totalPages}
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={safePage === 1}
+                            className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Página anterior"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                            .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                                if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) acc.push('...');
+                                acc.push(p);
+                                return acc;
+                            }, [])
+                            .map((p, idx) =>
+                                p === '...'
+                                    ? <span key={`ellipsis-${idx}`} className="px-1">…</span>
+                                    : <button
+                                        key={p}
+                                        onClick={() => setCurrentPage(p as number)}
+                                        className={`w-7 h-7 rounded-lg text-[12px] font-medium transition-colors ${safePage === p ? 'bg-stone-800 text-white' : 'hover:bg-stone-100'}`}
+                                    >
+                                        {p}
+                                    </button>
+                            )
+                        }
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={safePage === totalPages}
+                            className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Próxima página"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Order Details Modal */}
             {selectedOrder && (
