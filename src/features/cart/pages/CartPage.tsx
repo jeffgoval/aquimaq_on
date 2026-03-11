@@ -30,7 +30,6 @@ const CartPage: React.FC = () => {
     const { profile } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [recentProducts, setRecentProducts] = useState<any[]>([]);
-    const [scheduledDelivery, setScheduledDelivery] = useState<{ date: string; notes?: string } | null>(null);
     const { ids: recentIds } = useRecentlyViewed();
 
     useEffect(() => {
@@ -54,8 +53,6 @@ const CartPage: React.FC = () => {
                 shippingCost,
                 selectedShipping,
                 profile,
-                scheduledDeliveryDate: scheduledDelivery?.date,
-                scheduledDeliveryNotes: scheduledDelivery?.notes,
             });
 
             // 3. Clear cart before redirect
@@ -85,7 +82,6 @@ const CartPage: React.FC = () => {
                 onSelectShipping={setSelectedShipping}
                 onZipValid={setShippingZip}
                 onCheckout={handleCheckout}
-                onScheduledDeliveryChange={setScheduledDelivery}
                 initialZip={shippingZip || profile?.zip_code?.replace(/\D/g, '') || undefined}
                 isProcessing={isProcessing}
             />

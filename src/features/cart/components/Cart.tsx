@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart, ChevronLeft, ChevronRight, Trash2, ImageOff, Loader2, LogIn,
-    Minus, Plus, MapPin, AlertTriangle, Zap, Package, CalendarDays,
+    Minus, Plus, MapPin, AlertTriangle, Zap, Package,
 } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
@@ -31,7 +31,6 @@ interface CartProps {
     onZipValid?: (rawZip: string) => void;
     onBackToCatalog?: () => void;
     onCheckout?: () => void;
-    onScheduledDeliveryChange?: (data: { date: string; notes?: string } | null) => void;
     initialZip?: string;
     isProcessing?: boolean;
 }
@@ -47,7 +46,6 @@ const Cart: React.FC<CartProps> = ({
     onSelectShipping,
     onZipValid,
     onCheckout,
-    onScheduledDeliveryChange,
     initialZip,
     isProcessing = false,
 }) => {
@@ -58,9 +56,6 @@ const Cart: React.FC<CartProps> = ({
     const { showToast } = useToast();
     const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [wantsScheduled, setWantsScheduled] = useState(false);
-    const [scheduledDate, setScheduledDate] = useState('');
-    const [scheduledNotes, setScheduledNotes] = useState('');
 
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
     const outOfStockItems = items.filter(i => (i.stock ?? 0) === 0);
@@ -74,25 +69,6 @@ const Cart: React.FC<CartProps> = ({
     }, []);
 
     const handleBackToCatalog = () => navigate(ROUTES.HOME);
-
-    const handleScheduledToggle = (checked: boolean) => {
-        setWantsScheduled(checked);
-        if (!checked) {
-            setScheduledDate('');
-            setScheduledNotes('');
-            onScheduledDeliveryChange?.(null);
-        }
-    };
-
-    const handleScheduledDateChange = (date: string) => {
-        setScheduledDate(date);
-        if (date) onScheduledDeliveryChange?.({ date, notes: scheduledNotes || undefined });
-    };
-
-    const handleScheduledNotesChange = (notes: string) => {
-        setScheduledNotes(notes);
-        if (scheduledDate) onScheduledDeliveryChange?.({ date: scheduledDate, notes: notes || undefined });
-    };
 
     // ── Empty state ──
     if (items.length === 0) {
@@ -254,54 +230,6 @@ const Cart: React.FC<CartProps> = ({
                         onZipValid={onZipValid}
                     />
 
-                    {/* Scheduled delivery — only when a carrier (not pickup) is chosen */}
-                    {selectedShipping && selectedShipping.id !== 'pickup_store' && (
-                        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
-                            <label className="flex items-center gap-3 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={wantsScheduled}
-                                    onChange={e => handleScheduledToggle(e.target.checked)}
-                                    className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
-                                />
-                                <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                                    <CalendarDays size={16} className="text-agro-600" />
-                                    Agendar dia de entrega
-                                </span>
-                            </label>
-                            {wantsScheduled && (
-                                <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Data preferida de entrega
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={scheduledDate}
-                                            min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                                            onChange={e => handleScheduledDateChange(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-agro-500 focus:border-agro-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Horário ou instruções (opcional)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={scheduledNotes}
-                                            onChange={e => handleScheduledNotesChange(e.target.value)}
-                                            placeholder="Ex.: Entregar de manhã, portão azul"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-agro-500 focus:border-agro-500"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-400">
-                                        A data é uma preferência — sujeita à disponibilidade do transportador.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
 
                 {/* ── RIGHT: Summary sidebar (sticky) ── */}

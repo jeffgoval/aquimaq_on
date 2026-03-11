@@ -39,10 +39,6 @@ export interface StoreSettings {
   freeShippingThreshold: number;
   crossSellEnabled: boolean;
   crossSellCategory: string | null;
-  localDeliveryEnabled: boolean;
-  localDeliveryMaxKm: number;
-  localDeliveryFee: number;
-  localDeliveryLabel: string;
 }
 
 /** Formato da tabela store_settings no Supabase (snake_case). Endereço de origem apenas em origin_* (Melhor Envios / Mercado Pago). */
@@ -73,10 +69,6 @@ export interface StoreSettingsDB {
   free_shipping_threshold?: number | null;
   cross_sell_enabled?: boolean | null;
   cross_sell_category?: string | null;
-  local_delivery_enabled?: boolean | null;
-  local_delivery_max_km?: number | null;
-  local_delivery_fee?: number | null;
-  local_delivery_label?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -134,10 +126,6 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     freeShippingThreshold: Number(r.free_shipping_threshold ?? 350),
     crossSellEnabled: r.cross_sell_enabled ?? true,
     crossSellCategory: r.cross_sell_category ?? null,
-    localDeliveryEnabled: r.local_delivery_enabled ?? false,
-    localDeliveryMaxKm: Number(r.local_delivery_max_km ?? 0),
-    localDeliveryFee: Number(r.local_delivery_fee ?? 0),
-    localDeliveryLabel: r.local_delivery_label ?? 'Entrega Local',
   };
 };
 
@@ -172,9 +160,5 @@ export const storeSettingsToDB = (
   if (s.freeShippingThreshold !== undefined) out.free_shipping_threshold = s.freeShippingThreshold;
   if (s.crossSellEnabled !== undefined) out.cross_sell_enabled = s.crossSellEnabled;
   if (s.crossSellCategory !== undefined) out.cross_sell_category = s.crossSellCategory || null;
-  if (s.localDeliveryEnabled !== undefined) out.local_delivery_enabled = s.localDeliveryEnabled;
-  if (s.localDeliveryMaxKm !== undefined) out.local_delivery_max_km = s.localDeliveryMaxKm;
-  if (s.localDeliveryFee !== undefined) out.local_delivery_fee = s.localDeliveryFee;
-  if (s.localDeliveryLabel !== undefined) out.local_delivery_label = s.localDeliveryLabel || null;
   return out;
 };

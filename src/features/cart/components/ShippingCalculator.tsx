@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Truck, MapPin, Loader2, Store, AlertCircle, Home } from 'lucide-react';
+import { Truck, MapPin, Loader2, Store, AlertCircle } from 'lucide-react';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
 import { maskCEP } from '@/utils/masks';
 import { formatCurrency } from '@/utils/format';
 import { CartItem, ShippingOption } from '@/types';
-import { useStore } from '@/contexts/StoreContext';
-import { fetchCepCoordinates, haversineKm } from '@/utils/geo';
 
 interface ShippingCalculatorProps {
   cartTotal: number;
@@ -26,8 +24,6 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   initialZip,
   onZipValid
 }) => {
-  const { settings } = useStore();
-  const phoneNumber = settings?.phone?.replace(/\D/g, '') ?? '';
   const [cep, setCep] = useState(initialZip ? maskCEP(initialZip) : '');
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<ShippingOption[]>([]);
@@ -79,39 +75,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
     try {
       const { options: newOptions, error: shippingError, cepNotServiced: notServiced } = await calculateShipping(rawCep, items);
 
-      // Inject local delivery option if destination is within configured km radius
-      const finalOptions = [...newOptions];
-      if (
-        settings?.localDeliveryEnabled &&
-        settings.localDeliveryMaxKm > 0 &&
-        settings.address?.zip
-      ) {
-        try {
-          const [originCoords, destCoords] = await Promise.all([
-            fetchCepCoordinates(settings.address.zip),
-            fetchCepCoordinates(rawCep),
-          ]);
-          if (
-            originCoords &&
-            destCoords &&
-            haversineKm(originCoords, destCoords) <= settings.localDeliveryMaxKm &&
-            !finalOptions.find(o => o.id === 'local_delivery')
-          ) {
-            const localOption: ShippingOption = {
-              id: 'local_delivery',
-              carrier: 'Entrega Própria',
-              service: settings.localDeliveryLabel || 'Entrega Local',
-              price: settings.localDeliveryFee ?? 0,
-              estimatedDays: 2,
-            };
-            finalOptions.splice(1, 0, localOption); // insere logo após Retirada no Balcão
-          }
-        } catch {
-          // falha silenciosa: não injeta opção local
-        }
-      }
-
-      setOptions(finalOptions);
+      setOptions(newOptions);
       setCalculated(true);
       setCepNotServiced(notServiced ?? false);
       onZipValid?.(rawCep);
@@ -123,7 +87,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
       }
 
       if (preserveSelection && selectedOptionId) {
-        const stillExists = finalOptions.find(r => r.id === selectedOptionId);
+        const stillExists = newOptions.find(r => r.id === selectedOptionId);
         if (stillExists) {
           onSelectOption(stillExists);
         } else {
@@ -190,7 +154,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
           <div>
             <p className="text-amber-800 text-xs font-semibold">CEP não atendido pelas transportadoras</p>
             <p className="text-amber-700 text-xs mt-0.5">
-              Use a opção de <strong>Retirada no Balcão</strong>{settings?.localDeliveryEnabled ? ' ou Entrega Local' : ''} para concluir seu pedido.
+              Use a opção de <strong>Retirada no Balcão</strong> para concluir seu pedido.
             </p>
           </div>
         </div>
@@ -224,7 +188,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                    {option.carrier === 'Loja Física' ? <Store size={14} /> : option.id === 'local_delivery' ? <Home size={14} /> : null}
+                    {option.carrier === 'Loja Física' ? <Store size={14} /> : null}
                     {option.carrier} - {option.service}
                   </p>
                   <p className="text-xs text-gray-500">

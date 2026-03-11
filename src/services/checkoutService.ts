@@ -13,8 +13,6 @@ export interface CheckoutParams {
   shippingCost: number;
   selectedShipping: ShippingOption;
   profile: ProfileRow;
-  scheduledDeliveryDate?: string;
-  scheduledDeliveryNotes?: string;
 }
 
 /**
@@ -22,7 +20,7 @@ export interface CheckoutParams {
  * explicitly passing the user's access token.
  */
 export async function createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
-  const { cart, shippingCost, selectedShipping, profile, scheduledDeliveryDate, scheduledDeliveryNotes } = params;
+  const { cart, shippingCost, selectedShipping, profile } = params;
 
   // 1. Get the current session token
   const { data: { session } } = await supabase.auth.getSession();
@@ -62,8 +60,6 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
     order: {
       shipping_cost: shippingCost,
       shipping_method: `${selectedShipping.carrier} - ${selectedShipping.service}`,
-      scheduled_delivery_date: scheduledDeliveryDate ?? null,
-      scheduled_delivery_notes: scheduledDeliveryNotes ?? null,
       shipping_address: {
         street: profile.street ?? null,
         number: profile.number ?? null,

@@ -38,10 +38,6 @@ interface StoreConfig {
     freeShippingThreshold: number;
     crossSellEnabled: boolean;
     crossSellCategory: string;
-    localDeliveryEnabled: boolean;
-    localDeliveryMaxKm: number;
-    localDeliveryFee: number;
-    localDeliveryLabel: string;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -83,10 +79,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         freeShippingThreshold: 350,
         crossSellEnabled: true,
         crossSellCategory: '',
-        localDeliveryEnabled: false,
-        localDeliveryMaxKm: 0,
-        localDeliveryFee: 0,
-        localDeliveryLabel: 'Entrega Local',
     });
 
     // Sync formData with loaded settings (camelCase)
@@ -120,10 +112,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 freeShippingThreshold: settings.freeShippingThreshold ?? 350,
                 crossSellEnabled: settings.crossSellEnabled ?? true,
                 crossSellCategory: settings.crossSellCategory ?? '',
-                localDeliveryEnabled: settings.localDeliveryEnabled ?? false,
-                localDeliveryMaxKm: settings.localDeliveryMaxKm ?? 0,
-                localDeliveryFee: settings.localDeliveryFee ?? 0,
-                localDeliveryLabel: settings.localDeliveryLabel ?? 'Entrega Local',
             });
         }
     }, [settings]);
@@ -233,10 +221,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             freeShippingThreshold: formData.freeShippingThreshold,
             crossSellEnabled: formData.crossSellEnabled,
             crossSellCategory: formData.crossSellCategory || null,
-            localDeliveryEnabled: formData.localDeliveryEnabled,
-            localDeliveryMaxKm: formData.localDeliveryMaxKm,
-            localDeliveryFee: formData.localDeliveryFee,
-            localDeliveryLabel: formData.localDeliveryLabel,
         });
 
         setIsLoading(false);
@@ -656,69 +640,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 <option value="Máquinas e Equipamentos">Máquinas e Equipamentos</option>
                                             </select>
                                         </div>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Entrega Local */}
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <Truck className="text-agro-600" size={20} />
-                                    Entrega Local / Regional
-                                </h3>
-                                <p className="text-xs text-gray-500 -mt-3">
-                                    Configure uma opção de entrega própria para endereços dentro de um raio a partir da loja. Usa as coordenadas do CEP de origem.
-                                </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.localDeliveryEnabled}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryEnabled: e.target.checked }))}
-                                                className="w-4 h-4 rounded border-gray-300 text-agro-600 focus:ring-agro-500"
-                                            />
-                                            <span className="text-sm font-semibold text-gray-700">Ativar entrega local</span>
-                                        </label>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Nome da opção de entrega</label>
-                                        <input
-                                            type="text"
-                                            value={formData.localDeliveryLabel}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryLabel: e.target.value }))}
-                                            disabled={!formData.localDeliveryEnabled}
-                                            placeholder="Ex: Entrega na Região"
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Raio máximo de entrega (km)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            value={formData.localDeliveryMaxKm}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryMaxKm: Number(e.target.value) }))}
-                                            disabled={!formData.localDeliveryEnabled}
-                                            placeholder="Ex: 30"
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                        />
-                                        <p className="text-xs text-gray-400">Distância em linha reta a partir do endereço de origem da loja. Use 0 para desativar.</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Taxa de entrega local (R$)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.localDeliveryFee}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryFee: Number(e.target.value) }))}
-                                            disabled={!formData.localDeliveryEnabled}
-                                            placeholder="0 = grátis"
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                        />
-                                        <p className="text-xs text-gray-400">Use 0 para entrega local gratuita.</p>
                                     </div>
                                 </div>
                             </section>
