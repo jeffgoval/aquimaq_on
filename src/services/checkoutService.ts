@@ -1,7 +1,6 @@
 import { supabase } from '@/services/supabase';
 import type { CartItem, ShippingOption } from '@/types';
 import type { ProfileRow } from '@/types/database';
-import { calculateItemPrice } from '@/utils/price';
 import { ENV } from '@/config/env';
 
 export interface CheckoutResult {
@@ -11,11 +10,11 @@ export interface CheckoutResult {
 
 export interface CheckoutParams {
   cart: CartItem[];
-  subtotal: number;
   shippingCost: number;
-  grandTotal: number;
   selectedShipping: ShippingOption;
   profile: ProfileRow;
+  scheduledDeliveryDate?: string;
+  scheduledDeliveryNotes?: string;
 }
 
 /**
@@ -23,7 +22,7 @@ export interface CheckoutParams {
  * explicitly passing the user's access token.
  */
 export async function createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
-  const { cart, subtotal, shippingCost, grandTotal, selectedShipping, profile } = params;
+  const { cart, shippingCost, selectedShipping, profile, scheduledDeliveryDate, scheduledDeliveryNotes } = params;
 
   // 1. Get the current session token
   const { data: { session } } = await supabase.auth.getSession();
@@ -31,14 +30,14 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
     throw new Error('Você precisa estar logado para finalizar a compra.');
   }
 
-  // 2. Build items in Mercado Pago format
+  // 2. Build items in Mercado Pago format (unit_price é ignorado pelo servidor — preço real vem do banco)
   const items = cart.map((item) => ({
     id: item.id,
     title: item.name,
     description: (item.description || item.name).slice(0, 256),
     category_id: 'others',
     quantity: item.quantity,
-    unit_price: Number(calculateItemPrice(item).toFixed(2)),
+    unit_price: 0, // servidor recalcula a partir do banco
     currency_id: 'BRL',
   }));
 
@@ -61,10 +60,10 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
 
   const payload = {
     order: {
-      subtotal,
       shipping_cost: shippingCost,
-      total: grandTotal,
       shipping_method: `${selectedShipping.carrier} - ${selectedShipping.service}`,
+      scheduled_delivery_date: scheduledDeliveryDate ?? null,
+      scheduled_delivery_notes: scheduledDeliveryNotes ?? null,
       shipping_address: {
         street: profile.street ?? null,
         number: profile.number ?? null,

@@ -90,15 +90,18 @@ export const calculateShipping = async (
 
     const data = responseData as { options?: ShippingOption[]; error?: string };
 
+    const beforeCount = resultOptions.length;
     if (data.options?.length) {
       data.options.forEach((opt) => {
         if (opt.id !== PICKUP_OPTION.id) resultOptions.push(normalizeOption(opt));
       });
     }
+    const noCarriers = resultOptions.length === beforeCount;
 
     return {
       options: resultOptions,
       error: data.error,
+      cepNotServiced: noCarriers && !data.error,
     };
   } catch (e) {
     if (import.meta.env.DEV) console.error('Shipping quote error:', e);

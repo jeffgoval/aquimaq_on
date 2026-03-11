@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Truck, MapPin, Loader2, Store } from 'lucide-react';
+import { Truck, MapPin, Loader2, Store, AlertCircle, Home } from 'lucide-react';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
 import { maskCEP } from '@/utils/masks';
@@ -32,6 +32,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [calculated, setCalculated] = useState(false);
+  const [cepNotServiced, setCepNotServiced] = useState(false);
 
   /* State to track previous items for comparison or debounce */
   const [debouncedItems, setDebouncedItems] = useState(items);
@@ -68,15 +69,38 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
 
     setLoading(true);
     setError(null);
+    setCepNotServiced(false);
     if (!preserveSelection) {
       setCalculated(false);
       onSelectOption(null);
     }
 
     try {
-      const { options: newOptions, error: shippingError } = await calculateShipping(rawCep, items);
-      setOptions(newOptions);
+      const { options: newOptions, error: shippingError, cepNotServiced: notServiced } = await calculateShipping(rawCep, items);
+
+      // Inject local delivery option if CEP prefix matches store settings
+      const finalOptions = [...newOptions];
+      if (settings?.localDeliveryEnabled && settings.localDeliveryCepPrefixes) {
+        const prefixes = settings.localDeliveryCepPrefixes
+          .split(',')
+          .map(p => p.trim())
+          .filter(Boolean);
+        const cepMatches = prefixes.some(prefix => rawCep.startsWith(prefix));
+        if (cepMatches && !finalOptions.find(o => o.id === 'local_delivery')) {
+          const localOption: ShippingOption = {
+            id: 'local_delivery',
+            carrier: 'Entrega Própria',
+            service: settings.localDeliveryLabel || 'Entrega Local',
+            price: settings.localDeliveryFee ?? 0,
+            estimatedDays: 2,
+          };
+          finalOptions.splice(1, 0, localOption); // after pickup
+        }
+      }
+
+      setOptions(finalOptions);
       setCalculated(true);
+      setCepNotServiced(notServiced ?? false);
       onZipValid?.(rawCep);
 
       if (shippingError) {
@@ -86,7 +110,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
       }
 
       if (preserveSelection && selectedOptionId) {
-        const stillExists = newOptions.find(r => r.id === selectedOptionId);
+        const stillExists = finalOptions.find(r => r.id === selectedOptionId);
         if (stillExists) {
           onSelectOption(stillExists);
         } else {
@@ -147,7 +171,18 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
         </button>
       </form>
 
-      {error && (
+      {cepNotServiced && (
+        <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-amber-800 text-xs font-semibold">CEP não atendido pelas transportadoras</p>
+            <p className="text-amber-700 text-xs mt-0.5">
+              Use a opção de <strong>Retirada no Balcão</strong>{settings?.localDeliveryEnabled ? ' ou Entrega Local' : ''} para concluir seu pedido.
+            </p>
+          </div>
+        </div>
+      )}
+      {error && !cepNotServiced && (
         <div className="mb-3">
           <p className="text-amber-800 text-xs">{error}</p>
         </div>
@@ -176,7 +211,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                    {option.carrier === 'Loja Física' ? <Store size={14} /> : null}
+                    {option.carrier === 'Loja Física' ? <Store size={14} /> : option.id === 'local_delivery' ? <Home size={14} /> : null}
                     {option.carrier} - {option.service}
                   </p>
                   <p className="text-xs text-gray-500">

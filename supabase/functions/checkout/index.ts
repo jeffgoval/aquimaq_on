@@ -1,16 +1,19 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { MercadoPagoConfig, Preference } from "npm:mercadopago@2";
 
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+/** Retorna o origin permitido: domínio de produção ou localhost em desenvolvimento. */
+function getAllowedOrigin(req: Request): string {
+    const origin = req.headers.get("Origin") ?? "";
+    const prodOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    return (isLocalhost || origin === prodOrigin) ? origin : prodOrigin;
+}
 
 interface OrderPayload {
-    subtotal: number;
     shipping_cost: number;
-    total: number;
     shipping_method?: string | null;
+    scheduled_delivery_date?: string | null;
+    scheduled_delivery_notes?: string | null;
     shipping_address?: {
         street?: string | null;
         number?: string | null;
@@ -29,6 +32,31 @@ interface MPItem {
     quantity: number;
     unit_price: number;
     currency_id?: string;
+}
+
+interface ProductRow {
+    id: string;
+    name: string;
+    stock: number;
+    price: number;
+    wholesale_min_amount: number | null;
+    wholesale_discount_percent: number | null;
+}
+
+/** Aplica desconto de atacado (mesma lógica de src/utils/price.ts). */
+function calcServerUnitPrice(product: ProductRow, quantity: number): number {
+    if (
+        product.wholesale_min_amount != null &&
+        product.price * quantity >= product.wholesale_min_amount &&
+        product.wholesale_discount_percent != null
+    ) {
+        return product.price * (1 - product.wholesale_discount_percent / 100);
+    }
+    return product.price;
+}
+
+function round2(n: number): number {
+    return Math.round(n * 100) / 100;
 }
 
 /** Payer opcional: melhora taxa de aprovação (checklist MP). Em sandbox pode causar "uma das partes é de teste". */
@@ -52,11 +80,7 @@ function parseBody(body: unknown): CheckoutBody | null {
     if (!b.order || typeof b.order !== "object") return null;
     if (!Array.isArray(b.items) || b.items.length === 0) return null;
     const order = b.order as OrderPayload;
-    if (
-        typeof order.subtotal !== "number" ||
-        typeof order.shipping_cost !== "number" ||
-        typeof order.total !== "number"
-    ) return null;
+    if (typeof order.shipping_cost !== "number" || order.shipping_cost < 0) return null;
     if (typeof b.back_url_base !== "string" || !b.back_url_base.trim()) return null;
     const base = (b.back_url_base as string).trim().replace(/\/$/, "");
     let payer: PayerPayload | undefined;
@@ -78,6 +102,12 @@ function parseBody(body: unknown): CheckoutBody | null {
 }
 
 Deno.serve(async (req) => {
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": getAllowedOrigin(req),
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+        "Vary": "Origin",
+    };
+
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }
@@ -134,17 +164,84 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Create order in Supabase
+    // 1. Separar itens reais do item de frete
+    const realItems = payload.items.filter((item) => item.id !== "shipping");
+    const shippingItem = payload.items.find((item) => item.id === "shipping");
+
+    // 2. Buscar produtos do banco (estoque + preços reais) ANTES de criar o pedido
+    const productIds = realItems.map((i) => i.id).filter(Boolean) as string[];
+    if (productIds.length === 0) {
+        return new Response(JSON.stringify({ error: "Nenhum produto válido no carrinho." }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    const { data: productRows, error: productFetchError } = await supabaseAdmin
+        .from("products")
+        .select("id, name, stock, price, wholesale_min_amount, wholesale_discount_percent")
+        .in("id", productIds);
+
+    if (productFetchError || !productRows) {
+        return new Response(JSON.stringify({ error: "Erro ao verificar produtos." }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    // 3. Validar estoque e calcular preços server-side
+    for (const item of realItems) {
+        if (!item.id) continue;
+        const product = productRows.find((p: ProductRow) => p.id === item.id);
+        if (!product) {
+            return new Response(
+                JSON.stringify({ error: `Produto não encontrado: ${item.id}` }),
+                { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+        if ((product as ProductRow).stock < item.quantity) {
+            return new Response(
+                JSON.stringify({
+                    error: `Estoque insuficiente para "${(product as ProductRow).name}". Disponível: ${(product as ProductRow).stock}.`,
+                }),
+                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+    }
+
+    // 4. Calcular totais com preços reais do banco
+    const serverItems = realItems.map((item) => {
+        const product = productRows.find((p: ProductRow) => p.id === item.id) as ProductRow;
+        const unitPrice = round2(calcServerUnitPrice(product, item.quantity));
+        return {
+            product_id: item.id!,
+            product_name: product.name,
+            quantity: item.quantity,
+            unit_price: unitPrice,
+            // Para o MP: mantém title/description/category do cliente
+            title: item.title,
+            description: item.description,
+            category_id: item.category_id,
+        };
+    });
+
+    const serverSubtotal = round2(
+        serverItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+    );
+    const shippingCost = round2(Math.max(0, payload.order.shipping_cost));
+    const serverTotal = round2(serverSubtotal + shippingCost);
+
+    // 5. Criar pedido com valores server-side
     const { data: orderRow, error: orderError } = await supabaseAdmin
         .from("orders")
         .insert({
             cliente_id: user.id,
             status: "aguardando_pagamento",
-            subtotal: payload.order.subtotal,
-            shipping_cost: payload.order.shipping_cost,
-            total: payload.order.total,
+            subtotal: serverSubtotal,
+            shipping_cost: shippingCost,
+            total: serverTotal,
             shipping_method: payload.order.shipping_method ?? null,
             shipping_address: payload.order.shipping_address ?? null,
+            scheduled_delivery_date: payload.order.scheduled_delivery_date ?? null,
+            scheduled_delivery_notes: payload.order.scheduled_delivery_notes ?? null,
             payment_method: "mercado_pago",
         })
         .select("id")
@@ -157,37 +254,11 @@ Deno.serve(async (req) => {
         );
     }
 
-    // 2. Insert order_items (exclude the shipping pseudo-item)
-    const realItems = payload.items.filter((item) => item.id !== "shipping");
-
-    // Server-side stock validation
-    const productIds = realItems.map((i) => i.id).filter(Boolean) as string[];
-    if (productIds.length > 0) {
-        const { data: stockRows } = await supabaseAdmin
-            .from("products")
-            .select("id, name, stock")
-            .in("id", productIds);
-
-        for (const item of realItems) {
-            if (!item.id) continue;
-            const product = (stockRows ?? []).find((p: { id: string }) => p.id === item.id);
-            if (!product) continue;
-            if ((product as { stock: number }).stock < item.quantity) {
-                await supabaseAdmin.from("orders").delete().eq("id", orderRow.id);
-                return new Response(
-                    JSON.stringify({
-                        error: `Estoque insuficiente para "${(product as { name: string }).name}". Disponível: ${(product as { stock: number }).stock}.`,
-                    }),
-                    { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-            }
-        }
-    }
-
-    const orderItems = realItems.map((item) => ({
+    // 6. Inserir order_items com preços server-side
+    const orderItems = serverItems.map((item) => ({
         order_id: orderRow.id,
-        product_id: item.id ?? null,
-        product_name: item.title,
+        product_id: item.product_id,
+        product_name: item.product_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
     }));
@@ -195,7 +266,7 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("order_items").insert(orderItems);
     }
 
-    // 3. Read payment settings from store_settings
+    // 7. Read payment settings from store_settings
     const { data: storeRow } = await supabaseAdmin
         .from("store_settings")
         .select("max_installments, accepted_payment_types")
@@ -208,7 +279,7 @@ Deno.serve(async (req) => {
         .filter((t) => !acceptedTypes.includes(t))
         .map((t) => ({ id: t }));
 
-    // 4. Create Mercado Pago preference
+    // 7b. Create Mercado Pago preference
     const backUrls = {
         success: `${payload.back_url_base}/pagamento/sucesso`,
         failure: `${payload.back_url_base}/pagamento/falha`,
@@ -219,12 +290,29 @@ Deno.serve(async (req) => {
     const client = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
 
-    const itemsWithCurrency = payload.items.map((item) => ({
-        ...item,
-        currency_id: "BRL",
-        description: item.description ?? item.title?.slice(0, 256) ?? undefined,
-        category_id: item.category_id ?? "others",
-    }));
+    // Montar itens para o MP com preços server-side
+    const itemsWithCurrency = [
+        ...serverItems.map((item) => ({
+            id: item.product_id,
+            title: item.title,
+            description: (item.description ?? item.title)?.slice(0, 256),
+            category_id: item.category_id ?? "others",
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            currency_id: "BRL",
+        })),
+        ...(shippingCost > 0 && shippingItem
+            ? [{
+                id: "shipping",
+                title: shippingItem.title,
+                description: shippingItem.description?.slice(0, 256),
+                category_id: "others",
+                quantity: 1,
+                unit_price: shippingCost,
+                currency_id: "BRL",
+            }]
+            : []),
+    ];
 
     const payer =
         payload.payer?.email?.trim() || payload.payer?.first_name?.trim()
@@ -270,13 +358,13 @@ Deno.serve(async (req) => {
         );
     }
 
-    // 5. Create initial payment record
+    // 8. Create initial payment record with server-side total
     await supabaseAdmin.from("payments").insert({
         order_id: orderRow.id,
         mp_preference_id: mpResponse.id ?? null,
         mp_checkout_url: checkoutUrl,
         status: "pending",
-        amount: payload.order.total,
+        amount: serverTotal,
     });
 
     return new Response(

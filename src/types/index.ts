@@ -79,6 +79,8 @@ export interface ShippingOption {
 export interface ShippingResult {
   options: ShippingOption[];
   error?: string;
+  /** true quando a transportadora não atende o CEP informado */
+  cepNotServiced?: boolean;
 }
 
 export interface Order {
