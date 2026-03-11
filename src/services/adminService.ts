@@ -1,5 +1,16 @@
 import { supabase } from './supabase';
 
+export interface StockAlertRow {
+  id: string;
+  name: string;
+  stock: number;
+  reorderPoint: number | null;
+  expiryDate: string | null;
+  warehouseLocation: string | null;
+  supplier: string | null;
+  alertType: 'low_stock' | 'reorder' | 'expiring' | 'expired';
+}
+
 export interface DashboardStats {
   totalRevenue: number;
   totalOrders: number;
@@ -326,4 +337,58 @@ export const updateUserRole = async (userId: string, role: string): Promise<void
     .eq('id', userId);
 
   if (error) throw error;
+};
+
+
+const LOW_STOCK_THRESHOLD = 5;
+const EXPIRY_WARNING_DAYS = 60;
+
+/** Busca produtos com alertas de estoque (baixo, ponto de recompra, vencendo, vencidos). */
+export const getStockAlerts = async (): Promise<StockAlertRow[]> => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, stock, reorder_point, expiry_date, warehouse_location, supplier')
+    .eq('is_active', true)
+    .order('stock', { ascending: true });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  const today = new Date();
+  const warningDate = new Date(today);
+  warningDate.setDate(warningDate.getDate() + EXPIRY_WARNING_DAYS);
+
+  const alerts: StockAlertRow[] = [];
+
+  for (const p of data) {
+    const stock = p.stock ?? 0;
+    const reorderPoint = p.reorder_point ?? null;
+
+    // Vencido
+    if (p.expiry_date) {
+      const expiry = new Date(p.expiry_date);
+      if (expiry < today) {
+        alerts.push({ id: p.id, name: p.name, stock, reorderPoint, expiryDate: p.expiry_date, warehouseLocation: p.warehouse_location, supplier: p.supplier, alertType: 'expired' });
+        continue;
+      }
+      // Vencendo em breve
+      if (expiry <= warningDate) {
+        alerts.push({ id: p.id, name: p.name, stock, reorderPoint, expiryDate: p.expiry_date, warehouseLocation: p.warehouse_location, supplier: p.supplier, alertType: 'expiring' });
+        continue;
+      }
+    }
+
+    // Ponto de recompra
+    if (reorderPoint !== null && stock <= reorderPoint) {
+      alerts.push({ id: p.id, name: p.name, stock, reorderPoint, expiryDate: p.expiry_date, warehouseLocation: p.warehouse_location, supplier: p.supplier, alertType: 'reorder' });
+      continue;
+    }
+
+    // Estoque baixo geral
+    if (stock <= LOW_STOCK_THRESHOLD) {
+      alerts.push({ id: p.id, name: p.name, stock, reorderPoint, expiryDate: p.expiry_date, warehouseLocation: p.warehouse_location, supplier: p.supplier, alertType: 'low_stock' });
+    }
+  }
+
+  return alerts;
 };

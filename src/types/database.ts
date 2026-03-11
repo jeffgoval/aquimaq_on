@@ -413,12 +413,14 @@ export type Database = {
       }
       products: {
         Row: {
+          batch_number: string | null
           brand: string | null
           category: string | null
           created_at: string
           culture: string | null
           description: string | null
           discount: number | null
+          expiry_date: string | null
           gallery: Json | null
           height: number | null
           id: string
@@ -431,26 +433,31 @@ export type Database = {
           old_price: number | null
           price: number | null
           rating: number | null
+          reorder_point: number | null
           review_count: number | null
           seo_description: string | null
           seo_title: string | null
           slug: string | null
           stock: number | null
+          supplier: string | null
           technical_specs: string | null
           updated_at: string
           vendedor_id: string | null
+          warehouse_location: string | null
           weight: number | null
           wholesale_discount_percent: number | null
           wholesale_min_amount: number | null
           width: number | null
         }
         Insert: {
+          batch_number?: string | null
           brand?: string | null
           category?: string | null
           created_at?: string
           culture?: string | null
           description?: string | null
           discount?: number | null
+          expiry_date?: string | null
           gallery?: Json | null
           height?: number | null
           id?: string
@@ -463,26 +470,31 @@ export type Database = {
           old_price?: number | null
           price?: number | null
           rating?: number | null
+          reorder_point?: number | null
           review_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string | null
           stock?: number | null
+          supplier?: string | null
           technical_specs?: string | null
           updated_at?: string
           vendedor_id?: string | null
+          warehouse_location?: string | null
           weight?: number | null
           wholesale_discount_percent?: number | null
           wholesale_min_amount?: number | null
           width?: number | null
         }
         Update: {
+          batch_number?: string | null
           brand?: string | null
           category?: string | null
           created_at?: string
           culture?: string | null
           description?: string | null
           discount?: number | null
+          expiry_date?: string | null
           gallery?: Json | null
           height?: number | null
           id?: string
@@ -495,14 +507,17 @@ export type Database = {
           old_price?: number | null
           price?: number | null
           rating?: number | null
+          reorder_point?: number | null
           review_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string | null
           stock?: number | null
+          supplier?: string | null
           technical_specs?: string | null
           updated_at?: string
           vendedor_id?: string | null
+          warehouse_location?: string | null
           weight?: number | null
           wholesale_discount_percent?: number | null
           wholesale_min_amount?: number | null
@@ -697,6 +712,41 @@ export type Database = {
           },
         ]
       }
+      stock_notifications: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          notified_at: string | null
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          notified_at?: string | null
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          notified_at?: string | null
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
           accepted_payment_types: Json
@@ -705,8 +755,11 @@ export type Database = {
           banner_url: string | null
           cnpj: string | null
           created_at: string
+          cross_sell_category: string | null
+          cross_sell_enabled: boolean | null
           description: string | null
           email: string | null
+          free_shipping_threshold: number | null
           id: string
           logo_url: string | null
           max_installments: number
@@ -733,8 +786,11 @@ export type Database = {
           banner_url?: string | null
           cnpj?: string | null
           created_at?: string
+          cross_sell_category?: string | null
+          cross_sell_enabled?: boolean | null
           description?: string | null
           email?: string | null
+          free_shipping_threshold?: number | null
           id?: string
           logo_url?: string | null
           max_installments?: number
@@ -761,8 +817,11 @@ export type Database = {
           banner_url?: string | null
           cnpj?: string | null
           created_at?: string
+          cross_sell_category?: string | null
+          cross_sell_enabled?: boolean | null
           description?: string | null
           email?: string | null
+          free_shipping_threshold?: number | null
           id?: string
           logo_url?: string | null
           max_installments?: number
@@ -826,7 +885,10 @@ export type Database = {
     }
     Functions: {
       cancel_expired_orders: { Args: never; Returns: undefined }
-      check_document_exists: { Args: { p_drive_file_id: string }; Returns: Json }
+      check_document_exists: {
+        Args: { p_drive_file_id: string }
+        Returns: Json
+      }
       create_order: {
         Args: {
           p_cliente_id: string
@@ -841,21 +903,36 @@ export type Database = {
         }
         Returns: Json
       }
-      decrement_stock_for_order: { Args: { p_order_id: string }; Returns: undefined }
+      decrement_stock_for_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       get_daily_sales: {
         Args: { p_period_days?: number }
-        Returns: { orders_count: number; revenue: number; sale_date: string }[]
+        Returns: {
+          orders_count: number
+          revenue: number
+          sale_date: string
+        }[]
       }
       get_product_ranking: {
         Args: { p_max_results?: number }
-        Returns: { product_id: string; product_name: string; units_sold: number }[]
+        Returns: {
+          product_id: string
+          product_name: string
+          units_sold: number
+        }[]
       }
       get_sales_summary: { Args: { p_period_days?: number }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_manager: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       match_knowledge: {
-        Args: { filter_product_id?: string; match_count?: number; query_embedding: string }
+        Args: {
+          filter_product_id?: string
+          match_count?: number
+          query_embedding: string
+        }
         Returns: {
           content: string
           id: string
@@ -866,16 +943,44 @@ export type Database = {
         }[]
       }
       match_knowledge_base: {
-        Args: { match_count?: number; query_embedding: string; similarity_threshold?: number }
-        Returns: { content: string; id: string; product_id: string; similarity: number; title: string }[]
+        Args: {
+          match_count?: number
+          query_embedding: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          content: string
+          id: string
+          product_id: string
+          similarity: number
+          title: string
+        }[]
       }
       match_product_documents: {
-        Args: { match_count?: number; match_product_id: string; query_embedding: string; similarity_threshold?: number }
-        Returns: { content: string; id: string; similarity: number; title: string }[]
+        Args: {
+          match_count?: number
+          match_product_id: string
+          query_embedding: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          content: string
+          id: string
+          similarity: number
+          title: string
+        }[]
       }
-      next_vendedor_for_handoff: { Args: { last_agent_id?: string }; Returns: string }
+      next_vendedor_for_handoff: {
+        Args: { last_agent_id?: string }
+        Returns: string
+      }
       rag_search: {
-        Args: { filter_tipo?: string; match_count?: number; query_embedding: string; similarity_threshold?: number }
+        Args: {
+          filter_tipo?: string
+          match_count?: number
+          query_embedding: string
+          similarity_threshold?: number
+        }
         Returns: {
           chunk_id: string
           conteudo: string
@@ -887,7 +992,6 @@ export type Database = {
         }[]
       }
       restore_stock_from_unpaid_orders: { Args: never; Returns: number }
-      update_user_role: { Args: Record<string, never>; Returns: undefined }
     }
     Enums: {
       chat_channel: "web" | "whatsapp"
@@ -921,6 +1025,7 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -942,9 +1047,12 @@ export type Tables<
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends { Row: infer R }
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
       ? R
       : never
     : never
@@ -967,7 +1075,9 @@ export type TablesInsert<
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends { Insert: infer I }
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
       ? I
       : never
     : never
@@ -990,7 +1100,9 @@ export type TablesUpdate<
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends { Update: infer U }
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
       ? U
       : never
     : never

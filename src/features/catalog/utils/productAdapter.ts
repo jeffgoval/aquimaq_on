@@ -28,6 +28,11 @@ export const mapProductRowToProduct = (row: ProductRow): Product => {
         length: row.length ? Number(row.length) : undefined,
         wholesaleMinAmount: row.wholesale_min_amount ? Number(row.wholesale_min_amount) : undefined,
         wholesaleDiscountPercent: row.wholesale_discount_percent ? Number(row.wholesale_discount_percent) : undefined,
-        culture: (row as { culture?: string }).culture || undefined
+        culture: row.culture || undefined,
+        expiryDate: row.expiry_date || undefined,
+        batchNumber: row.batch_number || undefined,
+        warehouseLocation: row.warehouse_location || undefined,
+        reorderPoint: row.reorder_point ?? undefined,
+        supplier: row.supplier || undefined,
     };
 };

@@ -55,6 +55,12 @@ export interface Product {
   brand?: string;
   /** Cultura associada (ex.: Soja, Milho) para filtro e recomendações */
   culture?: string;
+  /** Gestão de estoque agrícola */
+  expiryDate?: string;
+  batchNumber?: string;
+  warehouseLocation?: string;
+  reorderPoint?: number;
+  supplier?: string;
 }
 
 export interface CartItem extends Product {

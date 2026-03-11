@@ -8,11 +8,17 @@ import {
     Clock,
     ArrowUpRight,
     ArrowDownRight,
-    RotateCcw
+    RotateCcw,
+    AlertTriangle,
+    CalendarX2,
+    ShoppingCart,
+    MapPin,
 } from 'lucide-react';
 import {
     getDashboardStats,
     restoreStockFromUnpaidOrders,
+    getStockAlerts,
+    type StockAlertRow,
 } from '@/services/adminService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -103,6 +109,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         totalClientes: 0,
     });
     const [recentOrders, setRecentOrders] = useState<RecentOrderProps[]>([]);
+    const [stockAlerts, setStockAlerts] = useState<StockAlertRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [restoreStockLoading, setRestoreStockLoading] = useState(false);
@@ -121,10 +128,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             try {
                 // Vendedor vê apenas suas próprias estatísticas
                 const vendedorId = isVendedor ? user?.id : undefined;
-                const { stats: nextStats, recentOrders: nextRecent } = await getDashboardStats(vendedorId);
+                const [{ stats: nextStats, recentOrders: nextRecent }, alerts] = await Promise.all([
+                    getDashboardStats(vendedorId),
+                    !isVendedor ? getStockAlerts() : Promise.resolve([]),
+                ]);
                 if (mounted) {
                     setStats(nextStats);
                     setRecentOrders(nextRecent);
+                    setStockAlerts(alerts);
                     setError(null);
                 }
             } catch (e) {
@@ -314,6 +325,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     </p>
                 )}
             </div>
+            )}
+
+            {/* Stock Alerts */}
+            {!isVendedor && stockAlerts.length > 0 && (
+                <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-red-50 flex items-center justify-between bg-red-50/50">
+                        <h2 className="text-[14px] font-medium text-red-700 flex items-center gap-2">
+                            <AlertTriangle size={15} className="text-red-500" />
+                            Alertas de Estoque ({stockAlerts.length})
+                        </h2>
+                        <button
+                            onClick={() => onNavigate('PRODUCTS')}
+                            className="text-red-400 hover:text-red-600 text-[12px] font-medium flex items-center gap-1"
+                        >
+                            Gerenciar produtos <ArrowUpRight size={14} />
+                        </button>
+                    </div>
+                    <div className="divide-y divide-stone-50">
+                        {stockAlerts.map((alert) => {
+                            const alertMeta = {
+                                expired:   { label: 'Vencido',         color: 'text-red-700 bg-red-100',      icon: <CalendarX2 size={13} /> },
+                                expiring:  { label: 'Vencendo',        color: 'text-orange-700 bg-orange-100', icon: <CalendarX2 size={13} /> },
+                                reorder:   { label: 'Repor Estoque',   color: 'text-amber-700 bg-amber-100',  icon: <ShoppingCart size={13} /> },
+                                low_stock: { label: 'Estoque Baixo',   color: 'text-yellow-700 bg-yellow-100', icon: <Package size={13} /> },
+                            }[alert.alertType];
+                            return (
+                                <div key={alert.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${alertMeta.color}`}>
+                                            {alertMeta.icon} {alertMeta.label}
+                                        </span>
+                                        <span className="text-[13px] text-stone-700 truncate">{alert.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 shrink-0 text-[12px] text-stone-400">
+                                        {alert.warehouseLocation && (
+                                            <span className="flex items-center gap-1 hidden sm:flex">
+                                                <MapPin size={12} /> {alert.warehouseLocation}
+                                            </span>
+                                        )}
+                                        {alert.expiryDate && (
+                                            <span>Val: {new Date(alert.expiryDate).toLocaleDateString('pt-BR')}</span>
+                                        )}
+                                        <span className={`font-semibold ${alert.stock <= 0 ? 'text-red-600' : 'text-stone-600'}`}>
+                                            {alert.stock} un.
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             )}
 
             {/* Recent Orders Table */}

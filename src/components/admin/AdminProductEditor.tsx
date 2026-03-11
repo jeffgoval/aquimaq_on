@@ -11,6 +11,7 @@ import {
     Sparkles,
     TrendingUp,
     BookOpen,
+    Warehouse,
 } from 'lucide-react';
 import ProductDocumentsManager from './ProductDocumentsManager';
 import {
@@ -49,6 +50,11 @@ interface ProductFormData {
     wholesaleMinAmount: number | null;
     wholesaleDiscountPercent: number | null;
     culture: string;
+    expiryDate: string;
+    batchNumber: string;
+    warehouseLocation: string;
+    reorderPoint: number | null;
+    supplier: string;
 }
 
 const categoryOptions = [
@@ -94,6 +100,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         wholesaleMinAmount: null,
         wholesaleDiscountPercent: null,
         culture: '',
+        expiryDate: '',
+        batchNumber: '',
+        warehouseLocation: '',
+        reorderPoint: null,
+        supplier: '',
     });
 
     // Load product if editing
@@ -130,6 +141,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 culture: data.culture || '',
                 wholesaleMinAmount: data.wholesale_min_amount || null,
                 wholesaleDiscountPercent: data.wholesale_discount_percent || null,
+                expiryDate: data.expiry_date || '',
+                batchNumber: data.batch_number || '',
+                warehouseLocation: data.warehouse_location || '',
+                reorderPoint: data.reorder_point ?? null,
+                supplier: data.supplier || '',
             });
         } else {
             setMessage({ type: 'error', text: 'Erro ao carregar produto.' });
@@ -205,6 +221,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
             wholesale_min_amount: formData.wholesaleMinAmount || null,
             wholesale_discount_percent: formData.wholesaleDiscountPercent || null,
             culture: formData.culture || null,
+            expiry_date: formData.expiryDate || null,
+            batch_number: formData.batchNumber || null,
+            warehouse_location: formData.warehouseLocation || null,
+            reorder_point: formData.reorderPoint ?? null,
+            supplier: formData.supplier || null,
             // Associa ao vendedor quando criado por um vendedor
             ...(vendedorId && !productId ? { vendedor_id: vendedorId } : {}),
         };
@@ -359,6 +380,85 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 <option key={c} value={c}>{c}</option>
                             ))}
                         </select>
+                    </div>
+                </div>
+
+                {/* Controle de Estoque Agrícola */}
+                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
+                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
+                        <Warehouse size={16} className="text-stone-400" />
+                        Controle de Estoque Agrícola
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                                Fornecedor
+                            </label>
+                            <input
+                                type="text"
+                                name="supplier"
+                                value={formData.supplier}
+                                onChange={handleChange}
+                                placeholder="Ex.: Bayer, Basf, Syngenta"
+                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                                Localização no Depósito
+                            </label>
+                            <input
+                                type="text"
+                                name="warehouseLocation"
+                                value={formData.warehouseLocation}
+                                onChange={handleChange}
+                                placeholder="Ex.: A3-P2, Corredor B"
+                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                                Número do Lote
+                            </label>
+                            <input
+                                type="text"
+                                name="batchNumber"
+                                value={formData.batchNumber}
+                                onChange={handleChange}
+                                placeholder="Ex.: LOT-2024-001"
+                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                                Data de Validade
+                            </label>
+                            <input
+                                type="date"
+                                name="expiryDate"
+                                value={formData.expiryDate}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                                Ponto de Recompra (unidades)
+                            </label>
+                            <input
+                                type="number"
+                                name="reorderPoint"
+                                value={formData.reorderPoint ?? ''}
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
+                                    reorderPoint: e.target.value ? parseInt(e.target.value) : null,
+                                }))}
+                                min="0"
+                                placeholder="Ex.: 10"
+                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            />
+                            <p className="text-[11px] text-stone-400 mt-1">Alerta quando estoque atingir este valor</p>
+                        </div>
                     </div>
                 </div>
 
