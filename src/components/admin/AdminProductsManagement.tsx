@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Package,
     Search,
@@ -30,8 +30,8 @@ interface ProductWithFlags extends Product {
 const categoryOptions = [
     { value: 'all', label: 'Todas as Categorias' },
     { value: 'Ferramentas Manuais', label: 'Ferramentas Manuais' },
-    { value: 'PeÃ§as de ReposiÃ§Ã£o', label: 'PeÃ§as de ReposiÃ§Ã£o' },
-    { value: 'AcessÃ³rios', label: 'AcessÃ³rios' },
+    { value: 'Peças de Reposição', label: 'Peças de Reposição' },
+    { value: 'Acessórios', label: 'Acessórios' },
     { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
     { value: 'Itens de Prateleira', label: 'Itens de Prateleira' },
 ];
@@ -234,10 +234,10 @@ const AdminProductsManagement: React.FC = () => {
                                 <tr className="border-b border-stone-100">
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Produto</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Categoria</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">PreÃ§o</th>
+                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Preço</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Estoque</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Tags</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide text-right">AÃ§Ãµes</th>
+                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-50">
@@ -336,15 +336,15 @@ const AdminProductsManagement: React.FC = () => {
             {!loading && filteredProducts.length > PAGE_SIZE && (
                 <div className="flex items-center justify-between text-[13px] text-stone-500">
                     <span>
-                        {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} â€”
-                        pÃ¡gina {safePage} de {totalPages}
+                        {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} —
+                        página {safePage} de {totalPages}
                     </span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={safePage === 1}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="PÃ¡gina anterior"
+                            aria-label="Página anterior"
                         >
                             <ChevronLeft size={16} />
                         </button>
@@ -357,7 +357,7 @@ const AdminProductsManagement: React.FC = () => {
                             }, [])
                             .map((p, idx) =>
                                 p === '...'
-                                    ? <span key={`ellipsis-${idx}`} className="px-1">â€¦</span>
+                                    ? <span key={`ellipsis-${idx}`} className="px-1">…</span>
                                     : <button
                                         key={p}
                                         onClick={() => setCurrentPage(p as number)}
@@ -371,7 +371,7 @@ const AdminProductsManagement: React.FC = () => {
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={safePage === totalPages}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="PrÃ³xima pÃ¡gina"
+                            aria-label="Próxima página"
                         >
                             <ChevronRight size={16} />
                         </button>
@@ -380,7 +380,7 @@ const AdminProductsManagement: React.FC = () => {
             )}
         </div>
 
-        {/* Modal de confirmaÃ§Ã£o de desativaÃ§Ã£o */}
+        {/* Modal de confirmação de desativação */}
         {confirmDeactivate && (
             <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
@@ -389,7 +389,7 @@ const AdminProductsManagement: React.FC = () => {
                         Tem certeza que deseja desativar <span className="text-stone-800 font-semibold">"{confirmDeactivate.name}"</span>?
                     </p>
                     <p className="text-stone-400 text-xs mb-6">
-                        O produto ficarÃ¡ oculto na loja. VocÃª pode reativÃ¡-lo a qualquer momento.
+                        O produto ficará oculto na loja. Você pode reativá-lo a qualquer momento.
                     </p>
                     <div className="flex gap-3 justify-end">
                         <button

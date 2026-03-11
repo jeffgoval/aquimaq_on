@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     ShoppingBag,
@@ -38,7 +38,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon }) => (
                 {change !== undefined && (
                     <div className={`flex items-center gap-1 mt-1.5 text-[12px] font-medium ${change >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                         {change >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                        <span>{Math.abs(change)}% vs mÃªs anterior</span>
+                        <span>{Math.abs(change)}% vs mês anterior</span>
                     </div>
                 )}
             </div>
@@ -102,7 +102,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const { user, hasRole } = useAuth();
     const isVendedor = hasRole(['vendedor']);
 
-    const [stats, setStats] = useState<import('@/services/adminService').DashboardStats>({
+    const [stats, setStats] = useState({
         totalRevenue: 0,
         totalOrders: 0,
         pendingOrders: 0,
@@ -119,14 +119,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         let mounted = true;
         const timeoutId = setTimeout(() => {
             if (mounted && loading) {
-                setError('A conexÃ£o estÃ¡ lenta. Algumas informaÃ§Ãµes podem nÃ£o carregar.');
+                setError('A conexão está lenta. Algumas informações podem não carregar.');
                 setLoading(false);
             }
         }, 8000);
 
         const load = async () => {
             try {
-                // Vendedor vÃª apenas suas prÃ³prias estatÃ­sticas
+                // Vendedor vê apenas suas próprias estatísticas
                 const vendedorId = isVendedor ? user?.id : undefined;
                 const [{ stats: nextStats, recentOrders: nextRecent }, alerts] = await Promise.all([
                     getDashboardStats(vendedorId),
@@ -141,7 +141,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             } catch (e) {
                 if (mounted) {
                     if (import.meta.env.DEV) console.error('AdminDashboard load:', e);
-                    setError('NÃ£o foi possÃ­vel carregar os dados do painel.');
+                    setError('Não foi possível carregar os dados do painel.');
                 }
             } finally {
                 if (mounted) {
@@ -207,7 +207,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         Dashboard
                     </h1>
                     <p className="text-stone-400 text-[13px] mt-0.5">
-                        {isVendedor ? 'Resumo das suas vendas e pedidos' : 'VisÃ£o geral do seu negÃ³cio'}
+                        {isVendedor ? 'Resumo das suas vendas e pedidos' : 'Visão geral do seu negócio'}
                     </p>
                 </div>
                 {error && (
@@ -222,9 +222,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                    title="Receita (mÃªs)"
+                    title="Receita (mês)"
                     value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalRevenue)}
-                    change={stats.revenueChange}
                     icon={<TrendingUp size={20} />}
                 />
                 <StatCard
@@ -267,7 +266,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div>
                         <h3 className="text-[13px] font-medium text-stone-700">Gerenciar Produtos</h3>
-                        <p className="text-stone-400 text-[12px]">Editar preÃ§os e estoque</p>
+                        <p className="text-stone-400 text-[12px]">Editar preços e estoque</p>
                     </div>
                 </button>
                 {!isVendedor && (
@@ -279,24 +278,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         <Users size={20} />
                     </div>
                     <div>
-                        <h3 className="text-[13px] font-medium text-stone-700">Gerenciar UsuÃ¡rios</h3>
+                        <h3 className="text-[13px] font-medium text-stone-700">Gerenciar Usuários</h3>
                         <p className="text-stone-400 text-[12px]">Administrar acessos</p>
                     </div>
                 </button>
                 )}
             </div>
 
-            {/* Restaurar estoque de pedidos nÃ£o pagos â€” apenas admin/gerente */}
+            {/* Restaurar estoque de pedidos não pagos — apenas admin/gerente */}
             {!isVendedor && (
             <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h3 className="text-[13px] font-medium text-amber-800 flex items-center gap-2">
                             <RotateCcw size={18} />
-                            Estoque de pedidos nÃ£o pagos
+                            Estoque de pedidos não pagos
                         </h3>
                         <p className="text-amber-700/80 text-[12px] mt-0.5">
-                            RepÃµe o estoque dos produtos que foram reservados em pedidos ainda nÃ£o pagos (evita zerar estoque em testes).
+                            Repõe o estoque dos produtos que foram reservados em pedidos ainda não pagos (evita zerar estoque em testes).
                         </p>
                     </div>
                     <button

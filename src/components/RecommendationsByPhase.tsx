@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
@@ -7,17 +7,17 @@ import ProductCard from './ProductCard';
 import { CalendarDays } from 'lucide-react';
 
 export interface RecommendationsByPhaseProps {
-  /** Fase da lavoura para filtrar (ex.: FloraÃ§Ã£o, Colheita). Se null, mostra selector. */
+  /** Fase da lavoura para filtrar (ex.: Floração, Colheita). Se null, mostra selector. */
   phase: string | null;
   /** Lista de fases para o dropdown */
   availablePhases: string[];
-  /** Callback quando o usuÃ¡rio seleciona outra fase no dropdown */
+  /** Callback quando o usuário seleciona outra fase no dropdown */
   onPhaseChange?: (phase: string | null) => void;
   /** Excluir este produto da lista (ex.: na PDP) */
   excludeProductId?: string;
   onAddToCart: (product: Product, quantity?: number) => void;
   limit?: number;
-  /** Se true, mostra selector de fase mesmo quando phase estÃ¡ preenchido (ex.: na Home) */
+  /** Se true, mostra selector de fase mesmo quando phase está preenchido (ex.: na Home) */
   showPhaseSelector?: boolean;
 }
 
@@ -76,7 +76,7 @@ const RecommendationsByPhase: React.FC<RecommendationsByPhaseProps> = ({
             Acompanhe o ciclo da sua lavoura
           </h3>
           <p className="text-gray-500 max-w-sm">
-            Selecione a fase da lavoura acima para descobrir os melhores equipamentos e insumos recomendados para o perÃ­odo.
+            Selecione a fase da lavoura acima para descobrir os melhores equipamentos e insumos recomendados para o período.
           </p>
         </div>
       ) : isLoading ? (

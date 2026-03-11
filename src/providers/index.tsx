@@ -1,4 +1,4 @@
-﻿import { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from '../contexts/StoreContext';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -10,7 +10,7 @@ type ProviderComponent = React.ComponentType<{ children: ReactNode }>;
 
 /**
  * Composition de Providers: evita aninhamento profundo (Provider Hell).
- * Ordem = exterior â†’ interior: HelmetProvider envolve tudo, WishlistProvider fica mais prÃ³ximo de children.
+ * Ordem = exterior → interior: HelmetProvider envolve tudo, WishlistProvider fica mais próximo de children.
  */
 function composeProviders(...providers: ProviderComponent[]) {
     return ({ children }: { children: ReactNode }) =>

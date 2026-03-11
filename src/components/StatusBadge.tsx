@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { OrderStatus } from '@/types';
 
 export const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
@@ -17,7 +17,7 @@ export const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
     [OrderStatus.DRAFT]: 'Rascunho',
     [OrderStatus.WAITING_PAYMENT]: 'Aguardando Pagamento',
     [OrderStatus.PAID]: 'Pago',
-    [OrderStatus.PICKING]: 'Em SeparaÃ§Ã£o',
+    [OrderStatus.PICKING]: 'Em Separação',
     [OrderStatus.SHIPPED]: 'Enviado',
     [OrderStatus.READY_PICKUP]: 'Pronto para Retirada',
     [OrderStatus.DELIVERED]: 'Entregue',

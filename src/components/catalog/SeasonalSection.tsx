@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
 import { Product } from '@/types';
@@ -36,7 +36,7 @@ const SeasonalSection: React.FC<SeasonalSectionProps> = ({ culturesInSeason, onA
                             <Leaf size={20} className="text-emerald-600" />
                         </span>
                         Em Safra Agora
-                        <span className="text-lg font-normal text-gray-400">Â· {monthName}</span>
+                        <span className="text-lg font-normal text-gray-400">· {monthName}</span>
                     </h2>
                     {culturesInSeason.length > 0 && (
                         <p className="mt-1 text-sm text-gray-500 ml-11">
@@ -49,7 +49,7 @@ const SeasonalSection: React.FC<SeasonalSectionProps> = ({ culturesInSeason, onA
                 </div>
                 <span className="ml-11 sm:ml-0 inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    PerÃ­odo ideal de compra
+                    Período ideal de compra
                 </span>
             </div>
 

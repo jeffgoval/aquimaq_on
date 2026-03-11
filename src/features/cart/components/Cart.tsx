@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart, ChevronLeft, ChevronRight, Trash2, ImageOff, Loader2, LogIn,
@@ -70,7 +70,7 @@ const Cart: React.FC<CartProps> = ({
 
     const handleBackToCatalog = () => navigate(ROUTES.HOME);
 
-    // â”€â”€ Empty state â”€â”€
+    // ── Empty state ──
     if (items.length === 0) {
         return (
             <div className="max-w-lg mx-auto px-4 py-20 text-center">
@@ -79,7 +79,7 @@ const Cart: React.FC<CartProps> = ({
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Carrinho vazio</h2>
                 <p className="text-gray-500 mb-8">
-                    Navegue pelo catÃ¡logo e adicione itens essenciais para sua produÃ§Ã£o.
+                    Navegue pelo catálogo e adicione itens essenciais para sua produção.
                 </p>
                 <button
                     onClick={handleBackToCatalog}
@@ -95,12 +95,12 @@ const Cart: React.FC<CartProps> = ({
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
 
-            {/* â”€â”€ Header â”€â”€ */}
+            {/* ── Header ── */}
             <div className="flex items-center gap-3 mb-8">
                 <button
                     onClick={handleBackToCatalog}
                     className="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100 shrink-0"
-                    aria-label="Voltar ao catÃ¡logo"
+                    aria-label="Voltar ao catálogo"
                 >
                     <ChevronLeft size={22} />
                 </button>
@@ -111,7 +111,7 @@ const Cart: React.FC<CartProps> = ({
                         <ChevronRight size={11} className="text-gray-300" />
                         <span className="text-gray-400">Pagamento</span>
                         <ChevronRight size={11} className="text-gray-300" />
-                        <span className="text-gray-400">ConfirmaÃ§Ã£o</span>
+                        <span className="text-gray-400">Confirmação</span>
                     </div>
                 </div>
                 <span className="text-sm text-gray-500 shrink-0">
@@ -119,10 +119,10 @@ const Cart: React.FC<CartProps> = ({
                 </span>
             </div>
 
-            {/* â”€â”€ Main grid: items left / summary right â”€â”€ */}
+            {/* ── Main grid: items left / summary right ── */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
 
-                {/* â”€â”€ LEFT: Items + Shipping â”€â”€ */}
+                {/* ── LEFT: Items + Shipping ── */}
                 <div className="space-y-4">
                     <CartProgress items={items} />
 
@@ -232,7 +232,7 @@ const Cart: React.FC<CartProps> = ({
 
                 </div>
 
-                {/* â”€â”€ RIGHT: Summary sidebar (sticky) â”€â”€ */}
+                {/* ── RIGHT: Summary sidebar (sticky) ── */}
                 <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
 
                     {/* Address block */}
@@ -240,7 +240,7 @@ const Cart: React.FC<CartProps> = ({
                         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                             <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                                 <MapPin size={15} className="text-agro-700" />
-                                EndereÃ§o de Entrega
+                                Endereço de Entrega
                             </span>
                             {isAddressComplete(profile) && (
                                 <button
@@ -254,7 +254,7 @@ const Cart: React.FC<CartProps> = ({
                         <div className="p-4">
                             {!profile ? (
                                 <div className="text-center py-1">
-                                    <p className="text-sm text-gray-500 mb-3">FaÃ§a login para informar o endereÃ§o</p>
+                                    <p className="text-sm text-gray-500 mb-3">Faça login para informar o endereço</p>
                                     <button
                                         onClick={() => navigate(ROUTES.LOGIN)}
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors"
@@ -265,13 +265,13 @@ const Cart: React.FC<CartProps> = ({
                             ) : !isAddressComplete(profile) ? (
                                 <div className="text-center py-1">
                                     <p className="text-sm text-amber-700 mb-3 flex items-center justify-center gap-1.5">
-                                        <AlertTriangle size={14} /> EndereÃ§o necessÃ¡rio para entrega
+                                        <AlertTriangle size={14} /> Endereço necessário para entrega
                                     </p>
                                     <button
                                         onClick={() => setShowAddressModal(true)}
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
                                     >
-                                        <MapPin size={15} /> Adicionar endereÃ§o
+                                        <MapPin size={15} /> Adicionar endereço
                                     </button>
                                 </div>
                             ) : (
@@ -280,7 +280,7 @@ const Cart: React.FC<CartProps> = ({
                                         {profile.street}, {profile.number}
                                         {profile.complement ? `, ${profile.complement}` : ''}
                                     </p>
-                                    <p>{profile.neighborhood} â€” {profile.city} / {profile.state}</p>
+                                    <p>{profile.neighborhood} — {profile.city} / {profile.state}</p>
                                     <p className="text-gray-400 text-xs font-mono">{profile.zip_code}</p>
                                 </div>
                             )}
@@ -298,7 +298,7 @@ const Cart: React.FC<CartProps> = ({
                             {cartSubtotal < FREE_SHIPPING_THRESHOLD && (
                                 <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 mb-1">
                                     <div className="flex justify-between text-xs text-blue-700 mb-1.5">
-                                        <span>Frete grÃ¡tis a partir de {formatCurrency(FREE_SHIPPING_THRESHOLD)}</span>
+                                        <span>Frete grátis a partir de {formatCurrency(FREE_SHIPPING_THRESHOLD)}</span>
                                         <span className="font-bold">faltam {formatCurrency(FREE_SHIPPING_THRESHOLD - cartSubtotal)}</span>
                                     </div>
                                     <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
@@ -311,7 +311,7 @@ const Cart: React.FC<CartProps> = ({
                             )}
                             {cartSubtotal >= FREE_SHIPPING_THRESHOLD && (
                                 <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-1 text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
-                                    <span>ðŸŽ‰</span> VocÃª ganhou frete grÃ¡tis!
+                                    <span>🎉</span> Você ganhou frete grátis!
                                 </div>
                             )}
 
@@ -324,7 +324,7 @@ const Cart: React.FC<CartProps> = ({
                                 <span>Frete</span>
                                 <span className={selectedShipping ? 'font-medium text-gray-800' : 'text-gray-400 italic'}>
                                     {selectedShipping
-                                        ? shippingCost === 0 ? 'GrÃ¡tis' : formatCurrency(shippingCost)
+                                        ? shippingCost === 0 ? 'Grátis' : formatCurrency(shippingCost)
                                         : 'a calcular'}
                                 </span>
                             </div>
@@ -356,16 +356,16 @@ const Cart: React.FC<CartProps> = ({
                                 </div>
                             </div>
 
-                            {/* â”€â”€ CTA â”€â”€ */}
+                            {/* ── CTA ── */}
                             <div className="pt-2 border-t border-gray-100">
                                 {hasOutOfStock && (
                                     <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
                                         <p className="font-semibold mb-1 flex items-center gap-1.5">
-                                            <AlertTriangle size={14} /> Itens indisponÃ­veis no carrinho
+                                            <AlertTriangle size={14} /> Itens indisponíveis no carrinho
                                         </p>
                                         <ul className="list-disc list-inside space-y-0.5 text-xs">
                                             {outOfStockItems.map(i => (
-                                                <li key={i.id}>{i.name} â€” <span className="font-medium">Esgotado</span></li>
+                                                <li key={i.id}>{i.name} — <span className="font-medium">Esgotado</span></li>
                                             ))}
                                         </ul>
                                         <p className="mt-1.5 text-xs text-red-600">Remova os itens esgotados para continuar.</p>
@@ -383,13 +383,13 @@ const Cart: React.FC<CartProps> = ({
                                         onClick={() => setShowAddressModal(true)}
                                         className="w-full flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors"
                                     >
-                                        <MapPin size={18} /> Informar endereÃ§o
+                                        <MapPin size={18} /> Informar endereço
                                     </button>
                                 ) : !selectedShipping ? (
                                     <div>
                                         <p className="text-xs text-center text-amber-700 mb-3 flex items-center justify-center gap-1.5">
                                             <AlertTriangle size={13} />
-                                            Selecione uma opÃ§Ã£o de frete para continuar
+                                            Selecione uma opção de frete para continuar
                                         </p>
                                         <button
                                             disabled
@@ -460,11 +460,11 @@ const Cart: React.FC<CartProps> = ({
                             .eq('id', profile.id);
 
                         if (error) {
-                            showToast('Erro ao salvar endereÃ§o. Tente novamente.', 'error');
+                            showToast('Erro ao salvar endereço. Tente novamente.', 'error');
                             throw error;
                         }
                         await refreshProfile();
-                        showToast('EndereÃ§o salvo!', 'success');
+                        showToast('Endereço salvo!', 'success');
                         setShowAddressModal(false);
                     }}
                 />

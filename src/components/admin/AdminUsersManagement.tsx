@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Shield, RefreshCw } from 'lucide-react';
 import { getUsersAdmin, updateUserRole, type AdminUserRow } from '@/services/adminService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +18,7 @@ const AdminUsersManagement: React.FC = () => {
             setUsers(filteredData);
         } catch (error) {
             if (import.meta.env.DEV) console.error('Error loading users:', error);
-            setMessage({ type: 'error', text: 'Erro ao carregar usuÃ¡rios.' });
+            setMessage({ type: 'error', text: 'Erro ao carregar usuários.' });
         } finally {
             setLoading(false);
         }
@@ -29,12 +29,11 @@ const AdminUsersManagement: React.FC = () => {
     }, []);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
-        // Gerente sÃ³ pode atribuir roles abaixo de gerente
+        // Block gerentes from interacting with admin roles
         if (isGerente && !isAdmin) {
             const targetUser = users.find(u => u.id === userId);
-            const elevated = ['gerente', 'admin'];
-            if (elevated.includes(targetUser?.role ?? '') || elevated.includes(newRole)) {
-                setMessage({ type: 'error', text: 'Gerentes sÃ³ podem gerenciar clientes e vendedores.' });
+            if (targetUser?.role === 'admin' || newRole === 'admin') {
+                setMessage({ type: 'error', text: 'Gerentes não podem gerenciar contas de Administrador.' });
                 setTimeout(() => setMessage(null), 3000);
                 return;
             }
@@ -44,11 +43,11 @@ const AdminUsersManagement: React.FC = () => {
             setUpdatingId(userId);
             await updateUserRole(userId, newRole);
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-            setMessage({ type: 'success', text: 'PermissÃ£o atualizada.' });
+            setMessage({ type: 'success', text: 'Permissão atualizada.' });
             setTimeout(() => setMessage(null), 2000);
         } catch (error) {
             console.error('Error updating role:', error);
-            setMessage({ type: 'error', text: 'Erro ao atualizar permissÃ£o.' });
+            setMessage({ type: 'error', text: 'Erro ao atualizar permissão.' });
         } finally {
             setUpdatingId(null);
         }
@@ -63,8 +62,8 @@ const AdminUsersManagement: React.FC = () => {
                         <Users size={24} className="text-stone-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-semibold text-stone-800">UsuÃ¡rios</h2>
-                        <p className="text-sm text-stone-500 mt-0.5">GestÃ£o de utilizadores da loja e permissÃµes</p>
+                        <h2 className="text-xl font-semibold text-stone-800">Usuários</h2>
+                        <p className="text-sm text-stone-500 mt-0.5">Gestão de utilizadores da loja e permissões</p>
                     </div>
                 </div>
                 <button
@@ -88,7 +87,7 @@ const AdminUsersManagement: React.FC = () => {
                 {loading ? (
                     <div className="p-8 text-center">
                         <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500 mb-2"></div>
-                        <p className="text-stone-400 text-[13px]">Carregando usuÃ¡rios...</p>
+                        <p className="text-stone-400 text-[13px]">Carregando usuários...</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -98,14 +97,14 @@ const AdminUsersManagement: React.FC = () => {
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Nome</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Email</th>
                                     <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Data de Cadastro</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">PermissÃ£o (Role)</th>
+                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Permissão (Role)</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-50">
                                 {users.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} className="px-4 py-8 text-center text-stone-400 text-[13px]">
-                                            Nenhum usuÃ¡rio encontrado.
+                                            Nenhum usuário encontrado.
                                         </td>
                                     </tr>
                                 ) : users.map(user => (
@@ -114,11 +113,11 @@ const AdminUsersManagement: React.FC = () => {
                                             <p className="text-[13px] font-medium text-stone-700">{user.name || 'Sem nome'}</p>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <p className="text-[13px] text-stone-600">{user.email || 'â€”'}</p>
+                                            <p className="text-[13px] text-stone-600">{user.email || '—'}</p>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="text-[12px] text-stone-400">
-                                                {user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'â€”'}
+                                                {user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
@@ -129,20 +128,20 @@ const AdminUsersManagement: React.FC = () => {
                                                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                                     disabled={
                                                         updatingId === user.id ||
-                                                        user.id === currentUser?.id ||
-                                                        (!isAdmin && ['gerente', 'admin'].includes(user.role))
+                                                        (!isAdmin && user.role === 'admin') ||
+                                                        (!isAdmin && user.id === currentUser?.id)
                                                     }
                                                     className={`
                                                         px-2 py-1 bg-stone-50 border border-stone-200 rounded text-[12px] font-medium cursor-pointer text-stone-700
                                                         focus:ring-1 focus:ring-stone-300 focus:outline-none focus:bg-white
                                                         ${updatingId === user.id ? 'opacity-50' : ''}
-                                                        ${(user.id === currentUser?.id || (!isAdmin && ['gerente','admin'].includes(user.role))) ? 'cursor-not-allowed bg-stone-100 opacity-60' : ''}
+                                                        ${(!isAdmin && (user.role === 'admin' || user.id === currentUser?.id)) ? 'cursor-not-allowed bg-stone-100 opacity-60' : ''}
                                                     `}
                                                 >
                                                     <option value="cliente">Cliente</option>
                                                     <option value="vendedor">Vendedor</option>
-                                                    {isAdmin && <option value="gerente">Gerente</option>}
-                                                    {isAdmin && <option value="admin">Admin</option>}
+                                                    <option value="gerente">Gerente</option>
+                                                    {(isAdmin || user.role === 'admin') && <option value="admin">Admin</option>}
                                                 </select>
                                             </div>
                                         </td>

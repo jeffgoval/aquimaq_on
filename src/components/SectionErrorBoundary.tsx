@@ -1,4 +1,4 @@
-﻿import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -36,7 +36,7 @@ class SectionErrorBoundary extends Component<Props, State> {
                 return this.props.fallback;
             }
 
-            const sectionName = this.props.sectionName || 'esta seÃ§Ã£o';
+            const sectionName = this.props.sectionName || 'esta seção';
 
             return (
                 <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-center my-4 animate-in fade-in">
@@ -44,10 +44,10 @@ class SectionErrorBoundary extends Component<Props, State> {
                         <AlertTriangle className="text-red-500" size={24} />
                     </div>
                     <h3 className="text-sm font-semibold text-red-800 mb-1">
-                        Ops! Algo deu errado n{sectionName === 'esta seÃ§Ã£o' ? 'esta seÃ§Ã£o' : `o ${sectionName}`}.
+                        Ops! Algo deu errado n{sectionName === 'esta seção' ? 'esta seção' : `o ${sectionName}`}.
                     </h3>
                     <p className="text-xs text-red-600 mb-3">
-                        NÃ£o foi possÃ­vel carregar o conteÃºdo.
+                        Não foi possível carregar o conteúdo.
                     </p>
                     <button
                         onClick={this.handleRetry}

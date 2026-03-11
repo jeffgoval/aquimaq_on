@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, MapPin, Facebook, Instagram, Youtube, Clock, HelpCircle, Package } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
@@ -6,7 +6,7 @@ import { useStore } from '@/contexts/StoreContext';
 import { ROUTES } from '@/constants/routes';
 import { maskPhone } from '@/utils/masks';
 
-// â”€â”€â”€ SVG payment logos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SVG payment logos ────────────────────────────────────────────────────────
 
 const VisaSVG: React.FC = () => (
     <svg viewBox="0 0 48 16" className="h-4 w-auto" aria-label="Visa">
@@ -49,14 +49,14 @@ const BoletoSVG: React.FC = () => (
 );
 
 const DebitCardSVG: React.FC = () => (
-    <svg viewBox="0 0 32 22" className="h-4 w-auto" aria-label="DÃ©bito">
+    <svg viewBox="0 0 32 22" className="h-4 w-auto" aria-label="Débito">
         <rect x="1" y="1" width="30" height="20" rx="3" fill="none" stroke="#555" strokeWidth="1.5" />
         <rect x="1" y="6" width="30" height="4" fill="#555" />
         <rect x="4" y="14" width="10" height="2" rx="1" fill="#999" />
     </svg>
 );
 
-// â”€â”€â”€ Reclame Aqui badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Reclame Aqui badge ────────────────────────────────────────────────────────
 
 const ReclameAquiBadge: React.FC<{ url: string }> = ({ url }) => (
     <a
@@ -73,7 +73,7 @@ const ReclameAquiBadge: React.FC<{ url: string }> = ({ url }) => (
     </a>
 );
 
-// â”€â”€â”€ Payment badge wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Payment badge wrapper ─────────────────────────────────────────────────────
 
 const PaymentBadge: React.FC<{ children: React.ReactNode; label?: string }> = ({ children, label }) => (
     <div
@@ -84,7 +84,7 @@ const PaymentBadge: React.FC<{ children: React.ReactNode; label?: string }> = ({
     </div>
 );
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const Footer: React.FC = () => {
     const { settings } = useStore();
@@ -138,18 +138,18 @@ const Footer: React.FC = () => {
                 {/* Main grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
 
-                    {/* Coluna 1 â€” Institucional */}
+                    {/* Coluna 1 — Institucional */}
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Institucional</h3>
                         <ul className="space-y-2.5 text-sm">
-                            <li><Link to={ROUTES.ABOUT} className="hover:text-white transition-colors">Sobre NÃ³s</Link></li>
-                            <li><Link to={ROUTES.POLICY_DELIVERY} className="hover:text-white transition-colors">PolÃ­tica de Entrega</Link></li>
-                            <li><Link to={ROUTES.POLICY_RETURNS} className="hover:text-white transition-colors">Trocas e DevoluÃ§Ãµes</Link></li>
-                            <li><Link to={ROUTES.POLICY_PRIVACY} className="hover:text-white transition-colors">PolÃ­tica de Privacidade</Link></li>
+                            <li><Link to={ROUTES.ABOUT} className="hover:text-white transition-colors">Sobre Nós</Link></li>
+                            <li><Link to={ROUTES.POLICY_DELIVERY} className="hover:text-white transition-colors">Política de Entrega</Link></li>
+                            <li><Link to={ROUTES.POLICY_RETURNS} className="hover:text-white transition-colors">Trocas e Devoluções</Link></li>
+                            <li><Link to={ROUTES.POLICY_PRIVACY} className="hover:text-white transition-colors">Política de Privacidade</Link></li>
                         </ul>
                     </div>
 
-                    {/* Coluna 2 â€” Ajuda */}
+                    {/* Coluna 2 — Ajuda */}
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Ajuda</h3>
                         <ul className="space-y-2.5 text-sm">
@@ -165,7 +165,7 @@ const Footer: React.FC = () => {
                         </ul>
                     </div>
 
-                    {/* Coluna 3 â€” Atendimento */}
+                    {/* Coluna 3 — Atendimento */}
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Atendimento</h3>
                         <ul className="space-y-3 text-sm">
@@ -229,20 +229,20 @@ const Footer: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Coluna 4 â€” Pagamento & SeguranÃ§a */}
+                    {/* Coluna 4 — Pagamento & Segurança */}
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Pagamento</h3>
 
                         <div className="flex flex-wrap gap-2 mb-2">
                             {acceptedPaymentTypes.includes('credit_card') && <>
-                                <PaymentBadge label="Visa CrÃ©dito"><VisaSVG /></PaymentBadge>
-                                <PaymentBadge label="Mastercard CrÃ©dito"><MastercardSVG /></PaymentBadge>
-                                <PaymentBadge label="Elo CrÃ©dito"><EloSVG /></PaymentBadge>
+                                <PaymentBadge label="Visa Crédito"><VisaSVG /></PaymentBadge>
+                                <PaymentBadge label="Mastercard Crédito"><MastercardSVG /></PaymentBadge>
+                                <PaymentBadge label="Elo Crédito"><EloSVG /></PaymentBadge>
                             </>}
                             {acceptedPaymentTypes.includes('debit_card') && (
-                                <PaymentBadge label="CartÃ£o de DÃ©bito">
+                                <PaymentBadge label="Cartão de Débito">
                                     <DebitCardSVG />
-                                    <span className="text-[10px] text-gray-500 font-semibold">DÃ©bito</span>
+                                    <span className="text-[10px] text-gray-500 font-semibold">Débito</span>
                                 </PaymentBadge>
                             )}
                             {acceptedPaymentTypes.includes('bank_transfer') && (
@@ -252,7 +252,7 @@ const Footer: React.FC = () => {
                                 </PaymentBadge>
                             )}
                             {acceptedPaymentTypes.includes('ticket') && (
-                                <PaymentBadge label="Boleto BancÃ¡rio">
+                                <PaymentBadge label="Boleto Bancário">
                                     <BoletoSVG />
                                 </PaymentBadge>
                             )}
@@ -260,11 +260,11 @@ const Footer: React.FC = () => {
 
                         {maxInstallments > 1 && (
                             <p className="text-xs text-gray-400 mb-4">
-                                Parcele em atÃ© <span className="text-white font-semibold">{maxInstallments}x</span> no cartÃ£o de crÃ©dito
+                                Parcele em até <span className="text-white font-semibold">{maxInstallments}x</span> no cartão de crédito
                             </p>
                         )}
 
-                        {/* ConfianÃ§a */}
+                        {/* Confiança */}
                         <div className="space-y-2 mt-4">
                             <div className="flex items-center gap-2 text-xs text-gray-400">
                                 <svg className="w-4 h-4 text-green-500 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -297,7 +297,7 @@ const Footer: React.FC = () => {
                     </p>
                     {(cnpj || addrLine2) && (
                         <p>
-                            {[cnpj, addrLine2, addrCEP ? `CEP ${addrCEP}` : null].filter(Boolean).join(' Â· ')}
+                            {[cnpj, addrLine2, addrCEP ? `CEP ${addrCEP}` : null].filter(Boolean).join(' · ')}
                         </p>
                     )}
                 </div>

@@ -123,7 +123,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       return;
     }
     if (!address.number?.trim()) {
-      setError('O nÃºmero do endereÃ§o Ã© obrigatÃ³rio para entrega.');
+      setError('O número do endereço é obrigatório para entrega.');
       return;
     }
     setIsLoading(true);
@@ -143,7 +143,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
       });
       onClose();
     } catch (err) {
-      setError('Erro ao salvar endereÃ§o. Tente novamente.');
+      setError('Erro ao salvar endereço. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +155,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <h2 id="address-modal-title" className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <MapPin className="text-agro-700" size={20} />
-            EndereÃ§o de Entrega
+            Endereço de Entrega
           </h2>
           <button
             type="button"
@@ -206,7 +206,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">NÃºmero</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
               <input
                 type="text"
                 value={address.number}
@@ -277,7 +277,7 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
                   Salvando...
                 </>
               ) : (
-                'Salvar endereÃ§o'
+                'Salvar endereço'
               )}
             </button>
           </div>

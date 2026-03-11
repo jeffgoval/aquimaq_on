@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from './Image';
 
 interface ProductGalleryProps {
@@ -34,7 +34,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Main Image â€” pan zoom on hover */}
+      {/* Main Image — pan zoom on hover */}
       <div
         ref={containerRef}
         className="w-full h-[320px] sm:h-[420px] lg:h-[500px] rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden p-4 sm:p-6 cursor-zoom-in"

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Package, AlertCircle } from 'lucide-react';
 import { Order, OrderStatus } from '@/types';
 import { StatusBadge } from './StatusBadge';
@@ -19,7 +19,7 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onViewOrderPayment }) =
 
             <div className="space-y-6">
                 {orders.length === 0 ? (
-                    <p className="text-gray-500">VocÃª ainda nÃ£o realizou nenhum pedido.</p>
+                    <p className="text-gray-500">Você ainda não realizou nenhum pedido.</p>
                 ) : (
                     orders.map(order => (
                         <div key={order.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -27,7 +27,7 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onViewOrderPayment }) =
                                 <div>
                                     <span className="text-sm text-gray-500 block">Pedido #{order.id}</span>
                                     <span className="text-xs text-gray-400">
-                                        {new Date(order.createdAt).toLocaleDateString()} Ã s {new Date(order.createdAt).toLocaleTimeString()}
+                                        {new Date(order.createdAt).toLocaleDateString()} às {new Date(order.createdAt).toLocaleTimeString()}
                                     </span>
                                 </div>
                                 <div className="mt-2 sm:mt-0 flex items-center">
@@ -72,7 +72,7 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onViewOrderPayment }) =
                                             <div>
                                                 <p className="text-sm text-yellow-800 font-medium">Aguardando Pagamento</p>
                                                 <p className="text-xs text-yellow-700 mt-1">
-                                                    A confirmaÃ§Ã£o do Pix pode levar alguns minutos.
+                                                    A confirmação do Pix pode levar alguns minutos.
                                                 </p>
                                             </div>
                                         </div>

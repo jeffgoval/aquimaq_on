@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Catalog from '../components/Catalog';
 import TrustBar from '@/components/TrustBar';
@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
 
     const { cultures: availableCultures, culturesInSeasonThisMonth } = useCropCalendar();
 
-    // Auto-seleciona a primeira fase da safra do mÃªs atual quando o calendÃ¡rio carrega
+    // Auto-seleciona a primeira fase da safra do mês atual quando o calendário carrega
     useEffect(() => {
         if (culturesInSeasonThisMonth.length > 0 && !filters.recommendationCulture) {
             filters.onRecommendationCultureChange(culturesInSeasonThisMonth[0]);
@@ -117,7 +117,7 @@ const HomePage: React.FC = () => {
                 />
             </ErrorBoundary>
 
-            {/* SeÃ§Ã£o Linha Pet */}
+            {/* Seção Linha Pet */}
             {(isPetLoading || petProducts.length > 0) && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 animate-fade-in">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-6">
@@ -151,7 +151,7 @@ const HomePage: React.FC = () => {
                         <span className="text-sm text-gray-400 order-2 sm:order-1">
                             Mostrando{' '}
                             <span className="font-semibold text-gray-600">
-                                {(page - 1) * PAGE_SIZE + 1}â€“{Math.min(page * PAGE_SIZE, totalCount)}
+                                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}
                             </span>
                             {' '}de{' '}
                             <span className="font-semibold text-gray-600">{totalCount}</span>
@@ -177,7 +177,7 @@ const HomePage: React.FC = () => {
                                 disabled={!hasMore}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                             >
-                                PrÃ³xima
+                                Próxima
                                 <ChevronRight size={15} />
                             </button>
                         </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronRight, MousePointer2, Lightbulb, ArrowRight, Beef, FlaskConical, Wrench, Wheat, Cog, ShieldCheck } from 'lucide-react';
 import { MEGA_MENU_CATEGORIES } from '@/constants/megaMenuCategories';
 
@@ -88,7 +88,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
                                 <div className="text-center">
                                     <MousePointer2 size={48} className="mx-auto mb-3 text-slate-300" />
                                     <p className="text-sm font-medium">Passe o mouse sobre uma categoria</p>
-                                    <p className="text-xs mt-1">para ver os produtos disponÃ­veis</p>
+                                    <p className="text-xs mt-1">para ver os produtos disponíveis</p>
                                 </div>
                             </div>
                         )}
@@ -100,7 +100,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-600 font-medium">
                             <Lightbulb size={18} className="inline-block mr-1.5 text-amber-500 align-middle" />
-                            <strong>Dica:</strong> NÃ£o encontrou o que procura? Use nossa busca acima!
+                            <strong>Dica:</strong> Não encontrou o que procura? Use nossa busca acima!
                         </span>
                         <button className="text-agro-700 font-bold hover:text-agro-800 transition-colors">
                             Ver Todos <ArrowRight size={16} className="inline ml-0.5 align-middle" />

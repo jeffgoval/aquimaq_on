@@ -1,4 +1,4 @@
-﻿import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { ROUTES, ROUTE_PATHS } from '@/constants/routes';

@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, GripVertical, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 
@@ -206,7 +206,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                                         Arraste imagens ou clique para selecionar
                                     </p>
                                     <p className="text-stone-400 text-[11px] mt-0.5">
-                                        JPG, PNG, WebP Â· MÃ¡x. {maxImages} imagens
+                                        JPG, PNG, WebP · Máx. {maxImages} imagens
                                     </p>
                                 </div>
                             </>
@@ -218,7 +218,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             {/* Helper Text */}
             {images.length > 0 && (
                 <p className="text-stone-400 text-[11px]">
-                    A primeira imagem serÃ¡ a principal. Arraste para reordenar.
+                    A primeira imagem será a principal. Arraste para reordenar.
                 </p>
             )}
         </div>

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/services/supabase';
@@ -98,7 +98,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     if (!email.trim() || !password) return;
     if (password !== confirmPassword) {
-      setError('As senhas nÃ£o coincidem.');
+      setError('As senhas não coincidem.');
       return;
     }
     if (password.length < 6) {
@@ -122,7 +122,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     if (data.session) {
-      // Ensure profile exists immediately â€” don't rely solely on the DB trigger
+      // Ensure profile exists immediately — don't rely solely on the DB trigger
       await supabase.from('profiles').upsert(
         { id: data.user!.id, email: data.user!.email, name, role: 'cliente' } as any,
         { onConflict: 'id' }
@@ -168,7 +168,7 @@ const LoginPage: React.FC = () => {
         <Helmet>
           <title>Erro | Aquimaq</title>
         </Helmet>
-        <p className="text-red-600 font-medium">Falha na confirmaÃ§Ã£o</p>
+        <p className="text-red-600 font-medium">Falha na confirmação</p>
         <p className="text-slate-600 text-sm mt-2 text-center">{error}</p>
         <button
           type="button"
@@ -218,7 +218,7 @@ const LoginPage: React.FC = () => {
 
         {mode === 'forgot' ? (
           <form onSubmit={handleForgotPassword} className="space-y-4">
-            <p className="text-slate-600 text-sm">Digite seu e-mail para receber o link de redefiniÃ§Ã£o de senha.</p>
+            <p className="text-slate-600 text-sm">Digite seu e-mail para receber o link de redefinição de senha.</p>
             <div>
               <label htmlFor="auth-email" className="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
               <input
@@ -279,7 +279,7 @@ const LoginPage: React.FC = () => {
               <input
                 id="signup-password"
                 type="password"
-                placeholder="MÃ­n. 6 caracteres"
+                placeholder="Mín. 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

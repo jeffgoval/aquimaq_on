@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Product } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
@@ -18,9 +18,6 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
         ? [product.imageUrl, ...product.gallery]
         : [product.imageUrl];
 
-    const canonicalUrl = window.location.href.split('?')[0];
-    const origin = window.location.origin;
-
     const schemaData = {
         "@context": "https://schema.org/",
         "@type": "Product",
@@ -33,7 +30,7 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
         },
         "offers": {
             "@type": "Offer",
-            "url": canonicalUrl,
+            "url": window.location.href,
             "priceCurrency": "BRL",
             "price": product.price,
             "availability": (product.stock && product.stock > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
@@ -49,62 +46,31 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
         } : undefined
     };
 
-    const breadcrumbSchema = {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "InÃ­cio",
-                "item": origin + "/"
-            },
-            ...(product.category ? [{
-                "@type": "ListItem",
-                "position": 2,
-                "name": product.category,
-                "item": `${origin}/?category=${encodeURIComponent(product.category)}`
-            }] : []),
-            {
-                "@type": "ListItem",
-                "position": product.category ? 3 : 2,
-                "name": product.name,
-                "item": canonicalUrl
-            }
-        ]
-    };
-
-    const descriptionText = `Compre ${product.name} na Aquimaq. ${product.description ? product.description.substring(0, 130) : ''}. Frete rÃ¡pido e parcelamento em atÃ© ${maxInstallments}x.`;
-
     return (
         <Helmet>
             {/* Primary SEO Tags */}
-            <title>{`${product.name} | Melhor PreÃ§o na Aquimaq`}</title>
-            <meta name="description" content={descriptionText} />
-            <link rel="canonical" href={canonicalUrl} />
+            <title>{`${product.name} | Melhor Preço na Aquimaq`}</title>
+            <meta name="title" content={`${product.name} | Aquimaq`} />
+            <meta name="description" content={`Compre ${product.name} na Aquimaq. ${product.description ? product.description.substring(0, 150) : ''}... Frete Grátis e Parcelamento em até ${maxInstallments}x.`} />
+            <link rel="canonical" href={window.location.href.split('?')[0]} />
 
             {/* Open Graph / Facebook */}
             <meta property="og:type" content="product" />
-            <meta property="og:url" content={canonicalUrl} />
+            <meta property="og:url" content={window.location.href} />
             <meta property="og:title" content={`${product.name} | Aquimaq`} />
             <meta property="og:description" content={product.description?.substring(0, 200)} />
             <meta property="og:image" content={product.imageUrl} />
 
             {/* Twitter */}
             <meta property="twitter:card" content="summary_large_image" />
-            <meta property="twitter:url" content={canonicalUrl} />
+            <meta property="twitter:url" content={window.location.href} />
             <meta property="twitter:title" content={`${product.name} | Aquimaq`} />
             <meta property="twitter:description" content={product.description?.substring(0, 200)} />
             <meta property="twitter:image" content={product.imageUrl} />
 
-            {/* Structured Data â€” Product */}
+            {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">
                 {JSON.stringify(schemaData)}
-            </script>
-
-            {/* Structured Data â€” BreadcrumbList */}
-            <script type="application/ld+json">
-                {JSON.stringify(breadcrumbSchema)}
             </script>
         </Helmet>
     );

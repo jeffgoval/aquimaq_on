@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -17,7 +17,7 @@ import { supabase } from '@/services/supabase';
 import { mapProductRowToProduct } from '@/features/catalog/utils/productAdapter';
 import type { ProductRow } from '@/types/database';
 
-// â”€â”€â”€ Filter helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Filter helpers ───────────────────────────────────────────────────────────
 type FilterKey = 'all' | 'pending' | 'active' | 'delivered' | 'cancelled';
 
 const FILTERS: { key: FilterKey; label: string }[] = [
@@ -42,7 +42,7 @@ function filterOrders(orders: Order[], key: FilterKey): Order[] {
     }
 }
 
-// â”€â”€â”€ Skeletons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Skeletons ────────────────────────────────────────────────────────────────
 const OrderSkeleton: React.FC = () => (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden animate-pulse">
         <div className="px-5 py-4 flex justify-between items-center border-b border-slate-100">
@@ -59,7 +59,7 @@ const OrderSkeleton: React.FC = () => (
     </div>
 );
 
-// â”€â”€â”€ Single order card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Single order card ────────────────────────────────────────────────────────
 const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     const [open, setOpen] = useState(false);
     const [reordering, setReordering] = useState(false);
@@ -89,7 +89,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
 
     return (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            {/* Card header â€” always visible */}
+            {/* Card header — always visible */}
             <button
                 type="button"
                 onClick={() => setOpen(v => !v)}
@@ -124,7 +124,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         {order.items.map((item, i) => (
                             <li key={i} className="flex justify-between text-sm">
                                 <span className="text-slate-600">
-                                    <span className="font-medium text-slate-800">{item.quantity}Ã—</span>{' '}
+                                    <span className="font-medium text-slate-800">{item.quantity}×</span>{' '}
                                     {item.productName}
                                 </span>
                                 <span className="font-medium text-slate-800 shrink-0 ml-4">
@@ -142,8 +142,8 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         </div>
                         {order.shippingCost !== undefined && (
                             <div className="flex justify-between text-slate-500">
-                                <span>Frete{order.shippingMethod ? ` Â· ${order.shippingMethod}` : ''}</span>
-                                <span>{order.shippingCost === 0 ? 'GrÃ¡tis' : formatCurrency(order.shippingCost)}</span>
+                                <span>Frete{order.shippingMethod ? ` · ${order.shippingMethod}` : ''}</span>
+                                <span>{order.shippingCost === 0 ? 'Grátis' : formatCurrency(order.shippingCost)}</span>
                             </div>
                         )}
                         <div className="flex justify-between font-bold text-slate-900 pt-1.5 border-t border-slate-200">
@@ -157,7 +157,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
                             <Truck size={16} className="text-blue-500 mt-0.5 shrink-0" />
                             <div className="text-sm">
-                                <p className="font-medium text-blue-800">CÃ³digo de rastreio</p>
+                                <p className="font-medium text-blue-800">Código de rastreio</p>
                                 <p className="text-blue-700 font-mono mt-0.5">{order.trackingCode}</p>
                                 {isShipped && (
                                     <a
@@ -180,7 +180,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                             <div className="text-sm">
                                 <p className="font-medium text-yellow-800">Aguardando pagamento</p>
                                 <p className="text-yellow-700 mt-0.5">
-                                    A confirmaÃ§Ã£o pode levar alguns minutos apÃ³s o pagamento.
+                                    A confirmação pode levar alguns minutos após o pagamento.
                                 </p>
                             </div>
                         </div>
@@ -209,7 +209,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     );
 };
 
-// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Page ─────────────────────────────────────────────────────────────────────
 const OrdersPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
@@ -304,7 +304,7 @@ const OrdersPage: React.FC = () => {
             {/* Error */}
             {error && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4" role="alert">
-                    Erro ao carregar pedidos. Tente recarregar a pÃ¡gina.
+                    Erro ao carregar pedidos. Tente recarregar a página.
                 </div>
             )}
 
@@ -322,7 +322,7 @@ const OrdersPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Empty state â€” no orders at all */}
+            {/* Empty state — no orders at all */}
             {!isLoading && orders.length === 0 && !error && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-16 h-16 bg-agro-50 rounded-full flex items-center justify-center mb-4">
@@ -330,7 +330,7 @@ const OrdersPage: React.FC = () => {
                     </div>
                     <h2 className="text-lg font-semibold text-slate-800 mb-1">Nenhum pedido ainda</h2>
                     <p className="text-slate-500 text-sm mb-6 max-w-xs">
-                        Quando vocÃª fizer uma compra, seus pedidos aparecerÃ£o aqui.
+                        Quando você fizer uma compra, seus pedidos aparecerão aqui.
                     </p>
                     <Link
                         to={ROUTES.HOME}
@@ -341,7 +341,7 @@ const OrdersPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Empty state â€” filter returns no results */}
+            {/* Empty state — filter returns no results */}
             {!isLoading && orders.length > 0 && filtered.length === 0 && (
                 <div className="py-10 text-center text-slate-500 text-sm">
                     Nenhum pedido nesta categoria.

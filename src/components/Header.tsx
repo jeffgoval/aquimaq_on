@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
@@ -24,12 +24,12 @@ const getAvatarInitials = (user: SupabaseUser): string => {
 };
 
 const NAV_CATEGORIES: { label: string; value: ProductCategory }[] = [
-    { label: 'NutriÃ§Ã£o Animal',     value: ProductCategory.NUTRITION },
-    { label: 'Defensivos AgrÃ­colas', value: ProductCategory.DEFENSIVES },
+    { label: 'Nutrição Animal',     value: ProductCategory.NUTRITION },
+    { label: 'Defensivos Agrícolas', value: ProductCategory.DEFENSIVES },
     { label: 'Sementes',            value: ProductCategory.SEEDS },
     { label: 'Equipamentos',        value: ProductCategory.EQUIPMENT },
-    { label: 'PeÃ§as de ReposiÃ§Ã£o',  value: ProductCategory.PARTS },
-    { label: 'EPI e SeguranÃ§a',     value: ProductCategory.PPE },
+    { label: 'Peças de Reposição',  value: ProductCategory.PARTS },
+    { label: 'EPI e Segurança',     value: ProductCategory.PPE },
 ];
 
 interface HeaderProps {
@@ -270,7 +270,7 @@ const Header: React.FC<HeaderProps> = ({
                                 )
                             )}
 
-                            {/* Wishlist icon â€” desktop */}
+                            {/* Wishlist icon — desktop */}
                             <Link
                                 to={ROUTES.WISHLIST}
                                 className={`hidden md:flex p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.WISHLIST) ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-400'}`}
@@ -310,7 +310,7 @@ const Header: React.FC<HeaderProps> = ({
                             }`}
                         >
                             <Store size={16} className="mr-1.5" />
-                            InÃ­cio
+                            Início
                         </button>
 
                         {/* Mega Menu */}

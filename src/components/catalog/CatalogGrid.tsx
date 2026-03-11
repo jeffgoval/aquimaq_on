@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Search } from 'lucide-react';
 import { Product } from '@/types';
 import ProductCard from '../ProductCard';
@@ -44,7 +44,7 @@ const EmptyState: React.FC<{
         <p className="text-gray-600 text-sm">
             {searchOrCategory
                 ? 'Tente ajustar filtros ou busca.'
-                : 'CatÃ¡logo vazio. Em breve teremos novidades.'}
+                : 'Catálogo vazio. Em breve teremos novidades.'}
         </p>
         {onClearFilters && (
             <button

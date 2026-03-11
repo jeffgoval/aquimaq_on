@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
 import { SortOption } from '../../hooks/useCatalogProducts';
 
@@ -19,11 +19,11 @@ export const CatalogMobileFilterBar = ({
                 onChange={(e) => onSortChange(e.target.value as SortOption)}
                 className="bg-transparent text-sm font-medium text-gray-700 outline-none cursor-pointer"
             >
-                <option value="relevance">RelevÃ¢ncia</option>
+                <option value="relevance">Relevância</option>
                 <option value="best_sellers">Mais Vendidos</option>
                 <option value="newest">Novidades</option>
-                <option value="price_asc">Menor PreÃ§o</option>
-                <option value="price_desc">Maior PreÃ§o</option>
+                <option value="price_asc">Menor Preço</option>
+                <option value="price_desc">Maior Preço</option>
             </select>
         </div>
     </div>

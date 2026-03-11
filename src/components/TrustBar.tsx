@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, ShieldCheck, MessageCircle, CreditCard } from 'lucide-react';
 
 const TrustBar: React.FC = () => {
@@ -13,7 +13,7 @@ const TrustBar: React.FC = () => {
         {
             icon: <CreditCard size={20} className="text-agro-700" />,
             title: "5% OFF no Pix",
-            subtitle: "Pagamento instantÃ¢neo"
+            subtitle: "Pagamento instantâneo"
         },
         {
             icon: <ShieldCheck size={20} className="text-agro-700" />,
@@ -79,7 +79,7 @@ const TrustBar: React.FC = () => {
                                     ? 'w-6 bg-agro-600'
                                     : 'w-1.5 bg-gray-300'
                                     }`}
-                                aria-label={`Ir para benefÃ­cio ${index + 1}`}
+                                aria-label={`Ir para benefício ${index + 1}`}
                             />
                         ))}
                     </div>

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Flame } from 'lucide-react';
 import { Product } from '@/types';
 import ProductCard from '../ProductCard';

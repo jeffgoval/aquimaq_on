@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { Helmet } from 'react-helmet-async';
@@ -17,17 +17,17 @@ const PaymentPendingPage: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Pagamento em processamento</h1>
         <p className="text-gray-600 mb-6">
-          O seu pagamento (boleto ou PIX) estÃ¡ a ser processado. Assim que for confirmado, vocÃª receberÃ¡ uma notificaÃ§Ã£o e poderÃ¡ acompanhar em Meus Pedidos.
+          O seu pagamento (boleto ou PIX) está a ser processado. Assim que for confirmado, você receberá uma notificação e poderá acompanhar em Meus Pedidos.
         </p>
         <Link
           to={ROUTES.HOME}
           className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
         >
-          Voltar ao inÃ­cio
+          Voltar ao início
         </Link>
         <p className="mt-4">
           <Link to={ROUTES.HOME} className="text-agro-700 hover:text-agro-700 text-sm">
-            Voltar ao inÃ­cio
+            Voltar ao início
           </Link>
         </p>
       </div>

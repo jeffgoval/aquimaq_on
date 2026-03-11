@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Truck, MapPin, Loader2, Store, AlertCircle } from 'lucide-react';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
@@ -12,7 +12,7 @@ interface ShippingCalculatorProps {
   onSelectOption: (option: ShippingOption | null) => void;
   selectedOptionId?: string;
   initialZip?: string;
-  /** Chamado quando o CEP Ã© validado e o frete Ã© calculado (para persistir no contexto). */
+  /** Chamado quando o CEP é validado e o frete é calculado (para persistir no contexto). */
   onZipValid?: (rawZip: string) => void;
 }
 
@@ -34,7 +34,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   /* State to track previous items for comparison or debounce */
   const [debouncedItems, setDebouncedItems] = useState(items);
 
-  // Auto-calculate if initialZip is present e vÃ¡lido
+  // Auto-calculate if initialZip is present e válido
   React.useEffect(() => {
     if (initialZip && validateCEP(initialZip)) {
       setCep(maskCEP(initialZip));
@@ -60,7 +60,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   const calculate = async (preserveSelection = false) => {
     const rawCep = cep.replace(/\D/g, '');
     if (!validateCEP(cep)) {
-      if (!initialZip) setError('Digite um CEP vÃ¡lido (8 dÃ­gitos).');
+      if (!initialZip) setError('Digite um CEP válido (8 dígitos).');
       return;
     }
 
@@ -100,10 +100,10 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
     } catch (err) {
       console.error(err);
       setOptions([
-        { id: 'pickup_store', carrier: 'Loja FÃ­sica', service: 'Retirada no BalcÃ£o', price: 0, estimatedDays: 0 }
+        { id: 'pickup_store', carrier: 'Loja Física', service: 'Retirada no Balcão', price: 0, estimatedDays: 0 }
       ]);
       setCalculated(true);
-      setError('Frete indisponÃ­vel no momento. VocÃª pode escolher retirada na loja.');
+      setError('Frete indisponível no momento. Você pode escolher retirada na loja.');
       onSelectOption(null);
     } finally {
       setLoading(false);
@@ -152,9 +152,9 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
         <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
           <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-amber-800 text-xs font-semibold">CEP nÃ£o atendido pelas transportadoras</p>
+            <p className="text-amber-800 text-xs font-semibold">CEP não atendido pelas transportadoras</p>
             <p className="text-amber-700 text-xs mt-0.5">
-              Use a opÃ§Ã£o de <strong>Retirada no BalcÃ£o</strong> para concluir seu pedido.
+              Use a opção de <strong>Retirada no Balcão</strong> para concluir seu pedido.
             </p>
           </div>
         </div>
@@ -188,19 +188,19 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                    {option.carrier === 'Loja FÃ­sica' ? <Store size={14} /> : null}
+                    {option.carrier === 'Loja Física' ? <Store size={14} /> : null}
                     {option.carrier} - {option.service}
                   </p>
                   <p className="text-xs text-gray-500">
                     {option.estimatedDays === 0
-                      ? 'DisponÃ­vel imediatamente'
-                      : `AtÃ© ${option.estimatedDays} dias Ãºteis`}
+                      ? 'Disponível imediatamente'
+                      : `Até ${option.estimatedDays} dias úteis`}
                   </p>
                 </div>
               </div>
               <span className="font-semibold text-gray-900 text-sm">
                 {option.price === 0
-                  ? 'GrÃ¡tis'
+                  ? 'Grátis'
                   : formatCurrency(option.price)
                 }
               </span>

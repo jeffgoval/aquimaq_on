@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getActiveBanners } from '@/services/bannerService';
@@ -141,7 +141,7 @@ const HeroBanner: React.FC = () => {
                         </button>
                         <button
                             onClick={goToNext}
-                            aria-label="PrÃ³ximo slide"
+                            aria-label="Próximo slide"
                             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-colors flex items-center justify-center"
                         >
                             <ChevronRight size={32} />

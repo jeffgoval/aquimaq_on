@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -52,7 +52,7 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 50
       <button
         onClick={() => onClose(id)}
         className="flex-shrink-0 p-1 hover:bg-black hover:bg-opacity-10 rounded transition-colors"
-        aria-label="Fechar notificaÃ§Ã£o"
+        aria-label="Fechar notificação"
       >
         <X className="w-4 h-4" />
       </button>

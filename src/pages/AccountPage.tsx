@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { User, Camera, Bell, MapPin, Pencil, Plus, Loader2, Package } from 'lucide-react';
@@ -73,7 +73,7 @@ const AccountPage: React.FC = () => {
             return;
         }
         if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) {
-            setError(`A foto deve ter no mÃ¡ximo ${MAX_AVATAR_SIZE_MB} MB.`);
+            setError(`A foto deve ter no máximo ${MAX_AVATAR_SIZE_MB} MB.`);
             return;
         }
         setError(null);
@@ -129,7 +129,7 @@ const AccountPage: React.FC = () => {
         <div className="max-w-2xl mx-auto px-4 py-8">
             <Helmet>
                 <title>Minha conta | {storeName}</title>
-                <meta name="description" content="Edite seu perfil e preferÃªncias." />
+                <meta name="description" content="Edite seu perfil e preferências." />
             </Helmet>
 
             <div className="mb-6">
@@ -145,12 +145,12 @@ const AccountPage: React.FC = () => {
             {success && (
                 <div className="mb-4 p-3 rounded-lg bg-agro-50 text-agro-700 text-sm flex items-center gap-2" role="status">
                     <span className="w-1.5 h-1.5 rounded-full bg-agro-500 shrink-0" />
-                    AlteraÃ§Ãµes salvas com sucesso.
+                    Alterações salvas com sucesso.
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* â”€â”€ Perfil â”€â”€ */}
+                {/* ── Perfil ── */}
                 <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2">
                         <User size={18} className="text-agro-700" />
@@ -197,7 +197,7 @@ const AccountPage: React.FC = () => {
                                 <Camera size={16} />
                                 {uploadingPhoto ? 'Enviando...' : 'Alterar foto'}
                             </button>
-                            <p className="text-xs text-slate-400 mt-1.5">JPG, PNG ou WebP Â· MÃ¡x. {MAX_AVATAR_SIZE_MB} MB</p>
+                            <p className="text-xs text-slate-400 mt-1.5">JPG, PNG ou WebP · Máx. {MAX_AVATAR_SIZE_MB} MB</p>
                         </div>
                     </div>
 
@@ -234,7 +234,7 @@ const AccountPage: React.FC = () => {
                             <p className="text-xs text-slate-400 mt-1">Para alterar o e-mail, entre em contato com o suporte.</p>
                         </div>
 
-                        {/* NotificaÃ§Ãµes */}
+                        {/* Notificações */}
                         <label className="flex items-center gap-3 cursor-pointer pt-1">
                             <input
                                 type="checkbox"
@@ -250,12 +250,12 @@ const AccountPage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* â”€â”€ EndereÃ§o de Entrega â”€â”€ */}
+                {/* ── Endereço de Entrega ── */}
                 <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                             <MapPin size={18} className="text-agro-700" />
-                            EndereÃ§o de entrega
+                            Endereço de entrega
                         </h2>
                         <button
                             type="button"
@@ -272,27 +272,27 @@ const AccountPage: React.FC = () => {
 
                     {hasAddress && profile ? (
                         <div className="text-sm text-slate-700 space-y-0.5">
-                            <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` â€” ${profile.complement}` : ''}</p>
-                            <p className="text-slate-500">{profile.neighborhood} Â· {profile.city} / {profile.state}</p>
+                            <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` — ${profile.complement}` : ''}</p>
+                            <p className="text-slate-500">{profile.neighborhood} · {profile.city} / {profile.state}</p>
                             <p className="text-slate-400 font-mono text-xs mt-1">{profile.zip_code}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-6 text-center rounded-lg bg-slate-50 border border-dashed border-slate-200">
                             <MapPin size={28} className="text-slate-300 mb-2" />
-                            <p className="text-sm text-slate-500 mb-3">Nenhum endereÃ§o cadastrado</p>
+                            <p className="text-sm text-slate-500 mb-3">Nenhum endereço cadastrado</p>
                             <button
                                 type="button"
                                 onClick={() => setShowAddressModal(true)}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-agro-600 text-white text-sm font-medium rounded-lg hover:bg-agro-700 transition-colors"
                             >
                                 <Plus size={15} />
-                                Adicionar endereÃ§o
+                                Adicionar endereço
                             </button>
                         </div>
                     )}
                 </section>
 
-                {/* â”€â”€ Meus Pedidos â”€â”€ */}
+                {/* ── Meus Pedidos ── */}
                 <Link
                     to={ROUTES.ORDERS}
                     className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm hover:border-agro-300 hover:bg-agro-50/40 transition-all group"
@@ -301,10 +301,10 @@ const AccountPage: React.FC = () => {
                         <Package size={18} className="text-agro-700" />
                         <div>
                             <p className="text-sm font-semibold text-slate-900">Meus Pedidos</p>
-                            <p className="text-xs text-slate-400">HistÃ³rico e acompanhamento</p>
+                            <p className="text-xs text-slate-400">Histórico e acompanhamento</p>
                         </div>
                     </div>
-                    <span className="text-xs font-medium text-agro-700 group-hover:text-agro-700">Ver todos â†’</span>
+                    <span className="text-xs font-medium text-agro-700 group-hover:text-agro-700">Ver todos →</span>
                 </Link>
 
                 {/* Buttons */}

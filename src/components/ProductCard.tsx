@@ -54,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group relative"
             aria-label={`Produto: ${product.name}`}
         >
-            {/* â”€â”€ Image area â”€â”€ */}
+            {/* ── Image area ── */}
             <Link
                 to={ROUTES.PRODUCT(product.id)}
                 className="relative h-52 w-full bg-gray-50 overflow-hidden block shrink-0"
@@ -65,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {isOutOfStock && (
                     <div className="absolute inset-0 bg-white/75 z-10 flex items-center justify-center">
                         <span className="text-xs font-bold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
-                            IndisponÃ­vel
+                            Indisponível
                         </span>
                     </div>
                 )}
@@ -100,12 +100,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
                             seasonalStatus === 'pre_safra' ? 'bg-sky-500 text-white' :
                             'bg-amber-600 text-white'
                         }`}>
-                            ðŸŒ± {SEASONAL_STATUS_LABEL[seasonalStatus]}
+                            🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
                         </span>
                     )}
                 </div>
 
-                {/* Bottom-left: low stock (nÃ£o colide com â™¥) */}
+                {/* Bottom-left: low stock (não colide com ♥) */}
                 {isLowStock && (
                     <span className="absolute bottom-2 left-2 z-10 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full pointer-events-none">
                         Restam {product.stock}
@@ -113,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 )}
             </Link>
 
-            {/* â™¥ Wishlist â€” fora do Link, sem colisÃ£o com badges */}
+            {/* ♥ Wishlist — fora do Link, sem colisão com badges */}
             <div className="absolute top-2 right-2 z-20 flex flex-col items-end">
                 <button
                     className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors shadow-sm relative group"
@@ -135,14 +135,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
             </div>
 
-            {/* â”€â”€ Info area â”€â”€ */}
+            {/* ── Info area ── */}
             <div className="px-4 pt-3 pb-0 flex flex-col flex-1">
                 {/* Category + brand */}
                 <p className="text-[10px] font-bold text-agro-700 uppercase tracking-widest truncate mb-1">
                     {product.category}
                     {product.brand && (
                         <span className="text-gray-400 font-normal normal-case tracking-normal ml-1.5">
-                            Â· {product.brand}
+                            · {product.brand}
                         </span>
                     )}
                 </p>
@@ -161,7 +161,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Price block â€” sticky to bottom of info area */}
+                {/* Price block — sticky to bottom of info area */}
                 <div className="mt-auto pt-3 border-t border-gray-100">
                     {product.oldPrice && (
                         <span className="text-xs text-gray-400 line-through block leading-none mb-0.5">
@@ -178,16 +178,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
             </div>
 
-            {/* â”€â”€ Add to cart â€” full-width â”€â”€ */}
+            {/* ── Add to cart — full-width ── */}
             <div className="px-4 py-3">
                 <button
                     onClick={() => onAddToCart(product)}
                     disabled={isOutOfStock}
                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-agro-600 hover:bg-agro-700 active:bg-agro-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    aria-label={isOutOfStock ? 'Produto indisponÃ­vel' : `Adicionar ${product.name} ao carrinho`}
+                    aria-label={isOutOfStock ? 'Produto indisponível' : `Adicionar ${product.name} ao carrinho`}
                 >
                     <ShoppingCart size={15} />
-                    {isOutOfStock ? 'IndisponÃ­vel' : 'Adicionar ao Carrinho'}
+                    {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
                 </button>
             </div>
         </article>

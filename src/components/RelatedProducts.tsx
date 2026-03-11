@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
@@ -32,7 +32,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
     <div className="mt-12 border-t border-gray-100 pt-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
-          Quem comprou, tambÃ©m levou
+          Quem comprou, também levou
         </h3>
         {/* Decorative arrow implies flow */}
         <ArrowRight className="text-gray-300 hidden sm:block" />

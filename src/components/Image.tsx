@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImageOff } from 'lucide-react';
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -42,7 +42,7 @@ const Image: React.FC<ImageProps> = ({
         return (
             <div
                 className={`bg-gray-100 flex flex-col items-center justify-center text-gray-400 ${className}`}
-                aria-label="Imagem indisponÃ­vel"
+                aria-label="Imagem indisponível"
             >
                 <ImageOff size={24} className="mb-1" />
             </div>

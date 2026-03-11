@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 interface QuantitySelectorProps {
@@ -73,7 +73,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       </div>
       {showMaxMessage && atMax && max > 0 && (
         <p className="text-xs text-amber-600 font-medium">
-          Estoque mÃ¡ximo disponÃ­vel
+          Estoque máximo disponível
         </p>
       )}
     </div>

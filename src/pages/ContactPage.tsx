@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Mail, MapPin, Clock, Home } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
@@ -18,23 +18,23 @@ const ContactPage: React.FC = () => {
 
     const addressLine = address && address.street
         ? [
-            `${address.street}, ${address.number}${address.complement ? ` â€” ${address.complement}` : ''}`,
+            `${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ''}`,
             `${address.district ? address.district + ', ' : ''}${address.city}/${address.state}`,
             address.zip ? `CEP ${address.zip.replace(/(\d{5})(\d{3})/, '$1-$2')}` : '',
-          ].filter(Boolean).join(' â€” ')
+          ].filter(Boolean).join(' — ')
         : null;
 
     return (
         <div className="bg-gray-50 min-h-screen py-12">
             <Helmet>
                 <title>Fale Conosco | {storeName}</title>
-                <meta name="description" content={`Entre em contato com a ${storeName}. Estamos prontos para atender vocÃª.`} />
+                <meta name="description" content={`Entre em contato com a ${storeName}. Estamos prontos para atender você.`} />
             </Helmet>
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <nav className="flex mb-8 text-sm text-gray-500 items-center gap-1">
                     <Link to={ROUTES.HOME} className="hover:text-agro-700 flex items-center gap-1">
-                        <Home size={14} /> InÃ­cio
+                        <Home size={14} /> Início
                     </Link>
                     <span>/</span>
                     <span className="font-semibold text-gray-900">Fale Conosco</span>
@@ -48,7 +48,7 @@ const ContactPage: React.FC = () => {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold">Fale Conosco</h1>
-                                <p className="mt-1 text-white/80">Estamos aqui para ajudar vocÃª.</p>
+                                <p className="mt-1 text-white/80">Estamos aqui para ajudar você.</p>
                             </div>
                         </div>
                     </div>
@@ -77,7 +77,7 @@ const ContactPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">E-mail</h3>
-                                        <p className="text-gray-500 text-sm mb-2">Envie sua dÃºvida ou pedido</p>
+                                        <p className="text-gray-500 text-sm mb-2">Envie sua dúvida ou pedido</p>
                                         <a href={`mailto:${email}`} className="text-agro-700 font-semibold hover:underline">
                                             {email}
                                         </a>
@@ -90,13 +90,13 @@ const ContactPage: React.FC = () => {
                                     <Clock size={22} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">HorÃ¡rio de Atendimento</h3>
+                                    <h3 className="font-semibold text-gray-900 mb-1">Horário de Atendimento</h3>
                                     {openingHours ? (
                                         <p className="text-gray-700 text-sm whitespace-pre-line">{openingHours}</p>
                                     ) : (
                                         <>
-                                            <p className="text-gray-700 text-sm">Segunda a Sexta: <span className="font-medium">8h Ã s 18h</span></p>
-                                            <p className="text-gray-700 text-sm">SÃ¡bado: <span className="font-medium">8h Ã s 12h</span></p>
+                                            <p className="text-gray-700 text-sm">Segunda a Sexta: <span className="font-medium">8h às 18h</span></p>
+                                            <p className="text-gray-700 text-sm">Sábado: <span className="font-medium">8h às 12h</span></p>
                                             <p className="text-gray-500 text-sm">Domingo: fechado</p>
                                         </>
                                     )}
@@ -110,9 +110,9 @@ const ContactPage: React.FC = () => {
                                     <MapPin size={22} />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 mb-1">EndereÃ§o</h3>
+                                    <h3 className="font-semibold text-gray-900 mb-1">Endereço</h3>
                                     <p className="text-gray-600 text-sm">{addressLine}</p>
-                                    <p className="text-gray-500 text-sm mt-1">Retirada no balcÃ£o disponÃ­vel nos horÃ¡rios de atendimento.</p>
+                                    <p className="text-gray-500 text-sm mt-1">Retirada no balcão disponível nos horários de atendimento.</p>
                                 </div>
                             </div>
                         )}
