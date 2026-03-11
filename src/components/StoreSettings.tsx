@@ -39,7 +39,7 @@ interface StoreConfig {
     crossSellEnabled: boolean;
     crossSellCategory: string;
     localDeliveryEnabled: boolean;
-    localDeliveryCepPrefixes: string;
+    localDeliveryMaxKm: number;
     localDeliveryFee: number;
     localDeliveryLabel: string;
 }
@@ -84,7 +84,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         crossSellEnabled: true,
         crossSellCategory: '',
         localDeliveryEnabled: false,
-        localDeliveryCepPrefixes: '',
+        localDeliveryMaxKm: 0,
         localDeliveryFee: 0,
         localDeliveryLabel: 'Entrega Local',
     });
@@ -121,7 +121,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 crossSellEnabled: settings.crossSellEnabled ?? true,
                 crossSellCategory: settings.crossSellCategory ?? '',
                 localDeliveryEnabled: settings.localDeliveryEnabled ?? false,
-                localDeliveryCepPrefixes: settings.localDeliveryCepPrefixes ?? '',
+                localDeliveryMaxKm: settings.localDeliveryMaxKm ?? 0,
                 localDeliveryFee: settings.localDeliveryFee ?? 0,
                 localDeliveryLabel: settings.localDeliveryLabel ?? 'Entrega Local',
             });
@@ -234,7 +234,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             crossSellEnabled: formData.crossSellEnabled,
             crossSellCategory: formData.crossSellCategory || null,
             localDeliveryEnabled: formData.localDeliveryEnabled,
-            localDeliveryCepPrefixes: formData.localDeliveryCepPrefixes,
+            localDeliveryMaxKm: formData.localDeliveryMaxKm,
             localDeliveryFee: formData.localDeliveryFee,
             localDeliveryLabel: formData.localDeliveryLabel,
         });
@@ -667,7 +667,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     Entrega Local / Regional
                                 </h3>
                                 <p className="text-xs text-gray-500 -mt-3">
-                                    Configure uma opção de entrega própria para CEPs próximos (cidades vizinhas). Funciona por prefixo de CEP.
+                                    Configure uma opção de entrega própria para endereços dentro de um raio a partir da loja. Usa as coordenadas do CEP de origem.
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -693,16 +693,18 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Prefixos de CEP atendidos</label>
+                                        <label className="text-sm font-semibold text-gray-700">Raio máximo de entrega (km)</label>
                                         <input
-                                            type="text"
-                                            value={formData.localDeliveryCepPrefixes}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryCepPrefixes: e.target.value }))}
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={formData.localDeliveryMaxKm}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, localDeliveryMaxKm: Number(e.target.value) }))}
                                             disabled={!formData.localDeliveryEnabled}
-                                            placeholder="Ex: 372,373,374"
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50"
+                                            placeholder="Ex: 30"
+                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                         />
-                                        <p className="text-xs text-gray-400">Separe por vírgula. Ex.: "372,373" cobre todos os CEPs 37200-000 a 37399-999.</p>
+                                        <p className="text-xs text-gray-400">Distância em linha reta a partir do endereço de origem da loja. Use 0 para desativar.</p>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">Taxa de entrega local (R$)</label>

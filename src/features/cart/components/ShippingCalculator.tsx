@@ -6,6 +6,7 @@ import { maskCEP } from '@/utils/masks';
 import { formatCurrency } from '@/utils/format';
 import { CartItem, ShippingOption } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
+import { fetchCepCoordinates, haversineKm } from '@/utils/geo';
 
 interface ShippingCalculatorProps {
   cartTotal: number;
@@ -78,23 +79,35 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
     try {
       const { options: newOptions, error: shippingError, cepNotServiced: notServiced } = await calculateShipping(rawCep, items);
 
-      // Inject local delivery option if CEP prefix matches store settings
+      // Inject local delivery option if destination is within configured km radius
       const finalOptions = [...newOptions];
-      if (settings?.localDeliveryEnabled && settings.localDeliveryCepPrefixes) {
-        const prefixes = settings.localDeliveryCepPrefixes
-          .split(',')
-          .map(p => p.trim())
-          .filter(Boolean);
-        const cepMatches = prefixes.some(prefix => rawCep.startsWith(prefix));
-        if (cepMatches && !finalOptions.find(o => o.id === 'local_delivery')) {
-          const localOption: ShippingOption = {
-            id: 'local_delivery',
-            carrier: 'Entrega Própria',
-            service: settings.localDeliveryLabel || 'Entrega Local',
-            price: settings.localDeliveryFee ?? 0,
-            estimatedDays: 2,
-          };
-          finalOptions.splice(1, 0, localOption); // after pickup
+      if (
+        settings?.localDeliveryEnabled &&
+        settings.localDeliveryMaxKm > 0 &&
+        settings.address?.zip
+      ) {
+        try {
+          const [originCoords, destCoords] = await Promise.all([
+            fetchCepCoordinates(settings.address.zip),
+            fetchCepCoordinates(rawCep),
+          ]);
+          if (
+            originCoords &&
+            destCoords &&
+            haversineKm(originCoords, destCoords) <= settings.localDeliveryMaxKm &&
+            !finalOptions.find(o => o.id === 'local_delivery')
+          ) {
+            const localOption: ShippingOption = {
+              id: 'local_delivery',
+              carrier: 'Entrega Própria',
+              service: settings.localDeliveryLabel || 'Entrega Local',
+              price: settings.localDeliveryFee ?? 0,
+              estimatedDays: 2,
+            };
+            finalOptions.splice(1, 0, localOption); // insere logo após Retirada no Balcão
+          }
+        } catch {
+          // falha silenciosa: não injeta opção local
         }
       }
 
