@@ -10,7 +10,6 @@ import {
     X,
     ChevronRight,
     Image,
-    BarChart,
     Store,
     Bot,
 } from 'lucide-react';
@@ -88,7 +87,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
     const navItems: NavItem[] = ([
         { id: 'DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-        { id: 'ANALYTICS', label: 'Analytics', icon: <BarChart size={18} /> },
         { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} /> },
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
@@ -96,10 +94,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'AI', label: 'Config. IA', icon: <Bot size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
-        // Vendedor: dashboard, pedidos e produtos
+        // Ver matriz de roles em App.tsx (AdminRoutes). Manter alinhado com ProtectedRoute por rota.
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
-        // Gerente: oculta itens exclusivos de admin (analytics, ia, configurações)
-        if (!isAdmin && !isVendedor && ['ANALYTICS', 'AI', 'SETTINGS'].includes(item.id)) return false;
+        if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
         return true;
     });
 
@@ -107,7 +104,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         if (onNavigate) {
             onNavigate(view);
         } else {
-            navigate(ADMIN_VIEW_TO_PATH[view]);
+            const path = ADMIN_VIEW_TO_PATH[view];
+            if (path) navigate(path);
         }
         setIsSidebarOpen(false);
     };

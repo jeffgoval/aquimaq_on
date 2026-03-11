@@ -53,18 +53,27 @@ const PageFallback = (
     </div>
 );
 
-// Helper to bridge route navigation with component callbacks
+/**
+ * Matriz de acesso por role (menu AdminLayout + rotas):
+ * - admin: Dashboard, Pedidos, Produtos, Banners, Usuários, Configurações, Config. IA
+ * - gerente: Dashboard, Pedidos, Produtos, Banners, Usuários, Configurações (sem IA)
+ * - vendedor: Dashboard, Pedidos, Produtos (sem Banners, Usuários, Config, IA)
+ * Rotas protegidas por ProtectedRoute em cada Route abaixo; layout filtra itens do menu.
+ */
 function AdminRoutes() {
     const navigate = useNavigate();
 
     const handleAdminNavigate = (view: string) => {
         const paths: Record<string, string> = {
-            'ORDERS': ROUTES.ADMIN_ORDERS,
-            'PRODUCTS': ROUTES.ADMIN_PRODUCTS,
-            'USERS': ROUTES.ADMIN_USERS,
-            'DASHBOARD': ROUTES.ADMIN,
+            DASHBOARD: ROUTES.ADMIN,
+            ORDERS: ROUTES.ADMIN_ORDERS,
+            PRODUCTS: ROUTES.ADMIN_PRODUCTS,
+            BANNERS: ROUTES.ADMIN_BANNERS,
+            USERS: ROUTES.ADMIN_USERS,
+            SETTINGS: ROUTES.ADMIN_SETTINGS,
+            AI: ROUTES.ADMIN_AI,
         };
-        navigate(paths[view] || ROUTES.ADMIN);
+        navigate(paths[view] ?? ROUTES.ADMIN);
     };
 
     return (

@@ -207,7 +207,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                         Dashboard
                     </h1>
                     <p className="text-stone-400 text-[13px] mt-0.5">
-                        {isVendedor ? 'Resumo das suas vendas e pedidos' : 'Visão geral do seu negócio'}
+                        {isVendedor
+                            ? 'Resumo das suas vendas e pedidos'
+                            : 'Visão geral do negócio, pedidos, produtos e usuários'}
                     </p>
                 </div>
                 {error && (

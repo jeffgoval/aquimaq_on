@@ -207,7 +207,7 @@ const Header: React.FC<HeaderProps> = ({
                                                         role="menuitem"
                                                     >
                                                         <LayoutDashboard size={16} />
-                                                        {isVendedor ? 'Meu Painel' : 'Painel Admin'}
+                                                        {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
                                                     </Link>
                                                 )}
                                                 <Link
@@ -368,7 +368,7 @@ const Header: React.FC<HeaderProps> = ({
                                                     className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
                                                 >
                                                     <LayoutDashboard size={18} />
-                                                    Painel Admin
+                                                    {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
                                                 </Link>
                                             )}
                                             <Link
