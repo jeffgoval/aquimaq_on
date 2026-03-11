@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, Phone, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
@@ -109,15 +110,16 @@ const Header: React.FC<HeaderProps> = ({
                     <div className="flex space-x-6">
                         {settings?.phone ? (
                             <a
-                                href={`tel:${settings.phone.replace(/\D/g, '')}`}
+                                href={`https://wa.me/55${settings.phone.replace(/\D/g, '')}`}
+                                target="_blank" rel="noopener noreferrer"
                                 className="flex items-center hover:text-white transition-colors"
                             >
-                                <Phone size={14} className="mr-2 text-agro-500 shrink-0" />
+                                <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
                                 Central de Vendas: {maskPhone(settings.phone)}
                             </a>
                         ) : (
                             <span className="flex items-center">
-                                <Phone size={14} className="mr-2 text-agro-500 shrink-0" />
+                                <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
                                 Central de Vendas: (00) 00000-0000
                             </span>
                         )}

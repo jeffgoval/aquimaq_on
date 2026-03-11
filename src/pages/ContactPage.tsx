@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Phone, Mail, MapPin, Clock, Home } from 'lucide-react';
+import { Mail, MapPin, Clock, Home } from 'lucide-react';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useStore } from '@/contexts/StoreContext';
@@ -43,7 +44,7 @@ const ContactPage: React.FC = () => {
                     <div className="bg-agro-600 px-6 py-8 md:px-10 md:py-12 text-white">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
-                                <Phone size={32} />
+                                <WhatsAppIcon size={32} />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold">Fale Conosco</h1>
@@ -57,12 +58,12 @@ const ContactPage: React.FC = () => {
                             {phone && (
                                 <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-xl border border-gray-100">
                                     <div className="p-3 bg-blue-100 text-blue-700 rounded-full shrink-0">
-                                        <Phone size={22} />
+                                        <WhatsAppIcon size={22} />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Telefone</h3>
-                                        <p className="text-gray-500 text-sm mb-2">Ligue para nossa central</p>
-                                        <a href={`tel:+55${phone.replace(/\D/g, '')}`} className="text-blue-700 font-semibold hover:underline">
+                                        <h3 className="font-semibold text-gray-900 mb-1">WhatsApp</h3>
+                                        <p className="text-gray-500 text-sm mb-2">Fale conosco pelo WhatsApp</p>
+                                        <a href={`https://wa.me/55${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-semibold hover:underline">
                                             {maskPhone(phone)}
                                         </a>
                                     </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Facebook, Instagram, Youtube, Clock, HelpCircle, Package } from 'lucide-react';
+import { Mail, MapPin, Facebook, Instagram, Youtube, Clock, HelpCircle, Package } from 'lucide-react';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { useStore } from '@/contexts/StoreContext';
 import { ROUTES } from '@/constants/routes';
 import { maskPhone } from '@/utils/masks';
@@ -170,8 +171,8 @@ const Footer: React.FC = () => {
                         <ul className="space-y-3 text-sm">
                             {phone && phoneRaw && (
                                 <li>
-                                    <a href={`tel:${phoneRaw}`} className="flex items-center gap-2 hover:text-white transition-colors">
-                                        <Phone size={15} className="text-agro-500 shrink-0" />
+                                    <a href={`https://wa.me/55${phoneRaw}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
+                                        <WhatsAppIcon size={15} className="text-agro-500 shrink-0" />
                                         {phone}
                                     </a>
                                 </li>
