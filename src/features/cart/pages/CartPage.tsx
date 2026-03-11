@@ -23,7 +23,6 @@ const CartPage: React.FC = () => {
         shippingCost,
         grandTotal,
         shippingZip,
-        clearCart,
     } = useCart();
 
     const { showToast } = useToast();
@@ -55,10 +54,7 @@ const CartPage: React.FC = () => {
                 profile,
             });
 
-            // 3. Clear cart before redirect
-            clearCart();
-
-            // 4. Redirect to Mercado Pago
+            // 3. Redirect to Mercado Pago
             window.location.href = result.checkout_url;
         } catch (error) {
             const message = error instanceof Error

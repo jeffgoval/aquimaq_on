@@ -6,19 +6,24 @@ import { getProducts } from '@/services/productService';
 import { formatCurrency } from '@/utils/format';
 import { useStore } from '@/contexts/StoreContext';
 import { ProductCategory } from '@/types';
+import { useCart } from '@/features/cart';
 
 const PaymentSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('external_reference') ?? searchParams.get('order_id') ?? '';
   const { settings } = useStore();
   const [products, setProducts] = useState<any[]>([]);
+  const { clearCart } = useCart();
 
   useEffect(() => {
+    // Clear the cart securely when the user lands on the success success
+    clearCart();
+
     if (settings && settings.crossSellEnabled === false) return;
     const params: Record<string, unknown> = { sortBy: 'best_sellers', pageSize: 4 };
     if (settings?.crossSellCategory) params.category = settings.crossSellCategory as ProductCategory;
     getProducts(params).then(({ data }) => setProducts(data)).catch(() => {});
-  }, [settings?.crossSellEnabled, settings?.crossSellCategory]);
+  }, [settings?.crossSellEnabled, settings?.crossSellCategory, clearCart]);
 
   return (
     <>

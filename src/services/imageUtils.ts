@@ -21,12 +21,57 @@ export function getPresetUrl(publicUrl: string, _preset: ImagePreset): string {
     return publicUrl;
 }
 
+export async function compressImage(file: File, maxWidth = 1600, quality = 0.8): Promise<File> {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) return file;
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new globalThis.Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return resolve(file);
+
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) return resolve(file);
+                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webp"), {
+                            type: 'image/webp',
+                            lastModified: Date.now(),
+                        });
+                        resolve(newFile);
+                    },
+                    'image/webp',
+                    quality
+                );
+            };
+            img.onerror = (e) => reject(e);
+        };
+        reader.onerror = (e) => reject(e);
+    });
+}
+
 export async function uploadProductImage(
-    file: File,
+    originalFile: File,
     productId: string,
     index: number = 0
 ): Promise<{ url: string; error: string | null }> {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const file = await compressImage(originalFile, 1200, 0.8);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'webp';
     const path = `products/${productId}/${index}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '3600', upsert: false });
     if (error) return { url: '', error: error.message };
@@ -35,10 +80,11 @@ export async function uploadProductImage(
 }
 
 export async function uploadBannerImage(
-    file: File,
+    originalFile: File,
     bannerId: string
 ): Promise<{ url: string; error: string | null }> {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const file = await compressImage(originalFile, 1920, 0.85);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'webp';
     const path = `banners/${bannerId}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('store-assets').upload(path, file, { cacheControl: '3600', upsert: false });
     if (error) return { url: '', error: error.message };
@@ -47,8 +93,9 @@ export async function uploadBannerImage(
 }
 
 /** Upload de foto de perfil do utilizador (bucket store-assets, pasta avatars). */
-export async function uploadAvatar(file: File, userId: string): Promise<{ url: string; error: string | null }> {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+export async function uploadAvatar(originalFile: File, userId: string): Promise<{ url: string; error: string | null }> {
+    const file = await compressImage(originalFile, 600, 0.8);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'webp';
     const path = `avatars/${userId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('store-assets').upload(path, file, { cacheControl: '3600', upsert: true });
     if (error) return { url: '', error: error.message };
