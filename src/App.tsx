@@ -38,7 +38,6 @@ const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersMan
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
 const AdminWhatsAppManagement = lazy(() => import('./components/admin/AdminWhatsAppManagement'));
-const AdminMenuManager = lazy(() => import('./components/admin/AdminMenuManager'));
 const AdminShippingGuard = lazy(() => import('./components/admin/AdminShippingGuard'));
 const AdminSeasonalSwitcher = lazy(() => import('./components/admin/AdminSeasonalSwitcher'));
 
@@ -77,7 +76,6 @@ function AdminRoutes() {
             SETTINGS: ROUTES.ADMIN_SETTINGS,
             AI: ROUTES.ADMIN_AI,
             WHATSAPP: ROUTES.ADMIN_WHATSAPP,
-            MENU: ROUTES.ADMIN_MENU,
             SHIPPING_GUARD: ROUTES.ADMIN_SHIPPING_GUARD,
             SEASONAL: ROUTES.ADMIN_SEASONAL,
         };
@@ -115,11 +113,6 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_WHATSAPP} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <AdminWhatsAppManagement />
-                    </ProtectedRoute>
-                } />
-                <Route path={ROUTE_PATHS.ADMIN_MENU} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
-                        <AdminMenuManager />
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_SHIPPING_GUARD} element={

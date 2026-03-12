@@ -64,7 +64,7 @@ const AdminShippingGuard: React.FC = () => {
         <div>
           <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
             <Truck size={20} />
-            Políticas logísticas (Shipping Guard)
+            Políticas logísticas
           </h2>
           <p className="text-sm text-stone-500 mt-0.5">
             Defina quais categorias têm restrição de entrega (ex.: apenas retirada) e a mensagem exibida no produto e no checkout.

@@ -13,7 +13,6 @@ import {
     Store,
     Bot,
     MessageSquare,
-    List,
     Truck,
     Calendar,
 } from 'lucide-react';
@@ -23,7 +22,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'MENU' | 'SHIPPING_GUARD' | 'SEASONAL';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'SHIPPING_GUARD' | 'SEASONAL';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -34,7 +33,6 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
     [ROUTES.ADMIN_AI]: 'AI',
     [ROUTES.ADMIN_WHATSAPP]: 'WHATSAPP',
-    [ROUTES.ADMIN_MENU]: 'MENU',
     [ROUTES.ADMIN_SHIPPING_GUARD]: 'SHIPPING_GUARD',
     [ROUTES.ADMIN_SEASONAL]: 'SEASONAL',
 };
@@ -48,7 +46,6 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     SETTINGS: ROUTES.ADMIN_SETTINGS,
     AI: ROUTES.ADMIN_AI,
     WHATSAPP: ROUTES.ADMIN_WHATSAPP,
-    MENU: ROUTES.ADMIN_MENU,
     SHIPPING_GUARD: ROUTES.ADMIN_SHIPPING_GUARD,
     SEASONAL: ROUTES.ADMIN_SEASONAL,
 };
@@ -102,7 +99,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} /> },
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
-        { id: 'MENU', label: 'Régua de menu', icon: <List size={18} /> },
         { id: 'SHIPPING_GUARD', label: 'Logística', icon: <Truck size={18} /> },
         { id: 'SEASONAL', label: 'Sazonalidade', icon: <Calendar size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
@@ -114,7 +110,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
         if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
         if (isVendedor && item.id === 'WHATSAPP') return false; // WhatsApp: apenas admin/gerente
-        if (isVendedor && ['MENU', 'SHIPPING_GUARD', 'SEASONAL'].includes(item.id)) return false; // Menu, Logística, Sazonalidade: admin/gerente
+        if (isVendedor && ['SHIPPING_GUARD', 'SEASONAL'].includes(item.id)) return false; // Logística, Sazonalidade: admin/gerente
         return true;
     });
 
