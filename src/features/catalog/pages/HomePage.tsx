@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Catalog from '../components/Catalog';
 import TrustBar from '@/components/TrustBar';
 import { useCart } from '@/features/cart';
+import { useStore } from '@/contexts/StoreContext';
 import { ProductCategory } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ROUTES } from '@/constants/routes';
@@ -15,22 +16,43 @@ import { ChevronLeft, ChevronRight, PawPrint } from 'lucide-react';
 
 const PAGE_SIZE = 12;
 
+/** Mapeia seasonal_context (admin) para nome de cultura usado em recomendações. */
+const SEASONAL_CONTEXT_TO_CULTURE: Record<string, string> = {
+    PLANTIO_MILHO: 'Milho',
+    COLHEITA_MILHO: 'Milho',
+    PLANTIO_SOJA: 'Soja',
+    COLHEITA_SOJA: 'Soja',
+    PLANTIO_CAFE: 'Café',
+    COLHEITA_CAFE: 'Café',
+};
+
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart } = useCart();
+    const { settings } = useStore();
     const [page, setPage] = useState(1);
 
     const filters = useCatalogFilters({ onFilterChange: () => setPage(1) });
 
     const { cultures: availableCultures, culturesInSeasonThisMonth } = useCropCalendar();
+    const seasonalContext = settings?.seasonalContext ?? null;
+    const overrideCulture = seasonalContext && seasonalContext !== 'OFF' ? SEASONAL_CONTEXT_TO_CULTURE[seasonalContext] : null;
 
-    // Auto-seleciona a primeira fase da safra do mês atual quando o calendário carrega
+    // Quando há modo de safra definido no admin, usa a cultura mapeada para recomendações
     useEffect(() => {
+        if (overrideCulture) {
+            filters.onRecommendationCultureChange(overrideCulture);
+        }
+    }, [overrideCulture]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Auto-seleciona a primeira fase da safra do mês atual quando o calendário carrega (se não houver override)
+    useEffect(() => {
+        if (overrideCulture) return;
         if (culturesInSeasonThisMonth.length > 0 && !filters.recommendationCulture) {
             filters.onRecommendationCultureChange(culturesInSeasonThisMonth[0]);
         }
-    }, [culturesInSeasonThisMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [culturesInSeasonThisMonth, overrideCulture]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const { products: petProducts, isLoading: isPetLoading } = useProducts({
         category: ProductCategory.PET,

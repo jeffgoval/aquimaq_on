@@ -19,6 +19,23 @@ export interface StoreSettingsSocialMedia {
   youtube: string;
 }
 
+/** Item do menu de navegação (régua preta). */
+export interface NavigationMenuItem {
+  label: string;
+  slug: string;
+  icon?: string;
+  is_highlighted?: boolean;
+  category_value?: string;
+  enabled?: boolean;
+}
+
+/** Regra de restrição de frete por categoria. */
+export interface ShippingRule {
+  category: string;
+  shipping_method: 'local_pickup_only' | 'regional_fleet_only';
+  message?: string;
+}
+
 /** Formato usado na UI (camelCase) */
 export interface StoreSettings {
   storeName: string;
@@ -39,6 +56,10 @@ export interface StoreSettings {
   freeShippingThreshold: number;
   crossSellEnabled: boolean;
   crossSellCategory: string | null;
+  navigationMenu?: NavigationMenuItem[];
+  shippingRules?: ShippingRule[];
+  seasonalContext?: string | null;
+  shippingRestrictionMessage?: string | null;
 }
 
 /** Formato da tabela store_settings no Supabase (snake_case). Endereço de origem apenas em origin_* (Melhor Envios / Mercado Pago). */
@@ -69,6 +90,10 @@ export interface StoreSettingsDB {
   free_shipping_threshold?: number | null;
   cross_sell_enabled?: boolean | null;
   cross_sell_category?: string | null;
+  navigation_menu?: NavigationMenuItem[] | null;
+  shipping_rules?: ShippingRule[] | null;
+  seasonal_context?: string | null;
+  shipping_restriction_message?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -126,6 +151,10 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     freeShippingThreshold: Number(r.free_shipping_threshold ?? 350),
     crossSellEnabled: r.cross_sell_enabled ?? true,
     crossSellCategory: r.cross_sell_category ?? null,
+    navigationMenu: (r.navigation_menu as NavigationMenuItem[] | null) ?? [],
+    shippingRules: (r.shipping_rules as ShippingRule[] | null) ?? [],
+    seasonalContext: r.seasonal_context ?? null,
+    shippingRestrictionMessage: r.shipping_restriction_message ?? null,
   };
 };
 
@@ -160,5 +189,9 @@ export const storeSettingsToDB = (
   if (s.freeShippingThreshold !== undefined) out.free_shipping_threshold = s.freeShippingThreshold;
   if (s.crossSellEnabled !== undefined) out.cross_sell_enabled = s.crossSellEnabled;
   if (s.crossSellCategory !== undefined) out.cross_sell_category = s.crossSellCategory || null;
+  if (s.navigationMenu !== undefined) out.navigation_menu = s.navigationMenu;
+  if (s.shippingRules !== undefined) out.shipping_rules = s.shippingRules;
+  if (s.seasonalContext !== undefined) out.seasonal_context = s.seasonalContext ?? null;
+  if (s.shippingRestrictionMessage !== undefined) out.shipping_restriction_message = s.shippingRestrictionMessage ?? null;
   return out;
 };

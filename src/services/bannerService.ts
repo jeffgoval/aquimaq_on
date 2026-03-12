@@ -12,10 +12,11 @@ export interface Banner {
   is_active?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
+  seasonal_context?: string | null;
 }
 
-/** Banners ativos para o hero (período vigente). */
-export const getActiveBanners = async (): Promise<Banner[]> => {
+/** Banners ativos para o hero (período vigente). Se seasonalContext for passado, só retorna banners cujo seasonal_context é null ou igual. */
+export const getActiveBanners = async (seasonalContext?: string | null): Promise<Banner[]> => {
   const { data, error } = await supabase
     .from('banners')
     .select('*')
@@ -33,7 +34,12 @@ export const getActiveBanners = async (): Promise<Banner[]> => {
     const endsAt = banner.ends_at ? new Date(banner.ends_at).getTime() : null;
     const startsOk = startsAt == null || startsAt <= now;
     const endsOk = endsAt == null || endsAt >= now;
-    return startsOk && endsOk;
+    const dateOk = startsOk && endsOk;
+    if (!dateOk) return false;
+    if (seasonalContext && seasonalContext !== 'OFF') {
+      return banner.seasonal_context == null || banner.seasonal_context === seasonalContext;
+    }
+    return true;
   });
 };
 
@@ -59,6 +65,7 @@ export interface BannerPayload {
   starts_at: string | null;
   ends_at: string | null;
   position: number;
+  seasonal_context?: string | null;
 }
 
 export const createBanner = async (

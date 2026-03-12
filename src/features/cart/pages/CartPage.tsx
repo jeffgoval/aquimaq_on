@@ -1,15 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cart from '../components/Cart';
 import { useCart } from '../context/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStore } from '@/contexts/StoreContext';
 import { createCheckout } from '@/services/checkoutService';
 import { checkStockAvailability } from '../services/orderService';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { getProductById } from '@/services/productService';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/utils/format';
+import type { ShippingRule } from '@/types/store';
+
+const getRestrictedCategoriesPickupOnly = (rules: ShippingRule[] | undefined): Set<string> => {
+    if (!rules?.length) return new Set();
+    return new Set(
+        rules.filter((r) => r.shipping_method === 'local_pickup_only').map((r) => r.category)
+    );
+};
 
 const CartPage: React.FC = () => {
     const {
@@ -27,9 +36,19 @@ const CartPage: React.FC = () => {
 
     const { showToast } = useToast();
     const { profile } = useAuth();
+    const { settings } = useStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [recentProducts, setRecentProducts] = useState<any[]>([]);
     const { ids: recentIds } = useRecentlyViewed();
+
+    const restrictedPickupOnly = useMemo(
+        () => getRestrictedCategoriesPickupOnly(settings?.shippingRules),
+        [settings?.shippingRules]
+    );
+    const cartHasPickupOnlyItems = useMemo(
+        () => cart.some((item) => restrictedPickupOnly.has(item.category)),
+        [cart, restrictedPickupOnly]
+    );
 
     useEffect(() => {
         if (recentIds.length === 0) return;
@@ -40,6 +59,14 @@ const CartPage: React.FC = () => {
     const handleCheckout = async () => {
         if (!profile || !selectedShipping || cart.length === 0) return;
         if (isProcessing) return;
+
+        if (cartHasPickupOnlyItems && selectedShipping.id !== 'pickup_store') {
+            const msg =
+                settings?.shippingRestrictionMessage ||
+                'Alguns produtos do carrinho só podem ser retirados na loja. Selecione "Retirada no Balcão" para continuar.';
+            showToast(msg, 'error');
+            return;
+        }
 
         setIsProcessing(true);
         try {
@@ -80,6 +107,8 @@ const CartPage: React.FC = () => {
                 onCheckout={handleCheckout}
                 initialZip={shippingZip || profile?.zip_code?.replace(/\D/g, '') || undefined}
                 isProcessing={isProcessing}
+                hasPickupOnlyRestriction={cartHasPickupOnlyItems}
+                pickupOnlyMessage={settings?.shippingRestrictionMessage}
             />
             {cart.length > 0 && recentProducts.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">

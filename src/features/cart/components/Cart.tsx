@@ -33,6 +33,8 @@ interface CartProps {
     onCheckout?: () => void;
     initialZip?: string;
     isProcessing?: boolean;
+    hasPickupOnlyRestriction?: boolean;
+    pickupOnlyMessage?: string | null;
 }
 
 const Cart: React.FC<CartProps> = ({
@@ -48,6 +50,8 @@ const Cart: React.FC<CartProps> = ({
     onCheckout,
     initialZip,
     isProcessing = false,
+    hasPickupOnlyRestriction = false,
+    pickupOnlyMessage,
 }) => {
     const navigate = useNavigate();
     const { profile, refreshProfile } = useAuth();
@@ -426,20 +430,28 @@ const Cart: React.FC<CartProps> = ({
                                         </button>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={onCheckout}
-                                        disabled={isProcessing || hasOutOfStock}
-                                        className="w-full flex items-center justify-center gap-2 py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-base rounded-xl transition-all shadow-lg shadow-orange-200/60 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
-                                    >
-                                        {isProcessing ? (
-                                            <>
-                                                <Loader2 size={20} className="animate-spin" />
-                                                Processando...
-                                            </>
-                                        ) : (
-                                            'Finalizar Compra'
+                                    <>
+                                        {hasPickupOnlyRestriction && selectedShipping.id !== 'pickup_store' && (
+                                            <p className="text-xs text-center text-amber-700 mb-3 flex items-center justify-center gap-1.5">
+                                                <AlertTriangle size={13} />
+                                                {pickupOnlyMessage || 'Alguns produtos só podem ser retirados na loja. Selecione "Retirada no Balcão" para continuar.'}
+                                            </p>
                                         )}
-                                    </button>
+                                        <button
+                                            onClick={onCheckout}
+                                            disabled={isProcessing || hasOutOfStock}
+                                            className="w-full flex items-center justify-center gap-2 py-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-base rounded-xl transition-all shadow-lg shadow-orange-200/60 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
+                                        >
+                                            {isProcessing ? (
+                                                <>
+                                                    <Loader2 size={20} className="animate-spin" />
+                                                    Processando...
+                                                </>
+                                            ) : (
+                                                'Finalizar Compra'
+                                            )}
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         </div>

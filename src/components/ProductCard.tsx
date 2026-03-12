@@ -2,13 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
-import { ShoppingCart, Heart, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Zap, Truck, MessageCircle } from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useStore } from '@/contexts/StoreContext';
 import StarRating from './StarRating';
 import Image from './Image';
 import { formatCurrency } from '@/utils/format';
 import type { SeasonalStatus } from '@/utils/cropCalendar';
 import { SEASONAL_STATUS_LABEL } from '@/utils/cropCalendar';
+import type { ShippingRule } from '@/types/store';
+
+const getShippingRestriction = (
+  rules: ShippingRule[] | undefined,
+  category: string
+): ShippingRule | null => {
+  if (!rules?.length) return null;
+  return rules.find((r) => r.category === category) ?? null;
+};
 
 const PIX_DISCOUNT = 0.05;
 const LOW_STOCK_THRESHOLD = 5;
@@ -27,8 +37,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     imageLoading = 'lazy',
     seasonalStatus = null,
 }) => {
+    const { settings } = useStore();
     const { isInWishlist, toggleWishlist } = useWishlist();
     const isFavorite = isInWishlist(product.id);
+    const shippingRule = getShippingRestriction(settings?.shippingRules, product.category);
 
     const isOutOfStock = product.stock === 0;
     const isLowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
@@ -101,6 +113,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
                             'bg-amber-600 text-white'
                         }`}>
                             🌱 {SEASONAL_STATUS_LABEL[seasonalStatus]}
+                        </span>
+                    )}
+                    {shippingRule && (
+                        <span className="inline-flex items-center gap-0.5 bg-slate-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            <Truck size={10} />
+                            {shippingRule.shipping_method === 'local_pickup_only' ? 'Apenas Retirada' : 'Entrega Regional'}
                         </span>
                     )}
                 </div>
@@ -179,7 +197,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
 
             {/* ── Add to cart — full-width ── */}
-            <div className="px-4 py-3">
+            <div className="px-4 py-3 space-y-2">
                 <button
                     onClick={() => onAddToCart(product)}
                     disabled={isOutOfStock}
@@ -189,6 +207,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     <ShoppingCart size={15} />
                     {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
                 </button>
+                {shippingRule && settings?.phone && (
+                    <a
+                        href={`https://wa.me/55${settings.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, gostaria de saber sobre a logística do produto: ${product.name}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium rounded-lg transition-colors"
+                    >
+                        <MessageCircle size={14} />
+                        Consultar Logística via WhatsApp
+                    </a>
+                )}
             </div>
         </article>
     );

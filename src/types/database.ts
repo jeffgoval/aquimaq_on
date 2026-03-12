@@ -796,6 +796,7 @@ export type Database = {
           id: string
           logo_url: string | null
           max_installments: number
+          navigation_menu: Json | null
           opening_hours: string | null
           origin_cep: string | null
           origin_city: string | null
@@ -807,6 +808,9 @@ export type Database = {
           phone: string | null
           razao_social: string | null
           reclame_aqui_url: string | null
+          seasonal_context: string | null
+          shipping_restriction_message: string | null
+          shipping_rules: Json | null
           social_media: Json | null
           store_name: string | null
           updated_at: string
@@ -827,6 +831,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           max_installments?: number
+          navigation_menu?: Json | null
           opening_hours?: string | null
           origin_cep?: string | null
           origin_city?: string | null
@@ -838,6 +843,9 @@ export type Database = {
           phone?: string | null
           razao_social?: string | null
           reclame_aqui_url?: string | null
+          seasonal_context?: string | null
+          shipping_restriction_message?: string | null
+          shipping_rules?: Json | null
           social_media?: Json | null
           store_name?: string | null
           updated_at?: string
@@ -858,6 +866,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           max_installments?: number
+          navigation_menu?: Json | null
           opening_hours?: string | null
           origin_cep?: string | null
           origin_city?: string | null
@@ -869,6 +878,9 @@ export type Database = {
           phone?: string | null
           razao_social?: string | null
           reclame_aqui_url?: string | null
+          seasonal_context?: string | null
+          shipping_restriction_message?: string | null
+          shipping_rules?: Json | null
           social_media?: Json | null
           store_name?: string | null
           updated_at?: string

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package, MoreHorizontal } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
@@ -10,6 +10,7 @@ import { maskPhone } from '@/utils/masks';
 import MegaMenu from './MegaMenu';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { ROUTES } from '@/constants/routes';
+import type { NavigationMenuItem } from '@/types/store';
 
 const getAvatarInitials = (user: SupabaseUser): string => {
     const name = (user.user_metadata?.full_name ?? user.user_metadata?.name) as string | undefined;
@@ -23,14 +24,17 @@ const getAvatarInitials = (user: SupabaseUser): string => {
     return local.slice(0, 2).toUpperCase() || '?';
 };
 
-const NAV_CATEGORIES: { label: string; value: ProductCategory }[] = [
-    { label: 'Nutrição Animal',     value: ProductCategory.NUTRITION },
-    { label: 'Defensivos Agrícolas', value: ProductCategory.DEFENSIVES },
-    { label: 'Sementes',            value: ProductCategory.SEEDS },
-    { label: 'Equipamentos',        value: ProductCategory.EQUIPMENT },
-    { label: 'Peças de Reposição',  value: ProductCategory.PARTS },
-    { label: 'EPI e Segurança',     value: ProductCategory.PPE },
+/** Fallback quando navigation_menu está vazio ou não configurado. */
+const FALLBACK_NAV: NavigationMenuItem[] = [
+    { label: 'Nutrição Animal', slug: ROUTES.HOME, category_value: ProductCategory.NUTRITION, enabled: true },
+    { label: 'Defensivos Agrícolas', slug: ROUTES.HOME, category_value: ProductCategory.DEFENSIVES, enabled: true },
+    { label: 'Sementes', slug: ROUTES.HOME, category_value: ProductCategory.SEEDS, enabled: true },
+    { label: 'Equipamentos', slug: ROUTES.HOME, category_value: ProductCategory.EQUIPMENT, enabled: true },
+    { label: 'Peças de Reposição', slug: ROUTES.HOME, category_value: ProductCategory.PARTS, enabled: true },
+    { label: 'EPI e Segurança', slug: ROUTES.HOME, category_value: ProductCategory.PPE, enabled: true },
 ];
+
+const MAX_VISIBLE_NAV_ITEMS = 5;
 
 interface HeaderProps {
     cartItemCount: number;
@@ -58,20 +62,36 @@ const Header: React.FC<HeaderProps> = ({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isMoreNavOpen, setIsMoreNavOpen] = useState(false);
     const mobileSearchInputRef = useRef<HTMLInputElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const moreNavRef = useRef<HTMLDivElement>(null);
+
+    const navItems = useMemo(() => {
+        const list = settings?.navigationMenu?.length
+            ? settings.navigationMenu.filter((item) => item.enabled !== false)
+            : FALLBACK_NAV;
+        return list;
+    }, [settings?.navigationMenu]);
+
+    const visibleNavItems = useMemo(() => navItems.slice(0, MAX_VISIBLE_NAV_ITEMS), [navItems]);
+    const overflowNavItems = useMemo(() => navItems.slice(MAX_VISIBLE_NAV_ITEMS), [navItems]);
+    const hasOverflow = overflowNavItems.length > 0;
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
                 setIsUserMenuOpen(false);
             }
+            if (moreNavRef.current && !moreNavRef.current.contains(e.target as Node)) {
+                setIsMoreNavOpen(false);
+            }
         };
-        if (isUserMenuOpen) {
+        if (isUserMenuOpen || isMoreNavOpen) {
             document.addEventListener('click', handleClickOutside);
         }
         return () => document.removeEventListener('click', handleClickOutside);
-    }, [isUserMenuOpen]);
+    }, [isUserMenuOpen, isMoreNavOpen]);
 
     // Focus Traps
     const mobileMenuRef = useFocusTrap(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
@@ -97,6 +117,18 @@ const Header: React.FC<HeaderProps> = ({
             navigate(ROUTES.HOME);
         }
         setIsMobileMenuOpen(false);
+        setIsMoreNavOpen(false);
+    };
+
+    const isInternalSlug = (slug: string) => slug.startsWith('/') && !slug.startsWith('//');
+    const handleNavItemClick = (item: NavigationMenuItem) => {
+        if (item.category_value && onCategoryChange) {
+            onCategoryChange(item.category_value as ProductCategory);
+            navigate(ROUTES.HOME);
+        } else if (isInternalSlug(item.slug)) {
+            navigate(item.slug);
+        }
+        setIsMoreNavOpen(false);
     };
 
     const isActive = (path: string) => location.pathname === path;
@@ -316,20 +348,87 @@ const Header: React.FC<HeaderProps> = ({
                         {/* Mega Menu */}
                         <MegaMenu onCategoryClick={(c) => handleCategoryClick(c as ProductCategory)} />
 
-                        {/* Category quick links */}
-                        <div className="flex h-full space-x-0.5 overflow-hidden">
-                            {NAV_CATEGORIES.map((cat) => (
-                                <button
-                                    key={cat.value}
-                                    onClick={() => handleCategoryClick(cat.value)}
-                                    className={`px-3 h-full flex items-center border-b-2 transition-colors whitespace-nowrap text-xs ${selectedCategory === cat.value
-                                        ? 'border-agro-500 text-white'
-                                        : 'border-transparent text-slate-300 hover:text-white'
-                                    }`}
-                                >
-                                    {cat.label}
-                                </button>
-                            ))}
+                        {/* Dynamic nav items from store_settings.navigation_menu */}
+                        <div className="flex h-full space-x-0.5 overflow-hidden items-center">
+                            {visibleNavItems.map((item, idx) => {
+                                const isCategory = Boolean(item.category_value);
+                                const active = isCategory
+                                    ? selectedCategory === item.category_value
+                                    : isInternalSlug(item.slug) && isActive(item.slug);
+                                const baseClass = `px-3 h-full flex items-center border-b-2 transition-colors whitespace-nowrap text-xs ${active ? 'border-agro-500 text-white' : 'border-transparent text-slate-300 hover:text-white'} ${item.is_highlighted ? 'font-semibold' : ''}`;
+                                if (!isCategory && !isInternalSlug(item.slug)) {
+                                    return (
+                                        <a
+                                            key={`${item.slug}-${idx}`}
+                                            href={item.slug}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={baseClass}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        key={`${item.slug}-${idx}`}
+                                        type="button"
+                                        onClick={() => handleNavItemClick(item)}
+                                        className={baseClass}
+                                    >
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
+                            {hasOverflow && (
+                                <div className="relative h-full flex items-center" ref={moreNavRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsMoreNavOpen((v) => !v)}
+                                        className={`px-3 h-full flex items-center border-b-2 transition-colors whitespace-nowrap text-xs border-transparent text-slate-300 hover:text-white ${isMoreNavOpen ? 'text-white' : ''}`}
+                                        aria-expanded={isMoreNavOpen}
+                                        aria-haspopup="true"
+                                    >
+                                        <MoreHorizontal size={16} className="mr-0.5" />
+                                        Mais
+                                    </button>
+                                    {isMoreNavOpen && (
+                                        <div
+                                            className="absolute left-0 top-full mt-0 min-w-[180px] py-1 bg-white text-slate-800 rounded-b-lg shadow-xl border border-slate-200 z-50"
+                                            role="menu"
+                                        >
+                                            {overflowNavItems.map((item, idx) => {
+                                                const isCategory = Boolean(item.category_value);
+                                                if (!isCategory && !isInternalSlug(item.slug)) {
+                                                    return (
+                                                        <a
+                                                            key={`overflow-${item.slug}-${idx}`}
+                                                            href={item.slug}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block px-4 py-2 text-sm hover:bg-slate-100"
+                                                            role="menuitem"
+                                                        >
+                                                            {item.label}
+                                                        </a>
+                                                    );
+                                                }
+                                                return (
+                                                    <button
+                                                        key={`overflow-${item.slug}-${idx}`}
+                                                        type="button"
+                                                        onClick={() => handleNavItemClick(item)}
+                                                        className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
+                                                        role="menuitem"
+                                                    >
+                                                        {item.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </nav>
                 </div>
@@ -424,18 +523,34 @@ const Header: React.FC<HeaderProps> = ({
                                     </Link>
                                 )
                             )}
-                            {Object.values(ProductCategory).map((cat) => (
-                                <button
-                                    key={cat}
-                                    onClick={() => handleCategoryClick(cat)}
-                                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${selectedCategory === cat
-                                        ? 'text-agro-700 bg-agro-50 font-medium'
-                                        : 'text-slate-600 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
+                            {navItems.map((item, idx) => {
+                                const isCategory = Boolean(item.category_value);
+                                const active = isCategory && selectedCategory === item.category_value;
+                                if (!isCategory && !isInternalSlug(item.slug)) {
+                                    return (
+                                        <a
+                                            key={`mobile-${item.slug}-${idx}`}
+                                            href={item.slug}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        key={`mobile-${item.slug}-${idx}`}
+                                        type="button"
+                                        onClick={() => handleNavItemClick(item)}
+                                        className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${active ? 'text-agro-700 bg-agro-50 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

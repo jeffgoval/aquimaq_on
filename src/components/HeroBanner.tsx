@@ -19,14 +19,16 @@ const HeroBanner: React.FC = () => {
     const touchStartXRef = useRef<number | null>(null);
     const slideIntervalMs = settings?.bannerSlideIntervalMs ?? DEFAULT_SLIDE_INTERVAL_MS;
 
+    const seasonalContext = settings?.seasonalContext ?? null;
+
     useEffect(() => {
-        getActiveBanners()
+        getActiveBanners(seasonalContext)
             .then((data) => {
                 if (data?.length) setBanners(data);
             })
             .catch((err) => console.error('Error loading banners:', err))
             .finally(() => setLoading(false));
-    }, []);
+    }, [seasonalContext]);
 
     // Auto-advance slides - pauses when isPausedRef is true.
     useEffect(() => {
