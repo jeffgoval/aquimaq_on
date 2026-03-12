@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package, MoreHorizontal } from 'lucide-react';
+import { Menu, X, ShoppingCart, Store, Search, LogIn, LogOut, ChevronDown, Heart, LayoutDashboard, User, Package } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
@@ -34,8 +34,6 @@ const FALLBACK_NAV: NavigationMenuItem[] = [
     { label: 'EPI e Segurança', slug: ROUTES.HOME, category_value: ProductCategory.PPE, enabled: true },
 ];
 
-const MAX_VISIBLE_NAV_ITEMS = 5;
-
 interface HeaderProps {
     cartItemCount: number;
     onCategoryReset?: () => void;
@@ -62,36 +60,27 @@ const Header: React.FC<HeaderProps> = ({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [isMoreNavOpen, setIsMoreNavOpen] = useState(false);
     const mobileSearchInputRef = useRef<HTMLInputElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
-    const moreNavRef = useRef<HTMLDivElement>(null);
 
     const navItems = useMemo(() => {
-        const list = settings?.navigationMenu?.length
+        const raw = settings?.navigationMenu?.length
             ? settings.navigationMenu.filter((item) => item.enabled !== false)
             : FALLBACK_NAV;
-        return list;
+        return raw.length > 0 ? raw : FALLBACK_NAV;
     }, [settings?.navigationMenu]);
-
-    const visibleNavItems = useMemo(() => navItems.slice(0, MAX_VISIBLE_NAV_ITEMS), [navItems]);
-    const overflowNavItems = useMemo(() => navItems.slice(MAX_VISIBLE_NAV_ITEMS), [navItems]);
-    const hasOverflow = overflowNavItems.length > 0;
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
                 setIsUserMenuOpen(false);
             }
-            if (moreNavRef.current && !moreNavRef.current.contains(e.target as Node)) {
-                setIsMoreNavOpen(false);
-            }
         };
-        if (isUserMenuOpen || isMoreNavOpen) {
+        if (isUserMenuOpen) {
             document.addEventListener('click', handleClickOutside);
         }
         return () => document.removeEventListener('click', handleClickOutside);
-    }, [isUserMenuOpen, isMoreNavOpen]);
+    }, [isUserMenuOpen]);
 
     // Focus Traps
     const mobileMenuRef = useFocusTrap(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
@@ -103,6 +92,15 @@ const Header: React.FC<HeaderProps> = ({
             mobileSearchInputRef.current.focus();
         }
     }, [isSearchOpen]);
+
+    // Bloquear scroll do body quando o menu mobile está aberto (evita scroll da página atrás)
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => { document.body.style.overflow = prev; };
+        }
+    }, [isMobileMenuOpen]);
 
     const handleLogoClick = () => {
         if (onCategoryReset) onCategoryReset();
@@ -117,7 +115,6 @@ const Header: React.FC<HeaderProps> = ({
             navigate(ROUTES.HOME);
         }
         setIsMobileMenuOpen(false);
-        setIsMoreNavOpen(false);
     };
 
     const isInternalSlug = (slug: string) => slug.startsWith('/') && !slug.startsWith('//');
@@ -128,7 +125,7 @@ const Header: React.FC<HeaderProps> = ({
         } else if (isInternalSlug(item.slug)) {
             navigate(item.slug);
         }
-        setIsMoreNavOpen(false);
+        setIsMobileMenuOpen(false);
     };
 
     const isActive = (path: string) => location.pathname === path;
@@ -140,14 +137,14 @@ const Header: React.FC<HeaderProps> = ({
             <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 hidden md:block border-b border-slate-800">
                 <div className="max-w-7xl mx-auto flex justify-end items-center">
                     <div className="flex space-x-6">
-                        {settings?.phone ? (
+                        {(settings?.whatsapp ?? settings?.phone) ? (
                             <a
-                                href={`https://wa.me/55${settings.phone.replace(/\D/g, '')}`}
+                                href={`https://wa.me/55${(settings.whatsapp || settings.phone || '').replace(/\D/g, '')}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="flex items-center hover:text-white transition-colors"
                             >
                                 <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
-                                Central de Vendas: {maskPhone(settings.phone)}
+                                Central de Vendas: {maskPhone(settings.whatsapp || settings.phone || '')}
                             </a>
                         ) : (
                             <span className="flex items-center">
@@ -329,10 +326,10 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            {/* 3. CATEGORY NAVIGATION */}
-            <div className="hidden md:block bg-slate-900 text-white shadow-inner">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex items-center space-x-1 text-sm font-medium h-11">
+            {/* 3. CATEGORY NAVIGATION - overflow-visible para o MegaMenu dropdown não ser cortado */}
+            <div className="hidden md:block bg-slate-900 text-white shadow-inner overflow-visible">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+                    <nav className="flex items-center space-x-1 text-sm font-medium h-11 overflow-visible">
                         {/* Home */}
                         <button
                             onClick={() => handleLogoClick()}
@@ -345,12 +342,14 @@ const Header: React.FC<HeaderProps> = ({
                             Início
                         </button>
 
-                        {/* Mega Menu */}
-                        <MegaMenu onCategoryClick={(c) => handleCategoryClick(c as ProductCategory)} />
+                        {/* Mega Menu — shrink-0 para não roubar espaço às categorias */}
+                        <div className="shrink-0">
+                            <MegaMenu onCategoryClick={(c) => handleCategoryClick(c as ProductCategory)} />
+                        </div>
 
-                        {/* Dynamic nav items from store_settings.navigation_menu */}
-                        <div className="flex h-full space-x-0.5 overflow-hidden items-center">
-                            {visibleNavItems.map((item, idx) => {
+                        {/* Categorias: flex-1 min-w-0 para não encolher a zero; overflow-x-auto para scroll se precisar */}
+                        <div className="flex flex-1 min-w-0 h-full items-center space-x-0.5 overflow-x-auto overflow-y-hidden">
+                            {navItems.map((item, idx) => {
                                 const isCategory = Boolean(item.category_value);
                                 const active = isCategory
                                     ? selectedCategory === item.category_value
@@ -380,55 +379,6 @@ const Header: React.FC<HeaderProps> = ({
                                     </button>
                                 );
                             })}
-                            {hasOverflow && (
-                                <div className="relative h-full flex items-center" ref={moreNavRef}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsMoreNavOpen((v) => !v)}
-                                        className={`px-3 h-full flex items-center border-b-2 transition-colors whitespace-nowrap text-xs border-transparent text-slate-300 hover:text-white ${isMoreNavOpen ? 'text-white' : ''}`}
-                                        aria-expanded={isMoreNavOpen}
-                                        aria-haspopup="true"
-                                    >
-                                        <MoreHorizontal size={16} className="mr-0.5" />
-                                        Mais
-                                    </button>
-                                    {isMoreNavOpen && (
-                                        <div
-                                            className="absolute left-0 top-full mt-0 min-w-[180px] py-1 bg-white text-slate-800 rounded-b-lg shadow-xl border border-slate-200 z-50"
-                                            role="menu"
-                                        >
-                                            {overflowNavItems.map((item, idx) => {
-                                                const isCategory = Boolean(item.category_value);
-                                                if (!isCategory && !isInternalSlug(item.slug)) {
-                                                    return (
-                                                        <a
-                                                            key={`overflow-${item.slug}-${idx}`}
-                                                            href={item.slug}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="block px-4 py-2 text-sm hover:bg-slate-100"
-                                                            role="menuitem"
-                                                        >
-                                                            {item.label}
-                                                        </a>
-                                                    );
-                                                }
-                                                return (
-                                                    <button
-                                                        key={`overflow-${item.slug}-${idx}`}
-                                                        type="button"
-                                                        onClick={() => handleNavItemClick(item)}
-                                                        className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
-                                                        role="menuitem"
-                                                    >
-                                                        {item.label}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </nav>
                 </div>
@@ -437,12 +387,12 @@ const Header: React.FC<HeaderProps> = ({
             {/* MOBILE MENU */}
             {isMobileMenuOpen && (
                 <div className="md:hidden fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div ref={mobileMenuRef} className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
+                    <div ref={mobileMenuRef} className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col pl-[env(safe-area-inset-left)] pb-[env(safe-area-inset-bottom)]" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
                             <span className="text-lg font-bold">Menu</span>
-                            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu"><X size={24} /></button>
+                            <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu" className="min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2 rounded-lg hover:bg-white/10 active:bg-white/20"><X size={24} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-2">
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 overscroll-contain">
                             {!authLoading && (
                                 user ? (
                                     <div className="px-4 py-3 border-b border-slate-100">
@@ -523,7 +473,10 @@ const Header: React.FC<HeaderProps> = ({
                                     </Link>
                                 )
                             )}
-                            {navItems.map((item, idx) => {
+                            {navItems.length > 0 && (
+                                <>
+                                    <p className="px-4 pt-4 pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Categorias</p>
+                                    {navItems.map((item, idx) => {
                                 const isCategory = Boolean(item.category_value);
                                 const active = isCategory && selectedCategory === item.category_value;
                                 if (!isCategory && !isInternalSlug(item.slug)) {
@@ -550,7 +503,9 @@ const Header: React.FC<HeaderProps> = ({
                                         {item.label}
                                     </button>
                                 );
-                            })}
+                                    })}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -15,6 +15,7 @@ import {
     MessageSquare,
     Truck,
     Calendar,
+    Star,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'SHIPPING_GUARD' | 'SEASONAL';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'SHIPPING_GUARD' | 'SEASONAL' | 'REVIEWS';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -35,6 +36,7 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_WHATSAPP]: 'WHATSAPP',
     [ROUTES.ADMIN_SHIPPING_GUARD]: 'SHIPPING_GUARD',
     [ROUTES.ADMIN_SEASONAL]: 'SEASONAL',
+    [ROUTES.ADMIN_REVIEWS]: 'REVIEWS',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
@@ -48,6 +50,7 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     WHATSAPP: ROUTES.ADMIN_WHATSAPP,
     SHIPPING_GUARD: ROUTES.ADMIN_SHIPPING_GUARD,
     SEASONAL: ROUTES.ADMIN_SEASONAL,
+    REVIEWS: ROUTES.ADMIN_REVIEWS,
 };
 
 interface AdminLayoutProps {
@@ -60,6 +63,8 @@ interface NavItem {
     id: AdminView;
     label: string;
     icon: React.ReactNode;
+    /** Tooltip ao passar o rato – explica o que é esta secção */
+    title?: string;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({
@@ -95,22 +100,23 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     }, [pathname, propActiveView]);
 
     const navItems: NavItem[] = ([
-        { id: 'DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-        { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} /> },
-        { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
-        { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
-        { id: 'SHIPPING_GUARD', label: 'Logística', icon: <Truck size={18} /> },
-        { id: 'SEASONAL', label: 'Sazonalidade', icon: <Calendar size={18} /> },
-        { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
-        { id: 'WHATSAPP', label: 'WhatsApp', icon: <MessageSquare size={18} /> },
-        { id: 'AI', label: 'Config. IA', icon: <Bot size={18} /> },
-        { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
+        { id: 'DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard size={18} />, title: 'Visão geral: pedidos, vendas e alertas' },
+        { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} />, title: 'Gerir pedidos e estados de envio' },
+        { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} />, title: 'Catálogo de produtos da loja' },
+        { id: 'BANNERS', label: 'Banners', icon: <Image size={18} />, title: 'Imagens de destaque na página inicial' },
+        { id: 'SHIPPING_GUARD', label: 'Logística', icon: <Truck size={18} />, title: 'Regras de entrega por categoria (ex.: apenas retirada, frota regional)' },
+        { id: 'SEASONAL', label: 'Sazonalidade', icon: <Calendar size={18} />, title: 'Fases de safra (plantio/colheita) para destacar produtos em época' },
+        { id: 'REVIEWS', label: 'Avaliações', icon: <Star size={18} />, title: 'Moderar avaliações de produtos (ocultar ou eliminar)' },
+        { id: 'USERS', label: 'Usuários', icon: <Users size={18} />, title: 'Equipa: administradores, gerentes e vendedores' },
+        { id: 'WHATSAPP', label: 'WhatsApp', icon: <MessageSquare size={18} />, title: 'Modelos de mensagem e integração WhatsApp' },
+        { id: 'AI', label: 'Config. IA', icon: <Bot size={18} />, title: 'Modelo de IA para descrições e sugestões (ex.: OpenAI)' },
+        { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} />, title: 'Dados da empresa, pagamento e marketing' },
     ] as NavItem[]).filter(item => {
         // Ver matriz de roles em App.tsx (AdminRoutes). Manter alinhado com ProtectedRoute por rota.
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
         if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
         if (isVendedor && item.id === 'WHATSAPP') return false; // WhatsApp: apenas admin/gerente
-        if (isVendedor && ['SHIPPING_GUARD', 'SEASONAL'].includes(item.id)) return false; // Logística, Sazonalidade: admin/gerente
+        if (isVendedor && ['SHIPPING_GUARD', 'SEASONAL', 'REVIEWS'].includes(item.id)) return false; // Logística, Sazonalidade, Avaliações: admin/gerente
         return true;
     });
 
@@ -175,6 +181,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     {navItems.map((item) => (
                         <button
                             key={item.id}
+                            type="button"
+                            title={item.title}
                             onClick={() => handleNavClick(item.id)}
                             className={`
                                 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-150

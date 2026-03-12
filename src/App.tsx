@@ -39,7 +39,8 @@ const StoreSettings = lazy(() => import('./components/StoreSettings'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
 const AdminWhatsAppManagement = lazy(() => import('./components/admin/AdminWhatsAppManagement'));
 const AdminShippingGuard = lazy(() => import('./components/admin/AdminShippingGuard'));
-const AdminSeasonalSwitcher = lazy(() => import('./components/admin/AdminSeasonalSwitcher'));
+const AdminSeasonalPage = lazy(() => import('./components/admin/AdminSeasonalPage'));
+const AdminReviewsManagement = lazy(() => import('./components/admin/AdminReviewsManagement'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -78,6 +79,7 @@ function AdminRoutes() {
             WHATSAPP: ROUTES.ADMIN_WHATSAPP,
             SHIPPING_GUARD: ROUTES.ADMIN_SHIPPING_GUARD,
             SEASONAL: ROUTES.ADMIN_SEASONAL,
+            REVIEWS: ROUTES.ADMIN_REVIEWS,
         };
         navigate(paths[view] ?? ROUTES.ADMIN);
     };
@@ -122,7 +124,12 @@ function AdminRoutes() {
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_SEASONAL} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente']}>
-                        <AdminSeasonalSwitcher />
+                        <AdminSeasonalPage />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_REVIEWS} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                        <AdminReviewsManagement />
                     </ProtectedRoute>
                 } />
             </Routes>

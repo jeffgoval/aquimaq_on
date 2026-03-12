@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { mapProductRowToProduct } from '@/features/catalog/utils/productAdapter';
-import type { ProductRow, CropCalendarRow, TablesInsert } from '@/types/database';
+import type { ProductRow, TablesInsert } from '@/types/database';
 import type { Product, ProductCategory } from '@/types';
 
 export type ProductSortOption =
@@ -194,12 +194,4 @@ export const getProductDocuments = async (
 };
 
 /** Calendário de culturas (para filtro “em época”). */
-export const getCropCalendar = async (): Promise<CropCalendarRow[]> => {
-  const { data, error } = await supabase
-    .from('crop_calendar')
-    .select('*')
-    .order('culture');
-
-  if (error) throw error;
-  return (data as CropCalendarRow[]) ?? [];
-};
+export { getCropCalendar } from './cropCalendarService';

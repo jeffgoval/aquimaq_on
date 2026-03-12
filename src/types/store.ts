@@ -44,6 +44,7 @@ export interface StoreSettings {
   cnpj: string;
   email: string;
   phone: string;
+  whatsapp?: string | null;
   address: StoreSettingsAddress;
   openingHours: string;
   socialMedia: StoreSettingsSocialMedia;
@@ -72,6 +73,7 @@ export interface StoreSettingsDB {
   cnpj?: string;
   email: string;
   phone: string;
+  whatsapp?: string | null;
   opening_hours: string;
   social_media: StoreSettingsSocialMedia;
   logo_url?: string | null;
@@ -139,6 +141,7 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     cnpj: r.cnpj ?? r.document ?? '',
     email: r.email ?? '',
     phone: r.phone ?? '',
+    whatsapp: r.whatsapp ?? null,
     address,
     openingHours: r.opening_hours ?? '',
     socialMedia: r.social_media ?? defaultSocial,
@@ -169,6 +172,7 @@ export const storeSettingsToDB = (
   if (s.cnpj !== undefined) out.cnpj = s.cnpj;
   if (s.email !== undefined) out.email = s.email;
   if (s.phone !== undefined) out.phone = s.phone;
+  if (s.whatsapp !== undefined) out.whatsapp = s.whatsapp ?? null;
   if (s.address !== undefined) {
     out.origin_cep = s.address.zip?.replace(/\D/g, '') ?? null;
     out.origin_street = s.address.street ?? null;

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck, Menu, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import type { NavigationMenuItem } from '@/types/store';
+import { ProductCategory } from '@/types';
+import { ROUTES } from '@/constants/routes';
 
 interface StoreSettingsProps {
     onBack: () => void;
@@ -14,8 +17,10 @@ interface StoreSettingsProps {
 interface StoreConfig {
     storeName: string;
     razaoSocial: string;
+    description: string;
     cnpj: string;
     phone: string;
+    whatsapp: string;
     email: string;
     openingHours: string;
     address: {
@@ -50,13 +55,19 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
 
-type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas';
+type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas' | 'menu';
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
     { id: 'empresa', label: 'Empresa', icon: <Store size={16} /> },
     { id: 'endereco', label: 'Endereço', icon: <MapPin size={16} /> },
     { id: 'pagamento', label: 'Pagamento', icon: <CreditCard size={16} /> },
     { id: 'vendas', label: 'Marketing', icon: <TrendingUp size={16} /> },
+    { id: 'menu', label: 'Menu da barra', icon: <Menu size={16} /> },
+];
+
+const NAV_CATEGORY_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: '— Link (sem categoria) —' },
+    ...Object.values(ProductCategory).map((c) => ({ value: c, label: c })),
 ];
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
@@ -64,8 +75,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const [formData, setFormData] = useState<StoreConfig>({
         storeName: '',
         razaoSocial: '',
+        description: '',
         cnpj: '',
         phone: '',
+        whatsapp: '',
         email: '',
         openingHours: '',
         address: {
@@ -90,15 +103,18 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         crossSellEnabled: true,
         crossSellCategory: '',
     });
+    const [navigationMenu, setNavigationMenu] = useState<NavigationMenuItem[]>([]);
 
-    // Sync formData with loaded settings (camelCase)
+    // Sync formData and navigationMenu with loaded settings (camelCase)
     useEffect(() => {
         if (settings) {
             setFormData({
                 storeName: settings.storeName,
                 razaoSocial: settings.razaoSocial || '',
+                description: settings.description ?? '',
                 cnpj: maskDocument(settings.cnpj || ''),
                 phone: maskPhone(settings.phone || ''),
+                whatsapp: maskPhone(settings.whatsapp ?? '') || '',
                 email: settings.email || '',
                 openingHours: settings.openingHours || '',
                 address: {
@@ -123,6 +139,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 crossSellEnabled: settings.crossSellEnabled ?? true,
                 crossSellCategory: settings.crossSellCategory ?? '',
             });
+            setNavigationMenu(Array.isArray(settings.navigationMenu) ? [...settings.navigationMenu] : []);
         }
     }, [settings]);
 
@@ -211,8 +228,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         const result = await saveSettings({
             storeName: formData.storeName,
             razaoSocial: formData.razaoSocial,
+            description: formData.description || undefined,
             cnpj: formData.cnpj.replace(/\D/g, ''),
             phone: formData.phone.replace(/\D/g, ''),
+            whatsapp: formData.whatsapp.replace(/\D/g, '') || null,
             email: formData.email,
             openingHours: formData.openingHours,
             address: {
@@ -232,6 +251,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             freeShippingThreshold: formData.freeShippingThreshold,
             crossSellEnabled: formData.crossSellEnabled,
             crossSellCategory: formData.crossSellCategory || null,
+            navigationMenu,
         });
 
         setIsLoading(false);
@@ -392,6 +412,25 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700">Número WhatsApp</label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                name="whatsapp"
+                                                value={formData.whatsapp}
+                                                onChange={(e) => {
+                                                    const v = maskPhone(e.target.value);
+                                                    setFormData((prev) => ({ ...prev, whatsapp: v }));
+                                                }}
+                                                maxLength={15}
+                                                placeholder="Se diferente do telefone acima"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-400">Usado no link &quot;Central de Vendas&quot; do header. Deixe vazio para usar o telefone de contato.</p>
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">E-mail</label>
                                         <div className="relative">
                                             <Mail className="absolute left-3.5 top-3 text-gray-400" size={18} />
@@ -419,6 +458,18 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </div>
                                         <p className="text-xs text-gray-400">Exibido no rodapé na seção de atendimento.</p>
                                     </div>
+                                </div>
+                                <div className="space-y-2 mt-6">
+                                    <label className="text-sm font-semibold text-gray-700">Descrição da loja</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                                        rows={3}
+                                        placeholder="Texto curto sobre a loja (SEO / página Sobre)."
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none text-sm"
+                                    />
+                                    <p className="text-xs text-gray-400">Usado em meta description e contexto da loja. Opcional.</p>
                                 </div>
                             </section>
 
@@ -709,6 +760,126 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
                             </>
+                            )}
+
+                            {/* Aba: Menu da barra (navegação) */}
+                            {activeTab === 'menu' && (
+                            <section className="space-y-6">
+                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                                    <Menu className="text-agro-700" size={20} />
+                                    Itens da barra de categorias
+                                </h3>
+                                <p className="text-sm text-gray-500">Ordem e itens exibidos na barra preta abaixo do header. Deixe vazio para usar a lista padrão.</p>
+                                <div className="space-y-3">
+                                    {navigationMenu.map((item, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200"
+                                        >
+                                            <span className="text-gray-400" aria-hidden><GripVertical size={18} /></span>
+                                            <input
+                                                type="text"
+                                                value={item.label}
+                                                onChange={(e) => {
+                                                    const next = [...navigationMenu];
+                                                    next[index] = { ...next[index], label: e.target.value };
+                                                    setNavigationMenu(next);
+                                                }}
+                                                placeholder="Label"
+                                                className="w-40 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={item.slug}
+                                                onChange={(e) => {
+                                                    const next = [...navigationMenu];
+                                                    next[index] = { ...next[index], slug: e.target.value };
+                                                    setNavigationMenu(next);
+                                                }}
+                                                placeholder="URL ou /rota"
+                                                className="flex-1 min-w-[160px] px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            />
+                                            <select
+                                                value={item.category_value ?? ''}
+                                                onChange={(e) => {
+                                                    const next = [...navigationMenu];
+                                                    const val = e.target.value;
+                                                    next[index] = {
+                                                        ...next[index],
+                                                        category_value: val || undefined,
+                                                        slug: val ? ROUTES.HOME : (next[index].slug || ''),
+                                                    };
+                                                    setNavigationMenu(next);
+                                                }}
+                                                className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            >
+                                                {NAV_CATEGORY_OPTIONS.map((opt) => (
+                                                    <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                            <label className="flex items-center gap-1.5 text-sm text-gray-700 whitespace-nowrap">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={item.enabled !== false}
+                                                    onChange={(e) => {
+                                                        const next = [...navigationMenu];
+                                                        next[index] = { ...next[index], enabled: e.target.checked };
+                                                        setNavigationMenu(next);
+                                                    }}
+                                                    className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
+                                                />
+                                                Ativo
+                                            </label>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (index === 0) return;
+                                                        const next = [...navigationMenu];
+                                                        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                                                        setNavigationMenu(next);
+                                                    }}
+                                                    disabled={index === 0}
+                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
+                                                    aria-label="Subir"
+                                                >
+                                                    ↑
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (index >= navigationMenu.length - 1) return;
+                                                        const next = [...navigationMenu];
+                                                        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                                        setNavigationMenu(next);
+                                                    }}
+                                                    disabled={index >= navigationMenu.length - 1}
+                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
+                                                    aria-label="Descer"
+                                                >
+                                                    ↓
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNavigationMenu((prev) => prev.filter((_, i) => i !== index))}
+                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
+                                                    aria-label="Remover"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setNavigationMenu((prev) => [...prev, { label: '', slug: ROUTES.HOME, enabled: true }])}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-agro-700 hover:bg-agro-50 rounded-lg border border-dashed border-agro-200"
+                                    >
+                                        <Plus size={16} />
+                                        Adicionar item
+                                    </button>
+                                </div>
+                            </section>
                             )}
 
                             <div className="pt-6 border-t border-gray-100 flex justify-end">

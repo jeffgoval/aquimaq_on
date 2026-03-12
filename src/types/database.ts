@@ -653,6 +653,7 @@ export type Database = {
           product_id: string
           rating: number
           verified_purchase: boolean | null
+          is_visible: boolean
         }
         Insert: {
           cliente_id: string
@@ -662,6 +663,7 @@ export type Database = {
           product_id: string
           rating: number
           verified_purchase?: boolean | null
+          is_visible?: boolean
         }
         Update: {
           cliente_id?: string
@@ -671,6 +673,7 @@ export type Database = {
           product_id?: string
           rating?: number
           verified_purchase?: boolean | null
+          is_visible?: boolean
         }
         Relationships: [
           {

@@ -27,6 +27,7 @@ export const ROUTES = {
   ADMIN_WHATSAPP: '/admin/whatsapp',
   ADMIN_SHIPPING_GUARD: '/admin/logistica',
   ADMIN_SEASONAL: '/admin/sazonalidade',
+  ADMIN_REVIEWS: '/admin/avaliacoes',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -58,5 +59,6 @@ export const ROUTE_PATHS = {
   ADMIN_WHATSAPP: 'whatsapp',
   ADMIN_SHIPPING_GUARD: 'logistica',
   ADMIN_SEASONAL: 'sazonalidade',
+  ADMIN_REVIEWS: 'avaliacoes',
   ORDERS: 'meus-pedidos',
 } as const;

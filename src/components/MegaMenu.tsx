@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, MousePointer2, ArrowRight } from 'lucide-react';
 import { MEGA_MENU_CATEGORIES } from '@/constants/megaMenuCategories';
 
@@ -6,22 +6,58 @@ interface MegaMenuProps {
     onCategoryClick?: (categorySlug: string) => void;
 }
 
+const HOVER_DELAY_MS = 150;
+
 const MegaMenu: React.FC<MegaMenuProps> = ({ onCategoryClick }) => {
     const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const scheduleClose = () => {
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => setIsOpen(false), HOVER_DELAY_MS);
+    };
+
+    const cancelClose = () => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+        setIsOpen(true);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        };
+    }, []);
 
     return (
-        <div className="relative group">
+        <div
+            className="relative"
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
+        >
             {/* Trigger Button */}
-            <button className="flex items-center px-5 h-12 transition-colors border-b-2 border-transparent text-slate-300 hover:text-white hover:bg-white/5 font-medium">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button
+                type="button"
+                className="flex items-center px-5 h-11 transition-colors border-b-2 border-transparent text-slate-300 hover:text-white hover:bg-white/5 font-medium"
+                aria-expanded={isOpen}
+                aria-haspopup="true"
+            >
+                <svg className="w-5 h-5 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
                 Todos os Departamentos
-                <ChevronRight className="ml-2 w-4 h-4 transition-transform group-hover:rotate-90" />
+                <ChevronRight className={`ml-2 w-4 h-4 shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
             </button>
 
             {/* Mega Menu Dropdown */}
-            <div className="absolute left-0 top-full mt-0 w-[900px] bg-white shadow-2xl rounded-b-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div
+                className={`absolute left-0 top-full mt-0 w-[900px] bg-white shadow-2xl rounded-b-xl border border-slate-200 transition-all duration-200 z-[100] ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                role="menu"
+                aria-hidden={!isOpen}
+            >
                 <div className="flex">
                     {/* Left Sidebar - Main Categories */}
                     <div className="w-64 bg-slate-50 border-r border-slate-200 py-2">
