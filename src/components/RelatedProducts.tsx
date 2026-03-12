@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
-import { useProducts } from '@/hooks/useCatalogProducts';
+import { useProducts } from '@/features/catalog';
 import { ShoppingCart, ArrowRight } from 'lucide-react';
 
 import Image from './Image';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
-import { SortOption } from '@/hooks/useCatalogProducts';
+import { SortOption } from '@/features/catalog';
 
 interface CatalogMobileFilterBarProps {
     sortBy: SortOption;

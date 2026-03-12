@@ -1,6 +1,6 @@
 import React from 'react';
 import { Product, ProductCategory } from '@/types';
-import type { UseCatalogFiltersResult } from '@/hooks/useCatalogFilters';
+import type { UseCatalogFiltersResult } from '@/features/catalog';
 import { CatalogSEO } from './catalog/CatalogSEO';
 import { CatalogHero } from './catalog/CatalogHero';
 import { CatalogFilterBar } from './catalog/CatalogFilterBar';

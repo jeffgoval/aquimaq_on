@@ -14,7 +14,7 @@ import SectionErrorBoundary from './SectionErrorBoundary';
 import ProductReviews from './ProductReviews';
 import RelatedProducts from './RelatedProducts';
 import RecommendationsByPhase from './RecommendationsByPhase';
-import { useCropCalendar } from '@/hooks/useCropCalendar';
+import { useCropCalendar } from '@/features/catalog';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';

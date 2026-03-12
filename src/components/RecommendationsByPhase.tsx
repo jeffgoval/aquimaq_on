@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
-import { useProducts } from '@/hooks/useCatalogProducts';
+import { useProducts } from '@/features/catalog';
 import ProductCard from './ProductCard';
 import { CalendarDays } from 'lucide-react';
 

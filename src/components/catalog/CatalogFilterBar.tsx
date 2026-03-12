@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { ProductCategory } from '@/types';
-import { SortOption } from '@/hooks/useCatalogProducts';
+import { SortOption } from '@/features/catalog';
 import { CatalogMobileFilterBar } from './CatalogMobileFilterBar';
 
 interface CatalogFilterBarProps {

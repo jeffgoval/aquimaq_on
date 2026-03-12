@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { useProducts as useCatalogProducts } from '@/hooks/useCatalogProducts';
+import { useProducts as useCatalogProducts } from '@/features/catalog';
 import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/features/cart';
 import { useToast } from '@/contexts/ToastContext';
