@@ -2,7 +2,6 @@
 export interface MegaMenuCategory {
     id: string;
     name: string;
-    icon?: string;
     subcategories: {
         id: string;
         name: string; // Display Name
@@ -15,7 +14,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'maquinas-equipamentos',
         name: 'Máquinas e Equipamentos',
-        icon: '⚙️',
         subcategories: [
             { id: 'derricadeiras', name: 'Derriçadeiras', slug: 'derricadeiras', mappedCategory: 'Máquinas e Equipamentos' },
             { id: 'rocadeiras', name: 'Roçadeiras', slug: 'rocadeiras', mappedCategory: 'Máquinas e Equipamentos' },
@@ -26,7 +24,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'pecas-reposicao',
         name: 'Peças de Reposição',
-        icon: '🔩',
         subcategories: [
             { id: 'hastes', name: 'Hastes', slug: 'hastes', mappedCategory: 'Peças de Reposição' },
             { id: 'garras-maozinhas', name: 'Garras / Mãozinhas', slug: 'garras-maozinhas', mappedCategory: 'Peças de Reposição' },
@@ -38,7 +35,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'insumos-agricolas',
         name: 'Insumos Agrícolas',
-        icon: '🌱',
         subcategories: [
             { id: 'adubos-foliares', name: 'Adubos Foliares', slug: 'adubos-foliares', mappedCategory: 'Insumos Agrícolas' },
             { id: 'fertilizantes-solo', name: 'Fertilizantes de Solo', slug: 'fertilizantes-solo', mappedCategory: 'Insumos Agrícolas' },
@@ -50,7 +46,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'colheita-ferramentas',
         name: 'Colheita e Ferramentas',
-        icon: '🌾',
         subcategories: [
             { id: 'panos-apanha', name: 'Panos de Apanha', slug: 'panos-apanha', mappedCategory: 'Colheita e Ferramentas' },
             { id: 'peneiras', name: 'Peneiras', slug: 'peneiras', mappedCategory: 'Colheita e Ferramentas' },
@@ -62,7 +57,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'linha-pet',
         name: 'Linha Pet',
-        icon: '🐾',
         subcategories: [
             { id: 'medicamentos-pet', name: 'Medicamentos', slug: 'medicamentos-pet', mappedCategory: 'Linha Pet' },
             { id: 'vacinas', name: 'Vacinas', slug: 'vacinas', mappedCategory: 'Linha Pet' },
@@ -73,7 +67,6 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
     {
         id: 'epi-seguranca',
         name: 'EPI e Segurança',
-        icon: '🦺',
         subcategories: [
             { id: 'mascaras', name: 'Máscaras', slug: 'mascaras', mappedCategory: 'EPI e Segurança' },
             { id: 'oculos-protecao', name: 'Óculos', slug: 'oculos-protecao', mappedCategory: 'EPI e Segurança' },
