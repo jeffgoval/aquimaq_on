@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -355,6 +355,9 @@ const LoginPage: React.FC = () => {
           </form>
         )}
       </div>
+      <p className="mt-4 text-center text-sm text-slate-500">
+        É staff? <Link to={ROUTES.ADMIN} className="text-slate-700 hover:underline">Aceda ao painel</Link>
+      </p>
     </div>
   );
 };

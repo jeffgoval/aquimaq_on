@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { ROUTES, ROUTE_PATHS } from '@/constants/routes';
 import { AppProviders } from './providers';
 import { useToast } from './contexts/ToastContext';
+import { useAuth } from './contexts/AuthContext';
 import { ENV } from './config/env';
 
 
@@ -19,6 +20,7 @@ const PolicyPage = lazy(() => import('./pages/PolicyPage'));
 const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const StaffLoginPage = lazy(() => import('./pages/StaffLoginPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentFailurePage = lazy(() => import('./pages/PaymentFailurePage'));
@@ -56,6 +58,33 @@ const PageFallback = (
         <p className="text-gray-500 text-sm mt-3">Carregando...</p>
     </div>
 );
+
+const AdminGateFallback = (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50">
+        <div className="w-10 h-10 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" aria-hidden />
+        <p className="text-stone-500 text-sm mt-3">Verificando...</p>
+    </div>
+);
+
+/** Para /admin: se não autenticado mostra login minimal (sem layout loja); se autenticado mostra painel. */
+function AdminGate() {
+    const { user, loading } = useAuth();
+    if (loading) return AdminGateFallback;
+    if (!user) {
+        return (
+            <Suspense fallback={AdminGateFallback}>
+                <StaffLoginPage />
+            </Suspense>
+        );
+    }
+    return (
+        <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
+            <AdminLayout>
+                <AdminRoutes />
+            </AdminLayout>
+        </ProtectedRoute>
+    );
+}
 
 /**
  * Matriz de acesso por role (menu AdminLayout + rotas):
@@ -170,17 +199,8 @@ function AppContent() {
                                 <Route path={ROUTE_PATHS.FAQ} element={<FAQPage />} />
                             </Route>
 
-                            {/* Admin Routes */}
-                            <Route
-                                path="/admin/*"
-                                element={
-                                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
-                                        <AdminLayout>
-                                            <AdminRoutes />
-                                        </AdminLayout>
-                                    </ProtectedRoute>
-                                }
-                            />
+                            {/* Admin Routes: sem sessão = login minimal (sem layout loja); com sessão = painel */}
+                            <Route path="/admin/*" element={<AdminGate />} />
 
                             <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
                         </Routes>

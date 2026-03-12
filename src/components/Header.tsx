@@ -54,6 +54,7 @@ const Header: React.FC<HeaderProps> = ({
     const { settings } = useStore();
     const { user, loading: authLoading, signOut, isAdmin, isGerente, hasRole } = useAuth();
     const isVendedor = hasRole(['vendedor']);
+    const isStaff = isAdmin || isGerente || isVendedor;
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -228,63 +229,78 @@ const Header: React.FC<HeaderProps> = ({
                                                     <p className="text-sm font-medium text-slate-900 truncate">{user.email}</p>
                                                     <p className="text-xs text-slate-500">{isAdmin ? 'Administrador' : isGerente ? 'Gerente' : isVendedor ? 'Vendedor' : 'Cliente'}</p>
                                                 </div>
-                                                {(isAdmin || isGerente || isVendedor) && (
-                                                    <Link
-                                                        to={ROUTES.ADMIN}
-                                                        onClick={() => { setIsUserMenuOpen(false); }}
-                                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                                                        role="menuitem"
-                                                    >
-                                                        <LayoutDashboard size={16} />
-                                                        {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
-                                                    </Link>
+                                                {isStaff ? (
+                                                    <>
+                                                        <Link
+                                                            to={ROUTES.ADMIN}
+                                                            onClick={() => { setIsUserMenuOpen(false); }}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
+                                                            role="menuitem"
+                                                        >
+                                                            <LayoutDashboard size={16} />
+                                                            {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
+                                                        </Link>
+                                                        <div className="border-t border-slate-100 my-1" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { signOut(); setIsUserMenuOpen(false); }}
+                                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <LogOut size={16} />
+                                                            Sair
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Link
+                                                            to={ROUTES.ACCOUNT}
+                                                            onClick={() => setIsUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <User size={16} />
+                                                            Minha conta
+                                                        </Link>
+                                                        <Link
+                                                            to={ROUTES.ORDERS}
+                                                            onClick={() => setIsUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <Package size={16} />
+                                                            Meus pedidos
+                                                        </Link>
+                                                        <Link
+                                                            to={ROUTES.WISHLIST}
+                                                            onClick={() => setIsUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <Heart size={16} />
+                                                            Favoritos
+                                                        </Link>
+                                                        <Link
+                                                            to={ROUTES.CART}
+                                                            onClick={() => setIsUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <ShoppingCart size={16} />
+                                                            Carrinho
+                                                        </Link>
+                                                        <div className="border-t border-slate-100 my-1" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { signOut(); setIsUserMenuOpen(false); }}
+                                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                            role="menuitem"
+                                                        >
+                                                            <LogOut size={16} />
+                                                            Sair
+                                                        </button>
+                                                    </>
                                                 )}
-                                                <Link
-                                                    to={ROUTES.ACCOUNT}
-                                                    onClick={() => setIsUserMenuOpen(false)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                                                    role="menuitem"
-                                                >
-                                                    <User size={16} />
-                                                    Minha conta
-                                                </Link>
-                                                <Link
-                                                    to={ROUTES.ORDERS}
-                                                    onClick={() => setIsUserMenuOpen(false)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                                                    role="menuitem"
-                                                >
-                                                    <Package size={16} />
-                                                    Meus pedidos
-                                                </Link>
-                                                <Link
-                                                    to={ROUTES.WISHLIST}
-                                                    onClick={() => setIsUserMenuOpen(false)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                                                    role="menuitem"
-                                                >
-                                                    <Heart size={16} />
-                                                    Favoritos
-                                                </Link>
-                                                <Link
-                                                    to={ROUTES.CART}
-                                                    onClick={() => setIsUserMenuOpen(false)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                                                    role="menuitem"
-                                                >
-                                                    <ShoppingCart size={16} />
-                                                    Carrinho
-                                                </Link>
-                                                <div className="border-t border-slate-100 my-1" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { signOut(); setIsUserMenuOpen(false); }}
-                                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                                                    role="menuitem"
-                                                >
-                                                    <LogOut size={16} />
-                                                    Sair
-                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -299,28 +315,30 @@ const Header: React.FC<HeaderProps> = ({
                                 )
                             )}
 
-                            {/* Wishlist icon — desktop */}
-                            <Link
-                                to={ROUTES.WISHLIST}
-                                className={`hidden md:flex p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.WISHLIST) ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-400'}`}
-                                aria-label="Favoritos"
-                            >
-                                <Heart size={21} className={isActive(ROUTES.WISHLIST) ? 'fill-red-500' : ''} />
-                            </Link>
-
-                            {/* Cart */}
-                            <Link
-                                to={ROUTES.CART}
-                                className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-700 bg-agro-50' : 'text-slate-600'}`}
-                                aria-label="Carrinho"
-                            >
-                                <ShoppingCart size={22} />
-                                {cartItemCount > 0 && (
-                                    <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center text-[10px] font-bold text-white bg-red-600 rounded-full shadow-sm ring-2 ring-white">
-                                        {cartItemCount}
-                                    </span>
-                                )}
-                            </Link>
+                            {/* Wishlist e Carrinho: ocultos para staff (não fazem compras na loja) */}
+                            {!isStaff && (
+                                <>
+                                    <Link
+                                        to={ROUTES.WISHLIST}
+                                        className={`hidden md:flex p-2 hover:bg-agro-50 rounded-full transition-all ${isActive(ROUTES.WISHLIST) ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-400'}`}
+                                        aria-label="Favoritos"
+                                    >
+                                        <Heart size={21} className={isActive(ROUTES.WISHLIST) ? 'fill-red-500' : ''} />
+                                    </Link>
+                                    <Link
+                                        to={ROUTES.CART}
+                                        className={`p-2 hover:bg-agro-50 rounded-full relative transition-all ${isActive(ROUTES.CART) ? 'text-agro-700 bg-agro-50' : 'text-slate-600'}`}
+                                        aria-label="Carrinho"
+                                    >
+                                        <ShoppingCart size={22} />
+                                        {cartItemCount > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center text-[10px] font-bold text-white bg-red-600 rounded-full shadow-sm ring-2 ring-white">
+                                                {cartItemCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -410,56 +428,69 @@ const Header: React.FC<HeaderProps> = ({
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-0.5">
-                                            {(isAdmin || isGerente || isVendedor) && (
-                                                <Link
-                                                    to={ROUTES.ADMIN}
-                                                    onClick={() => setIsMobileMenuOpen(false)}
-                                                    className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
-                                                >
-                                                    <LayoutDashboard size={18} />
-                                                    {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
-                                                </Link>
+                                            {isStaff ? (
+                                                <>
+                                                    <Link
+                                                        to={ROUTES.ADMIN}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
+                                                    >
+                                                        <LayoutDashboard size={18} />
+                                                        {isVendedor ? 'Meu Painel' : isGerente ? 'Painel Gerente' : 'Painel Admin'}
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg text-left"
+                                                    >
+                                                        <LogOut size={18} />
+                                                        Sair
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Link
+                                                        to={ROUTES.ACCOUNT}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                                    >
+                                                        <User size={18} />
+                                                        Minha conta
+                                                    </Link>
+                                                    <Link
+                                                        to={ROUTES.ORDERS}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                                    >
+                                                        <Package size={18} />
+                                                        Meus pedidos
+                                                    </Link>
+                                                    <Link
+                                                        to={ROUTES.WISHLIST}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                                    >
+                                                        <Heart size={18} />
+                                                        Favoritos
+                                                    </Link>
+                                                    <Link
+                                                        to={ROUTES.CART}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
+                                                    >
+                                                        <ShoppingCart size={18} />
+                                                        Carrinho
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg text-left"
+                                                    >
+                                                        <LogOut size={18} />
+                                                        Sair
+                                                    </button>
+                                                </>
                                             )}
-                                            <Link
-                                                to={ROUTES.ACCOUNT}
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
-                                            >
-                                                <User size={18} />
-                                                Minha conta
-                                            </Link>
-                                            <Link
-                                                to={ROUTES.ORDERS}
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
-                                            >
-                                                <Package size={18} />
-                                                Meus pedidos
-                                            </Link>
-                                            <Link
-                                                to={ROUTES.WISHLIST}
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
-                                            >
-                                                <Heart size={18} />
-                                                Favoritos
-                                            </Link>
-                                            <Link
-                                                to={ROUTES.CART}
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                                className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 rounded-lg"
-                                            >
-                                                <ShoppingCart size={18} />
-                                                Carrinho
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
-                                                className="flex items-center gap-2 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg text-left"
-                                            >
-                                                <LogOut size={18} />
-                                                Sair
-                                            </button>
                                         </div>
                                     </div>
                                 ) : (
