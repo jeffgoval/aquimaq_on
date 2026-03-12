@@ -12,6 +12,7 @@ import {
     Image,
     Store,
     Bot,
+    MessageSquare,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +20,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -29,6 +30,7 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_USERS]: 'USERS',
     [ROUTES.ADMIN_SETTINGS]: 'SETTINGS',
     [ROUTES.ADMIN_AI]: 'AI',
+    [ROUTES.ADMIN_WHATSAPP]: 'WHATSAPP',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
@@ -39,6 +41,7 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     USERS: ROUTES.ADMIN_USERS,
     SETTINGS: ROUTES.ADMIN_SETTINGS,
     AI: ROUTES.ADMIN_AI,
+    WHATSAPP: ROUTES.ADMIN_WHATSAPP,
 };
 
 interface AdminLayoutProps {
@@ -91,12 +94,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} /> },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} /> },
         { id: 'USERS', label: 'Usuários', icon: <Users size={18} /> },
+        { id: 'WHATSAPP', label: 'WhatsApp', icon: <MessageSquare size={18} /> },
         { id: 'AI', label: 'Config. IA', icon: <Bot size={18} /> },
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} /> },
     ] as NavItem[]).filter(item => {
         // Ver matriz de roles em App.tsx (AdminRoutes). Manter alinhado com ProtectedRoute por rota.
         if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
         if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
+        if (isVendedor && item.id === 'WHATSAPP') return false; // WhatsApp: apenas admin/gerente
         return true;
     });
 

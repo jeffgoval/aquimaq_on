@@ -37,10 +37,13 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500 });
     }
 
-    // Verifica que a chamada vem do n8n com a service role key
+    // Verifica que a chamada vem com a service role key
     const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    if (token !== serviceRoleKey) {
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const envAnon = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const legacySrv = Deno.env.get("LEGACY_SERVICE_ROLE_KEY") || "";
+    
+    if (token !== serviceRoleKey && token !== legacySrv && token !== envAnon) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 

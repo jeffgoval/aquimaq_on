@@ -37,6 +37,7 @@ const AdminBannerManagement = lazy(() => import('./components/admin/AdminBannerM
 const AdminUsersManagement = lazy(() => import('./components/admin/AdminUsersManagement'));
 const StoreSettings = lazy(() => import('./components/StoreSettings'));
 const AdminAISettings = lazy(() => import('./components/admin/AdminAISettings'));
+const AdminWhatsAppManagement = lazy(() => import('./components/admin/AdminWhatsAppManagement'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -72,6 +73,7 @@ function AdminRoutes() {
             USERS: ROUTES.ADMIN_USERS,
             SETTINGS: ROUTES.ADMIN_SETTINGS,
             AI: ROUTES.ADMIN_AI,
+            WHATSAPP: ROUTES.ADMIN_WHATSAPP,
         };
         navigate(paths[view] ?? ROUTES.ADMIN);
     };
@@ -102,6 +104,11 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_AI} element={
                     <ProtectedRoute allowedRoles={['admin']}>
                         <AdminAISettings />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_WHATSAPP} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                        <AdminWhatsAppManagement />
                     </ProtectedRoute>
                 } />
             </Routes>

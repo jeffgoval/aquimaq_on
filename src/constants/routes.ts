@@ -24,6 +24,7 @@ export const ROUTES = {
   ADMIN_USERS: '/admin/usuarios',
   ADMIN_SETTINGS: '/admin/configuracoes',
   ADMIN_AI: '/admin/ia',
+  ADMIN_WHATSAPP: '/admin/whatsapp',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -52,5 +53,6 @@ export const ROUTE_PATHS = {
   ADMIN_USERS: 'usuarios',
   ADMIN_SETTINGS: 'configuracoes',
   ADMIN_AI: 'ia',
+  ADMIN_WHATSAPP: 'whatsapp',
   ORDERS: 'meus-pedidos',
 } as const;

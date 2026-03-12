@@ -1,6 +1,10 @@
 // Hooks
 export { useProducts, type SortOption } from './hooks/useCatalogProducts';
-export { useCatalogFilters, type UseCatalogFiltersResult } from './hooks/useCatalogFilters';
+export {
+    useCatalogFilters,
+    type UseCatalogFiltersOptions,
+    type UseCatalogFiltersResult,
+} from './hooks/useCatalogFilters';
 export { useProduct } from './hooks/useProduct';
 export { useCropCalendar } from './hooks/useCropCalendar';
 

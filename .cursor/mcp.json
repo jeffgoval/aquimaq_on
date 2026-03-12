@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "supabase": {
+    "supabase_aquimaq": {
       "url": "https://mcp.supabase.com/mcp?project_ref=bzicdqrbqykypzesxayw&read_only=false"
     },
-    "mercadopago": {
+    "mercadopago_aquimaq": {
       "url": "https://mcp.mercadopago.com/mcp"
     }
   }

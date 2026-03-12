@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
 import { Product } from '@/types';
 import { ROUTES } from '@/constants/routes';
-import { useProducts } from '@/hooks/useCatalogProducts';
+import { useProducts } from '@/features/catalog';
 import ProductCard from '@/components/ProductCard';
 import { MONTHS_FULL } from '@/utils/cropCalendar';
 

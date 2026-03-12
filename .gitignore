@@ -34,3 +34,10 @@ aquimaq_on/
 # Supabase CLI temp files
 supabase/supabase/
 supabase/.temp/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

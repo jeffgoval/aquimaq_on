@@ -41,6 +41,8 @@ E-commerce especializado em produtos agropecuários, ferramentas, peças e semen
 
 6. **Estoque**: O botão **Restaurar estoque** no Admin > Dashboard executa a RPC `restore_stock_from_unpaid_orders()` para repor estoque de pedidos não pagos.
 
+7. **Chatwoot + n8n (carrinhos abandonados / follow-up WhatsApp):** Secrets no Supabase, migration `cart_sessions`, deploy das Edge Functions `whatsapp-send` e `detect-abandoned-carts`, e configuração dos workflows n8n — ver [docs/configuration-chatwoot-n8n.md](docs/configuration-chatwoot-n8n.md).
+
 ## Estrutura do Projeto
 
 - `/src/pages`: Páginas da aplicação (Loja e Admin)
