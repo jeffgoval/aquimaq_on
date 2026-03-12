@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
     Package, ChevronDown, ChevronUp, ExternalLink,
-    ShoppingBag, AlertCircle, Truck, CheckCircle2, ShoppingCart,
+    ShoppingBag, AlertCircle, Truck, CheckCircle2, ShoppingCart, MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStore } from '@/contexts/StoreContext';
@@ -59,6 +59,111 @@ const OrderSkeleton: React.FC = () => (
     </div>
 );
 
+// ─── Shipping timeline ────────────────────────────────────────────────────────
+const SHIPPING_STEPS = [
+    { key: 'etiqueta_criada',  label: 'Etiqueta Criada',     desc: 'Loja preparando o envio' },
+    { key: 'etiqueta_gerada',  label: 'Etiqueta Impressa',   desc: 'Pronto para postar' },
+    { key: 'postado',          label: 'Objeto Postado',       desc: 'Entregue à transportadora' },
+    { key: 'entregue',         label: 'Entregue',             desc: 'Pedido recebido' },
+] as const;
+
+const SHIPPING_STATUS_LABELS: Record<string, string> = {
+    etiqueta_criada: 'Etiqueta Criada',
+    etiqueta_paga:   'Etiqueta Paga',
+    etiqueta_gerada: 'Etiqueta Impressa',
+    postado:         'Objeto Postado',
+    entregue:        'Entregue',
+    nao_entregue:    'Tentativa de Entrega',
+    cancelado:       'Envio Cancelado',
+};
+
+const ShippingTimeline: React.FC<{ shippingStatus: string; trackingCode?: string; trackingUrl?: string }> = ({
+    shippingStatus, trackingCode, trackingUrl,
+}) => {
+    const currentIdx = SHIPPING_STEPS.findIndex(s => s.key === shippingStatus);
+    const isDelivered = shippingStatus === 'entregue';
+    const isFailed = shippingStatus === 'nao_entregue' || shippingStatus === 'cancelado';
+
+    const rastrearUrl = trackingUrl
+        ?? (trackingCode ? `https://www.correios.com.br/rastreamento/#/search?objects=${trackingCode}` : null);
+
+    return (
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <Truck size={15} className="text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-800">Rastreamento do Envio</span>
+                </div>
+                {rastrearUrl && (
+                    <a
+                        href={rastrearUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    >
+                        Ver detalhes <ExternalLink size={11} />
+                    </a>
+                )}
+            </div>
+
+            {/* Status atual em destaque */}
+            <p className={`text-xs font-bold mb-3 ${isFailed ? 'text-red-600' : 'text-blue-700'}`}>
+                Status atual: {SHIPPING_STATUS_LABELS[shippingStatus] ?? shippingStatus}
+            </p>
+
+            {/* Timeline de steps */}
+            {!isFailed && (
+                <div className="flex items-start gap-0">
+                    {SHIPPING_STEPS.map((step, idx) => {
+                        const done = currentIdx >= 0 && idx <= currentIdx;
+                        const active = idx === currentIdx;
+                        const isLast = idx === SHIPPING_STEPS.length - 1;
+                        return (
+                            <div key={step.key} className="flex-1 flex flex-col items-center">
+                                {/* Dot + connector */}
+                                <div className="flex items-center w-full">
+                                    {idx > 0 && (
+                                        <div className={`flex-1 h-0.5 ${done ? 'bg-blue-500' : 'bg-blue-200'}`} />
+                                    )}
+                                    <div className={`
+                                        w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 transition-all
+                                        ${active && isDelivered ? 'bg-emerald-500 border-emerald-500' :
+                                          active ? 'bg-blue-500 border-blue-500' :
+                                          done  ? 'bg-blue-400 border-blue-400' :
+                                                  'bg-white border-blue-200'}
+                                    `}>
+                                        {done ? (
+                                            <CheckCircle2 size={12} className="text-white" />
+                                        ) : (
+                                            <div className="w-2 h-2 rounded-full bg-blue-200" />
+                                        )}
+                                    </div>
+                                    {!isLast && (
+                                        <div className={`flex-1 h-0.5 ${done && currentIdx > idx ? 'bg-blue-500' : 'bg-blue-200'}`} />
+                                    )}
+                                </div>
+                                {/* Label */}
+                                <p className={`text-[10px] text-center mt-1.5 leading-tight px-0.5 ${
+                                    active ? 'font-bold text-blue-800' : done ? 'font-medium text-blue-600' : 'text-blue-300'
+                                }`}>
+                                    {step.label}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Código de rastreio */}
+            {trackingCode && (
+                <p className="text-xs text-blue-500 font-mono mt-3 text-center">
+                    {trackingCode}
+                </p>
+            )}
+        </div>
+    );
+};
+
 // ─── Single order card ────────────────────────────────────────────────────────
 const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     const [open, setOpen] = useState(false);
@@ -86,6 +191,8 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
 
     const isWaitingPayment = order.status === OrderStatus.WAITING_PAYMENT;
     const isShipped = order.status === OrderStatus.SHIPPED || order.status === OrderStatus.DELIVERED;
+    const isPickup = order.shippingMethod?.toLowerCase().includes('retirada');
+    const hasShippingTimeline = isShipped && !!order.shippingStatus && !isPickup;
 
     return (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -152,23 +259,43 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         </div>
                     </div>
 
-                    {/* Tracking */}
-                    {order.trackingCode && (
+                    {/* Shipping timeline (Melhor Envios granular status) */}
+                    {hasShippingTimeline && (
+                        <ShippingTimeline
+                            shippingStatus={order.shippingStatus!}
+                            trackingCode={order.trackingCode}
+                            trackingUrl={order.trackingUrl}
+                        />
+                    )}
+
+                    {/* Tracking code only (sem shipping_status do ME) */}
+                    {isShipped && !hasShippingTimeline && order.trackingCode && (
                         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
                             <Truck size={16} className="text-blue-500 mt-0.5 shrink-0" />
                             <div className="text-sm">
                                 <p className="font-medium text-blue-800">Código de rastreio</p>
                                 <p className="text-blue-700 font-mono mt-0.5">{order.trackingCode}</p>
-                                {isShipped && (
-                                    <a
-                                        href={`https://www.correios.com.br/rastreamento/#/search?objects=${order.trackingCode}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium mt-1.5 transition-colors"
-                                    >
-                                        Rastrear envio <ExternalLink size={12} />
-                                    </a>
-                                )}
+                                <a
+                                    href={`https://www.correios.com.br/rastreamento/#/search?objects=${order.trackingCode}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium mt-1.5 transition-colors"
+                                >
+                                    Rastrear envio <ExternalLink size={12} />
+                                </a>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pickup ready */}
+                    {order.status === OrderStatus.READY_PICKUP && (
+                        <div className="flex items-start gap-2 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                            <MapPin size={16} className="text-indigo-600 mt-0.5 shrink-0" />
+                            <div className="text-sm">
+                                <p className="font-medium text-indigo-800">Pronto para retirada!</p>
+                                <p className="text-indigo-700 mt-0.5">
+                                    Seu pedido está disponível na loja. Apresente este número ao retirar.
+                                </p>
                             </div>
                         </div>
                     )}

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart, ChevronLeft, ChevronRight, Trash2, ImageOff, Loader2, LogIn,
-    Minus, Plus, MapPin, AlertTriangle, Zap, Package,
+    Minus, Plus, MapPin, AlertTriangle, Zap, Package, Store,
 } from 'lucide-react';
 import { CartItem, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
@@ -60,6 +60,7 @@ const Cart: React.FC<CartProps> = ({
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
     const outOfStockItems = items.filter(i => (i.stock ?? 0) === 0);
     const hasOutOfStock = outOfStockItems.length > 0;
+    const isPickup = selectedShipping?.id === 'pickup_store';
 
     const isAddressComplete = (p: ProfileRow | null) =>
         !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
@@ -235,57 +236,81 @@ const Cart: React.FC<CartProps> = ({
                 {/* ── RIGHT: Summary sidebar (sticky) ── */}
                 <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
 
-                    {/* Address block */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                <MapPin size={15} className="text-agro-700" />
-                                Endereço de Entrega
-                            </span>
-                            {isAddressComplete(profile) && (
-                                <button
-                                    onClick={() => setShowAddressModal(true)}
-                                    className="text-xs text-agro-700 hover:text-agro-700 font-medium hover:underline"
-                                >
-                                    Editar
-                                </button>
-                            )}
-                        </div>
-                        <div className="p-4">
-                            {!profile ? (
-                                <div className="text-center py-1">
-                                    <p className="text-sm text-gray-500 mb-3">Faça login para informar o endereço</p>
-                                    <button
-                                        onClick={() => navigate(ROUTES.LOGIN)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                                    >
-                                        <LogIn size={15} /> Entrar
-                                    </button>
-                                </div>
-                            ) : !isAddressComplete(profile) ? (
-                                <div className="text-center py-1">
-                                    <p className="text-sm text-amber-700 mb-3 flex items-center justify-center gap-1.5">
-                                        <AlertTriangle size={14} /> Endereço necessário para entrega
+                    {/* Address / Pickup block */}
+                    {isPickup ? (
+                        <div className="bg-indigo-50 rounded-xl border border-indigo-100 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-indigo-100 flex items-center gap-2">
+                                <Store size={15} className="text-indigo-600" />
+                                <span className="text-sm font-semibold text-indigo-800">Retirada na Loja</span>
+                            </div>
+                            <div className="p-4 text-sm space-y-1">
+                                {settings?.storeName && (
+                                    <p className="font-semibold text-indigo-900">{settings.storeName}</p>
+                                )}
+                                {settings?.address?.street && (
+                                    <p className="text-xs text-indigo-700">
+                                        {settings.address.street}{settings.address.number ? `, ${settings.address.number}` : ''}
+                                        {settings.address.city ? ` — ${settings.address.city}/${settings.address.state}` : ''}
                                     </p>
+                                )}
+                                {settings?.phone && (
+                                    <p className="text-xs text-indigo-500">{settings.phone}</p>
+                                )}
+                                <p className="text-xs text-indigo-500 pt-1">Retire após confirmação do pagamento.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                                <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <MapPin size={15} className="text-agro-700" />
+                                    Endereço de Entrega
+                                </span>
+                                {isAddressComplete(profile) && (
                                     <button
                                         onClick={() => setShowAddressModal(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                                        className="text-xs text-agro-700 hover:text-agro-700 font-medium hover:underline"
                                     >
-                                        <MapPin size={15} /> Adicionar endereço
+                                        Editar
                                     </button>
-                                </div>
-                            ) : (
-                                <div className="text-sm text-gray-700 space-y-0.5">
-                                    <p className="font-semibold text-gray-900">
-                                        {profile.street}, {profile.number}
-                                        {profile.complement ? `, ${profile.complement}` : ''}
-                                    </p>
-                                    <p>{profile.neighborhood} — {profile.city} / {profile.state}</p>
-                                    <p className="text-gray-400 text-xs font-mono">{profile.zip_code}</p>
-                                </div>
-                            )}
+                                )}
+                            </div>
+                            <div className="p-4">
+                                {!profile ? (
+                                    <div className="text-center py-1">
+                                        <p className="text-sm text-gray-500 mb-3">Faça login para informar o endereço</p>
+                                        <button
+                                            onClick={() => navigate(ROUTES.LOGIN)}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                                        >
+                                            <LogIn size={15} /> Entrar
+                                        </button>
+                                    </div>
+                                ) : !isAddressComplete(profile) ? (
+                                    <div className="text-center py-1">
+                                        <p className="text-sm text-amber-700 mb-3 flex items-center justify-center gap-1.5">
+                                            <AlertTriangle size={14} /> Endereço necessário para entrega
+                                        </p>
+                                        <button
+                                            onClick={() => setShowAddressModal(true)}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                                        >
+                                            <MapPin size={15} /> Adicionar endereço
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-700 space-y-0.5">
+                                        <p className="font-semibold text-gray-900">
+                                            {profile.street}, {profile.number}
+                                            {profile.complement ? `, ${profile.complement}` : ''}
+                                        </p>
+                                        <p>{profile.neighborhood} — {profile.city} / {profile.state}</p>
+                                        <p className="text-gray-400 text-xs font-mono">{profile.zip_code}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Order summary */}
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -294,8 +319,8 @@ const Cart: React.FC<CartProps> = ({
                         </div>
                         <div className="p-4 space-y-3">
 
-                            {/* Free shipping progress */}
-                            {cartSubtotal < FREE_SHIPPING_THRESHOLD && (
+                            {/* Free shipping progress — oculto para retirada */}
+                            {!isPickup && cartSubtotal < FREE_SHIPPING_THRESHOLD && (
                                 <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 mb-1">
                                     <div className="flex justify-between text-xs text-blue-700 mb-1.5">
                                         <span>Frete grátis a partir de {formatCurrency(FREE_SHIPPING_THRESHOLD)}</span>
@@ -309,7 +334,7 @@ const Cart: React.FC<CartProps> = ({
                                     </div>
                                 </div>
                             )}
-                            {cartSubtotal >= FREE_SHIPPING_THRESHOLD && (
+                            {!isPickup && cartSubtotal >= FREE_SHIPPING_THRESHOLD && (
                                 <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-1 text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
                                     <span>🎉</span> Você ganhou frete grátis!
                                 </div>
@@ -324,7 +349,9 @@ const Cart: React.FC<CartProps> = ({
                                 <span>Frete</span>
                                 <span className={selectedShipping ? 'font-medium text-gray-800' : 'text-gray-400 italic'}>
                                     {selectedShipping
-                                        ? shippingCost === 0 ? 'Grátis' : formatCurrency(shippingCost)
+                                        ? isPickup
+                                            ? 'Retirada no Balcão'
+                                            : shippingCost === 0 ? 'Grátis' : formatCurrency(shippingCost)
                                         : 'a calcular'}
                                 </span>
                             </div>
@@ -378,7 +405,7 @@ const Cart: React.FC<CartProps> = ({
                                     >
                                         <LogIn size={18} /> Entrar para finalizar
                                     </button>
-                                ) : !isAddressComplete(profile) ? (
+                                ) : !isPickup && !isAddressComplete(profile) ? (
                                     <button
                                         onClick={() => setShowAddressModal(true)}
                                         className="w-full flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors"

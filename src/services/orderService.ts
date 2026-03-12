@@ -11,6 +11,8 @@ interface OrderRow {
     shipping_method: string | null;
     payment_method: string | null;
     tracking_code: string | null;
+    shipping_status: string | null;
+    tracking_url: string | null;
     created_at: string;
     order_items: Array<{
         product_id: string | null;
@@ -36,6 +38,8 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
       shipping_method,
       payment_method,
       tracking_code,
+      shipping_status,
+      tracking_url,
       created_at,
       order_items (
         product_id,
@@ -69,5 +73,7 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
         shippingMethod: row.shipping_method ?? undefined,
         paymentMethod: row.payment_method ?? undefined,
         trackingCode: row.tracking_code ?? undefined,
+        shippingStatus: row.shipping_status ?? undefined,
+        trackingUrl: row.tracking_url ?? undefined,
     }));
 }

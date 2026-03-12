@@ -56,11 +56,13 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
   const first_name = nameParts[0] ?? '';
   const last_name = nameParts.slice(1).join(' ') || '';
 
+  const isPickup = selectedShipping.id === 'pickup_store';
+
   const payload = {
     order: {
       shipping_cost: shippingCost,
       shipping_method: `${selectedShipping.carrier} - ${selectedShipping.service}`,
-      shipping_address: {
+      shipping_address: isPickup ? null : {
         street: profile.street ?? null,
         number: profile.number ?? null,
         neighborhood: profile.neighborhood ?? null,

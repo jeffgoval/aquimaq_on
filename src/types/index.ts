@@ -100,6 +100,10 @@ export interface Order {
   createdAt: string;
   paymentMethod?: string;
   trackingCode?: string;
+  /** Status granular de transporte (eventos Melhor Envios) */
+  shippingStatus?: string;
+  /** URL de rastreio da transportadora (fornecida pelo Melhor Envios) */
+  trackingUrl?: string;
 }
 
 // Pagamento

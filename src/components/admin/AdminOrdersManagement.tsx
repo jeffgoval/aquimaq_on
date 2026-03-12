@@ -14,7 +14,8 @@ import {
     RefreshCw,
     X,
     Download,
-    Printer
+    Printer,
+    Store,
 } from 'lucide-react';
 import {
     getOrdersAdmin,
@@ -42,6 +43,17 @@ const statusOptions = [
     { value: 'entregue', label: 'Entregue' },
     { value: 'cancelado', label: 'Cancelado' },
 ];
+
+/** Retorna true quando o pedido é de retirada na loja. */
+const isPickupOrder = (order: { shippingMethod?: string | null }) =>
+    !!(order.shippingMethod?.toLowerCase().includes('retirada') ||
+       order.shippingMethod?.includes('pickup_store'));
+
+/** Opções de status para pedidos de ENTREGA (exclui pronto_retirada). */
+const deliveryStatusOptions = statusOptions.slice(1).filter(o => o.value !== 'pronto_retirada');
+
+/** Opções de status para pedidos de RETIRADA (exclui enviado). */
+const pickupStatusOptions = statusOptions.slice(1).filter(o => o.value !== 'enviado');
 
 const statusConfig: Record<string, { label: string; color: string }> = {
     'aguardando_pagamento': { label: 'Aguardando', color: 'text-amber-600 bg-amber-50' },
@@ -290,9 +302,16 @@ const AdminOrdersManagement: React.FC = () => {
                                     return (
                                         <tr key={order.id} className="hover:bg-stone-25">
                                             <td className="px-4 py-3">
-                                                <span className="font-mono text-[12px] text-stone-500">
-                                                    #{order.id.slice(-8).toUpperCase()}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-mono text-[12px] text-stone-500">
+                                                        #{order.id.slice(-8).toUpperCase()}
+                                                    </span>
+                                                    {isPickupOrder(order) && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-semibold rounded-full border border-indigo-100">
+                                                            <Store size={9} /> Retirada
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div>
@@ -317,7 +336,7 @@ const AdminOrdersManagement: React.FC = () => {
                                                         ${updatingOrderId === order.id ? 'opacity-50' : ''}
                                                     `}
                                                 >
-                                                    {statusOptions.slice(1).map(option => (
+                                                    {(isPickupOrder(order) ? pickupStatusOptions : deliveryStatusOptions).map(option => (
                                                         <option key={option.value} value={option.value}>
                                                             {option.label}
                                                         </option>
@@ -413,10 +432,23 @@ const AdminOrdersManagement: React.FC = () => {
                         </div>
                         <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
-                            {/* Address details */}
-                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
-                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Truck size={14} /> Endereço de Entrega</h4>
-                                <p className="text-stone-600 text-[13px]">{selectedOrder.clientAddress}</p>
+                            {/* Address / Pickup details */}
+                            <div className={`p-4 rounded-xl border ${isPickupOrder(selectedOrder) ? 'bg-indigo-50 border-indigo-100' : 'bg-stone-50 border-stone-100'}`}>
+                                {isPickupOrder(selectedOrder) ? (
+                                    <>
+                                        <h4 className="text-[12px] font-medium text-indigo-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                                            <Store size={14} /> Retirada na Loja
+                                        </h4>
+                                        <p className="text-indigo-600 text-[13px]">Cliente retira no balcão.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                                            <Truck size={14} /> Endereço de Entrega
+                                        </h4>
+                                        <p className="text-stone-600 text-[13px]">{selectedOrder.clientAddress}</p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 text-[13px]">
