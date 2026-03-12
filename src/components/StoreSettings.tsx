@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
+import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
@@ -48,6 +49,15 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
+
+type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas';
+
+const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'empresa', label: 'Empresa', icon: <Store size={16} /> },
+    { id: 'endereco', label: 'Endereço', icon: <MapPin size={16} /> },
+    { id: 'pagamento', label: 'Pagamento', icon: <CreditCard size={16} /> },
+    { id: 'vendas', label: 'Marketing', icon: <TrendingUp size={16} /> },
+];
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
@@ -116,6 +126,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         }
     }, [settings]);
 
+    const [activeTab, setActiveTab] = useState<SettingsTab>('empresa');
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingAddress, setIsLoadingAddress] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -261,15 +272,40 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {/* Abas */}
+                        <div className="flex border-b border-gray-200 overflow-x-auto">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        'flex items-center gap-2 px-5 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
+                                        activeTab === tab.id
+                                            ? 'border-agro-600 text-agro-700 bg-agro-50/50'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    )}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
                         <form onSubmit={handleSubmit} className="p-8 space-y-8">
 
                             {message && (
-                                <div className={`p-4 rounded-xl text-sm flex items-center ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                <div className={cn(
+                                    'p-4 rounded-xl text-sm flex items-center',
+                                    message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                )}>
                                     {message.text}
                                 </div>
                             )}
 
-                            {/* Dados da Empresa */}
+                            {/* Aba: Empresa */}
+                            {activeTab === 'empresa' && (
+                            <>
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Informações da Empresa</h3>
 
@@ -386,7 +422,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
 
-                            {/* Redes Sociais */}
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Redes Sociais</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -431,8 +466,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     </div>
                                 </div>
                             </section>
+                            </>
+                            )}
 
-                            {/* Endereço de Origem (Frete) */}
+                            {/* Aba: Endereço */}
+                            {activeTab === 'endereco' && (
                             <section className="space-y-6">
                                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -530,8 +568,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     </div>
                                 </div>
                             </section>
+                            )}
 
-                            {/* Pagamento */}
+                            {/* Aba: Pagamento */}
+                            {activeTab === 'pagamento' && (
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
                                     <CreditCard className="text-agro-700" size={20} />
@@ -580,8 +620,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     </div>
                                 </div>
                             </section>
+                            )}
 
-                            {/* Conversão */}
+                            {/* Aba: Marketing */}
+                            {activeTab === 'vendas' && (
+                            <>
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
                                     <TrendingUp className="text-agro-700" size={20} />
@@ -644,7 +687,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
 
-                            {/* Rodapé & Confiança */}
                             <section className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
                                     <Star className="text-agro-700" size={20} />
@@ -666,6 +708,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     <p className="text-xs text-gray-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
                                 </div>
                             </section>
+                            </>
+                            )}
 
                             <div className="pt-6 border-t border-gray-100 flex justify-end">
                                 <button
