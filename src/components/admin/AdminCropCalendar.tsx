@@ -224,7 +224,7 @@ const AdminCropCalendar: React.FC = () => {
             <button
               type="button"
               onClick={editingId ? handleUpdate : handleSaveNew}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-agro-600 hover:bg-agro-700 rounded-lg"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-stone-800 hover:bg-stone-700 rounded-lg"
             >
               <Save size={14} />
               {editingId ? 'Atualizar' : 'Adicionar'}
@@ -245,7 +245,7 @@ const AdminCropCalendar: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-agro-700 hover:bg-agro-50 rounded-lg border border-agro-200"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 rounded-lg border border-stone-200"
         >
           <Plus size={16} />
           Adicionar cultura

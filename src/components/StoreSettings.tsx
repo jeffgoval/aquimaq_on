@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck, Menu, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import type { NavigationMenuItem } from '@/types/store';
-import { ProductCategory } from '@/types';
-import { ROUTES } from '@/constants/routes';
 
 interface StoreSettingsProps {
     onBack: () => void;
@@ -55,19 +52,13 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
 
-type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas' | 'menu';
+type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas';
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
     { id: 'empresa', label: 'Empresa', icon: <Store size={16} /> },
     { id: 'endereco', label: 'Endereço', icon: <MapPin size={16} /> },
     { id: 'pagamento', label: 'Pagamento', icon: <CreditCard size={16} /> },
     { id: 'vendas', label: 'Marketing', icon: <TrendingUp size={16} /> },
-    { id: 'menu', label: 'Menu da barra', icon: <Menu size={16} /> },
-];
-
-const NAV_CATEGORY_OPTIONS: { value: string; label: string }[] = [
-    { value: '', label: '— Link (sem categoria) —' },
-    ...Object.values(ProductCategory).map((c) => ({ value: c, label: c })),
 ];
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
@@ -103,9 +94,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         crossSellEnabled: true,
         crossSellCategory: '',
     });
-    const [navigationMenu, setNavigationMenu] = useState<NavigationMenuItem[]>([]);
 
-    // Sync formData and navigationMenu with loaded settings (camelCase)
+    // Sync formData with loaded settings (camelCase)
     useEffect(() => {
         if (settings) {
             setFormData({
@@ -139,7 +129,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 crossSellEnabled: settings.crossSellEnabled ?? true,
                 crossSellCategory: settings.crossSellCategory ?? '',
             });
-            setNavigationMenu(Array.isArray(settings.navigationMenu) ? [...settings.navigationMenu] : []);
         }
     }, [settings]);
 
@@ -251,7 +240,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             freeShippingThreshold: formData.freeShippingThreshold,
             crossSellEnabled: formData.crossSellEnabled,
             crossSellCategory: formData.crossSellCategory || null,
-            navigationMenu,
         });
 
         setIsLoading(false);
@@ -269,41 +257,41 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             {isLoadingSettings ? (
                 <div className="flex items-center justify-center py-32">
                     <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-agro-600 mb-4"></div>
-                        <p className="text-gray-600 font-medium">Carregando configurações...</p>
+                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-stone-200 border-t-stone-600 mb-4"></div>
+                        <p className="text-stone-600 font-medium">Carregando configurações...</p>
                     </div>
                 </div>
             ) : (
                 <>
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-                                <Store className="text-agro-700" size={32} />
+                            <h1 className="text-xl font-semibold text-stone-800 flex items-center gap-2">
+                                <Store className="text-stone-600" size={24} />
                                 Configurações da Loja
                             </h1>
-                            <p className="text-gray-500 mt-2">Defina os dados da empresa e endereço de origem para frete.</p>
+                            <p className="text-stone-500 text-sm mt-0.5">Dados da empresa e endereço de origem para frete.</p>
                         </div>
                         <button
                             onClick={onBack}
-                            className="text-gray-500 hover:text-gray-700 font-medium"
+                            className="text-stone-500 hover:text-stone-700 font-medium text-sm"
                         >
                             Voltar
                         </button>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
                         {/* Abas */}
-                        <div className="flex border-b border-gray-200 overflow-x-auto">
+                        <div className="flex border-b border-stone-200 overflow-x-auto">
                             {TABS.map((tab) => (
                                 <button
                                     key={tab.id}
                                     type="button"
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        'flex items-center gap-2 px-5 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
+                                        'flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
                                         activeTab === tab.id
-                                            ? 'border-agro-600 text-agro-700 bg-agro-50/50'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                            ? 'border-stone-700 text-stone-900 bg-stone-50'
+                                            : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
                                     )}
                                 >
                                     {tab.icon}
@@ -327,18 +315,18 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             {activeTab === 'empresa' && (
                             <>
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Informações da Empresa</h3>
+                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2">Informações da Empresa</h3>
 
                                 <div className="flex flex-col items-center sm:flex-row gap-6 mb-6">
                                     <div className="relative group">
-                                        <div className="w-32 h-32 rounded-full border-4 border-gray-100 overflow-hidden flex items-center justify-center bg-gray-50">
+                                        <div className="w-32 h-32 rounded-full border-4 border-stone-100 overflow-hidden flex items-center justify-center bg-stone-50">
                                             {formData.logoUrl ? (
                                                 <img src={formData.logoUrl} alt="Logo da Loja" className="w-full h-full object-cover" />
                                             ) : (
-                                                <Store size={48} className="text-gray-300" />
+                                                <Store size={48} className="text-stone-300" />
                                             )}
                                         </div>
-                                        <label className="absolute bottom-0 right-0 bg-agro-600 text-white p-2 rounded-full cursor-pointer hover:bg-agro-700 transition-colors shadow-lg">
+                                        <label className="absolute bottom-0 right-0 bg-stone-800 text-white p-2 rounded-full cursor-pointer hover:bg-stone-700 transition-colors">
                                             <Upload size={16} />
                                             <input
                                                 type="file"
@@ -349,72 +337,72 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         </label>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="font-semibold text-gray-900">Logo da Loja</h4>
-                                        <p className="text-sm text-gray-500 mb-2">Recomendado: 500x500px, PNG ou JPG.</p>
+                                        <h4 className="font-semibold text-stone-900">Logo da Loja</h4>
+                                        <p className="text-sm text-stone-500 mb-2">Recomendado: 500x500px, PNG ou JPG.</p>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Nome da Loja</label>
+                                        <label className="text-sm font-semibold text-stone-700">Nome da Loja</label>
                                         <div className="relative">
-                                            <Store className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Store className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="storeName"
                                                 value={formData.storeName}
                                                 onChange={handleChange}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Razão Social</label>
+                                        <label className="text-sm font-semibold text-stone-700">Razão Social</label>
                                         <div className="relative">
-                                            <FileText className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <FileText className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="razaoSocial"
                                                 value={formData.razaoSocial}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Aquimaq Comércio de Máquinas Ltda."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">Exibida no rodapé (exigência CDC).</p>
+                                        <p className="text-xs text-stone-400">Exibida no rodapé (exigência CDC).</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">CNPJ</label>
+                                        <label className="text-sm font-semibold text-stone-700">CNPJ</label>
                                         <div className="relative">
-                                            <FileText className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <FileText className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="cnpj"
                                                 value={formData.cnpj}
                                                 onChange={handleChange}
                                                 maxLength={18}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Telefone de Contato</label>
+                                        <label className="text-sm font-semibold text-stone-700">Telefone de Contato</label>
                                         <div className="relative">
-                                            <Phone className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Phone className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="phone"
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 maxLength={15}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Número WhatsApp</label>
+                                        <label className="text-sm font-semibold text-stone-700">Número WhatsApp</label>
                                         <div className="relative">
-                                            <Phone className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Phone className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="whatsapp"
@@ -425,93 +413,93 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 }}
                                                 maxLength={15}
                                                 placeholder="Se diferente do telefone acima"
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">Usado no link &quot;Central de Vendas&quot; do header. Deixe vazio para usar o telefone de contato.</p>
+                                        <p className="text-xs text-stone-400">Usado no link &quot;Central de Vendas&quot; do header. Deixe vazio para usar o telefone de contato.</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">E-mail</label>
+                                        <label className="text-sm font-semibold text-stone-700">E-mail</label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Mail className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="email"
                                                 name="email"
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Horário de Atendimento</label>
+                                        <label className="text-sm font-semibold text-stone-700">Horário de Atendimento</label>
                                         <div className="relative">
-                                            <Clock className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Clock className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 name="openingHours"
                                                 value={formData.openingHours}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Seg a Sex, 8h às 18h | Sáb, 8h às 12h"
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">Exibido no rodapé na seção de atendimento.</p>
+                                        <p className="text-xs text-stone-400">Exibido no rodapé na seção de atendimento.</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2 mt-6">
-                                    <label className="text-sm font-semibold text-gray-700">Descrição da loja</label>
+                                    <label className="text-sm font-semibold text-stone-700">Descrição da loja</label>
                                     <textarea
                                         name="description"
                                         value={formData.description}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                                        rows={3}
-                                        placeholder="Texto curto sobre a loja (SEO / página Sobre)."
-                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none text-sm"
+                                        rows={4}
+                                        placeholder="Ex: Somos uma loja especializada em ferramentas e insumos para o agronegócio..."
+                                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none text-sm"
                                     />
-                                    <p className="text-xs text-gray-400">Usado em meta description e contexto da loja. Opcional.</p>
+                                    <p className="text-xs text-stone-400">Exibido na página <strong>Sobre</strong> (seção &quot;Nossa História&quot;) e na meta description dessa página. Se deixar vazio, a página Sobre usa o texto padrão.</p>
                                 </div>
                             </section>
 
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Redes Sociais</h3>
+                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2">Redes Sociais</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Instagram</label>
+                                        <label className="text-sm font-semibold text-stone-700">Instagram</label>
                                         <div className="relative">
-                                            <Instagram className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Instagram className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 value={formData.socialMedia.instagram}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, instagram: e.target.value } }))}
                                                 placeholder="https://instagram.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Facebook</label>
+                                        <label className="text-sm font-semibold text-stone-700">Facebook</label>
                                         <div className="relative">
-                                            <Facebook className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Facebook className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 value={formData.socialMedia.facebook}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, facebook: e.target.value } }))}
                                                 placeholder="https://facebook.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">YouTube</label>
+                                        <label className="text-sm font-semibold text-stone-700">YouTube</label>
                                         <div className="relative">
-                                            <Youtube className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                            <Youtube className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
                                                 type="text"
                                                 value={formData.socialMedia.youtube}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, youtube: e.target.value } }))}
                                                 placeholder="https://youtube.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                         </div>
                                     </div>
@@ -523,9 +511,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             {/* Aba: Endereço */}
                             {activeTab === 'endereco' && (
                             <section className="space-y-6">
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <MapPin className="text-agro-700" size={20} />
+                                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                                    <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                                        <MapPin className="text-stone-600" size={20} />
                                         Endereço de Origem (Estoque)
                                     </h3>
                                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Usado para cálculo de frete</span>
@@ -534,18 +522,18 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 <div className="grid grid-cols-12 gap-x-4 gap-y-6">
                                     {/* CEP */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">CEP</label>
+                                        <label className="text-sm font-semibold text-stone-700">CEP</label>
                                         <div className="relative">
                                             <input
                                                 type="text"
                                                 value={formData.address.zip}
                                                 onChange={(e) => handleAddressChange('zip', e.target.value)}
                                                 maxLength={9}
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                                className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                             />
                                             {isLoadingAddress && (
                                                 <div className="absolute right-3 top-2.5">
-                                                    <div className="w-5 h-5 border-2 border-agro-500 border-t-transparent rounded-full animate-spin"></div>
+                                                    <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin"></div>
                                                 </div>
                                             )}
                                         </div>
@@ -553,68 +541,68 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
                                     {/* Rua */}
                                     <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Logradouro</label>
+                                        <label className="text-sm font-semibold text-stone-700">Logradouro</label>
                                         <input
                                             type="text"
                                             value={formData.address.street}
                                             onChange={(e) => handleAddressChange('street', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
 
                                     {/* Número */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Número</label>
+                                        <label className="text-sm font-semibold text-stone-700">Número</label>
                                         <input
                                             type="text"
                                             value={formData.address.number}
                                             onChange={(e) => handleAddressChange('number', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
 
                                     {/* Complemento */}
                                     <div className="col-span-12 md:col-span-5 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Complemento</label>
+                                        <label className="text-sm font-semibold text-stone-700">Complemento</label>
                                         <input
                                             type="text"
                                             value={formData.address.complement}
                                             onChange={(e) => handleAddressChange('complement', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
 
                                     {/* Bairro */}
                                     <div className="col-span-12 md:col-span-4 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Bairro</label>
+                                        <label className="text-sm font-semibold text-stone-700">Bairro</label>
                                         <input
                                             type="text"
                                             value={formData.address.district}
                                             onChange={(e) => handleAddressChange('district', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
 
                                     {/* Cidade */}
                                     <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Cidade</label>
+                                        <label className="text-sm font-semibold text-stone-700">Cidade</label>
                                         <input
                                             type="text"
                                             value={formData.address.city}
                                             onChange={(e) => handleAddressChange('city', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
 
                                     {/* UF */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">UF</label>
+                                        <label className="text-sm font-semibold text-stone-700">UF</label>
                                         <input
                                             type="text"
                                             maxLength={2}
                                             value={formData.address.state}
                                             onChange={(e) => handleAddressChange('state', e.target.value.toUpperCase())}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -624,30 +612,30 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             {/* Aba: Pagamento */}
                             {activeTab === 'pagamento' && (
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <CreditCard className="text-agro-700" size={20} />
+                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
+                                    <CreditCard className="text-stone-600" size={20} />
                                     Configurações de Pagamento
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Max installments */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Máximo de Parcelas</label>
+                                        <label className="text-sm font-semibold text-stone-700">Máximo de Parcelas</label>
                                         <select
                                             value={formData.maxInstallments}
                                             onChange={(e) => setFormData(prev => ({ ...prev, maxInstallments: Number(e.target.value) }))}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         >
                                             {[1, 2, 3, 4, 6, 9, 12].map(n => (
                                                 <option key={n} value={n}>{n === 1 ? 'Somente à vista' : `Até ${n}x`}</option>
                                             ))}
                                         </select>
-                                        <p className="text-xs text-gray-400">Número máximo de parcelas exibidas no Mercado Pago.</p>
+                                        <p className="text-xs text-stone-400">Número máximo de parcelas exibidas no Mercado Pago.</p>
                                     </div>
 
                                     {/* Accepted payment types */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Formas de Pagamento Aceitas</label>
+                                        <label className="text-sm font-semibold text-stone-700">Formas de Pagamento Aceitas</label>
                                         <div className="space-y-2 pt-1">
                                             {ALL_PAYMENT_TYPES.map(type => (
                                                 <label key={type} className="flex items-center gap-2 cursor-pointer select-none">
@@ -662,9 +650,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                                     : prev.acceptedPaymentTypes.filter(t => t !== type),
                                                             }));
                                                         }}
-                                                        className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
+                                                        className="w-4 h-4 rounded border-stone-300 text-stone-700 focus:ring-stone-500"
                                                     />
-                                                    <span className="text-sm text-gray-700">{PAYMENT_TYPE_LABELS[type]}</span>
+                                                    <span className="text-sm text-stone-700">{PAYMENT_TYPE_LABELS[type]}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -677,16 +665,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             {activeTab === 'vendas' && (
                             <>
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <TrendingUp className="text-agro-700" size={20} />
+                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
+                                    <TrendingUp className="text-stone-600" size={20} />
                                     Conversão e Vendas
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Free shipping threshold */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Truck size={15} className="text-agro-500" />
+                                        <label className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+                                            <Truck size={15} className="text-stone-500" />
                                             Frete Grátis a partir de (R$)
                                         </label>
                                         <input
@@ -697,15 +685,15 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 const v = e.target.value.replace(/\D/g, '');
                                                 setFormData(prev => ({ ...prev, freeShippingThreshold: v === '' ? 0 : Number(v) }));
                                             }}
-                                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
-                                        <p className="text-xs text-gray-400">Exibido como barra de progresso no carrinho. Coloque 0 para desativar.</p>
+                                        <p className="text-xs text-stone-400">Exibido como barra de progresso no carrinho. Coloque 0 para desativar.</p>
                                     </div>
 
                                     {/* Cross-sell enabled */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <TrendingUp size={15} className="text-agro-500" />
+                                        <label className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+                                            <TrendingUp size={15} className="text-stone-500" />
                                             Cross-sell após pagamento
                                         </label>
                                         <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
@@ -713,17 +701,17 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 type="checkbox"
                                                 checked={formData.crossSellEnabled}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, crossSellEnabled: e.target.checked }))}
-                                                className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
+                                                className="w-4 h-4 rounded border-stone-300 text-stone-700 focus:ring-stone-500"
                                             />
-                                            <span className="text-sm text-gray-700">Mostrar "Outros clientes também compraram" na página de sucesso</span>
+                                            <span className="text-sm text-stone-700">Mostrar "Outros clientes também compraram" na página de sucesso</span>
                                         </label>
                                         <div className="space-y-1 pt-1">
-                                            <label className="text-xs font-semibold text-gray-600">Categoria (deixe vazio = mais vendidos)</label>
+                                            <label className="text-xs font-semibold text-stone-600">Categoria (deixe vazio = mais vendidos)</label>
                                             <select
                                                 value={formData.crossSellCategory}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, crossSellCategory: e.target.value }))}
                                                 disabled={!formData.crossSellEnabled}
-                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none disabled:opacity-50"
+                                                className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none disabled:opacity-50"
                                             >
                                                 <option value="">Mais vendidos (padrão)</option>
                                                 <option value="Ferramentas Manuais">Ferramentas Manuais</option>
@@ -739,154 +727,34 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             </section>
 
                             <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <Star className="text-agro-700" size={20} />
+                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
+                                    <Star className="text-stone-600" size={20} />
                                     Rodapé &amp; Confiança
                                 </h3>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700">URL do Reclame Aqui</label>
+                                    <label className="text-sm font-semibold text-stone-700">URL do Reclame Aqui</label>
                                     <div className="relative">
-                                        <Star className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                                        <Star className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                         <input
                                             type="url"
                                             name="reclameAquiUrl"
                                             value={formData.reclameAquiUrl}
                                             onChange={handleChange}
                                             placeholder="https://www.reclameaqui.com.br/empresa/aquimaq/"
-                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+                                            className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
                                         />
                                     </div>
-                                    <p className="text-xs text-gray-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
+                                    <p className="text-xs text-stone-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
                                 </div>
                             </section>
                             </>
                             )}
 
-                            {/* Aba: Menu da barra (navegação) */}
-                            {activeTab === 'menu' && (
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                                    <Menu className="text-agro-700" size={20} />
-                                    Itens da barra de categorias
-                                </h3>
-                                <p className="text-sm text-gray-500">Ordem e itens exibidos na barra preta abaixo do header. Deixe vazio para usar a lista padrão.</p>
-                                <div className="space-y-3">
-                                    {navigationMenu.map((item, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200"
-                                        >
-                                            <span className="text-gray-400" aria-hidden><GripVertical size={18} /></span>
-                                            <input
-                                                type="text"
-                                                value={item.label}
-                                                onChange={(e) => {
-                                                    const next = [...navigationMenu];
-                                                    next[index] = { ...next[index], label: e.target.value };
-                                                    setNavigationMenu(next);
-                                                }}
-                                                placeholder="Label"
-                                                className="w-40 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={item.slug}
-                                                onChange={(e) => {
-                                                    const next = [...navigationMenu];
-                                                    next[index] = { ...next[index], slug: e.target.value };
-                                                    setNavigationMenu(next);
-                                                }}
-                                                placeholder="URL ou /rota"
-                                                className="flex-1 min-w-[160px] px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
-                                            />
-                                            <select
-                                                value={item.category_value ?? ''}
-                                                onChange={(e) => {
-                                                    const next = [...navigationMenu];
-                                                    const val = e.target.value;
-                                                    next[index] = {
-                                                        ...next[index],
-                                                        category_value: val || undefined,
-                                                        slug: val ? ROUTES.HOME : (next[index].slug || ''),
-                                                    };
-                                                    setNavigationMenu(next);
-                                                }}
-                                                className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
-                                            >
-                                                {NAV_CATEGORY_OPTIONS.map((opt) => (
-                                                    <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
-                                                ))}
-                                            </select>
-                                            <label className="flex items-center gap-1.5 text-sm text-gray-700 whitespace-nowrap">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={item.enabled !== false}
-                                                    onChange={(e) => {
-                                                        const next = [...navigationMenu];
-                                                        next[index] = { ...next[index], enabled: e.target.checked };
-                                                        setNavigationMenu(next);
-                                                    }}
-                                                    className="w-4 h-4 rounded border-gray-300 text-agro-700 focus:ring-agro-500"
-                                                />
-                                                Ativo
-                                            </label>
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (index === 0) return;
-                                                        const next = [...navigationMenu];
-                                                        [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                                                        setNavigationMenu(next);
-                                                    }}
-                                                    disabled={index === 0}
-                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
-                                                    aria-label="Subir"
-                                                >
-                                                    ↑
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (index >= navigationMenu.length - 1) return;
-                                                        const next = [...navigationMenu];
-                                                        [next[index], next[index + 1]] = [next[index + 1], next[index]];
-                                                        setNavigationMenu(next);
-                                                    }}
-                                                    disabled={index >= navigationMenu.length - 1}
-                                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
-                                                    aria-label="Descer"
-                                                >
-                                                    ↓
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNavigationMenu((prev) => prev.filter((_, i) => i !== index))}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                                                    aria-label="Remover"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => setNavigationMenu((prev) => [...prev, { label: '', slug: ROUTES.HOME, enabled: true }])}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-agro-700 hover:bg-agro-50 rounded-lg border border-dashed border-agro-200"
-                                    >
-                                        <Plus size={16} />
-                                        Adicionar item
-                                    </button>
-                                </div>
-                            </section>
-                            )}
-
-                            <div className="pt-6 border-t border-gray-100 flex justify-end">
+                            <div className="pt-6 border-t border-stone-100 flex justify-end">
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="px-8 py-3 bg-agro-600 text-white rounded-xl font-bold hover:bg-agro-700 shadow-lg shadow-agro-600/20 transition-all flex items-center hover:-translate-y-0.5"
+                                    className="px-6 py-2.5 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700 transition-colors flex items-center gap-2"
                                 >
                                     {isLoading ? 'Salvando...' : <><Save size={20} className="mr-2" /> Salvar Configurações</>}
                                 </button>

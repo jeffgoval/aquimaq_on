@@ -50,7 +50,7 @@ const AdminSeasonalSwitcher: React.FC = () => {
           <select
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500 focus:border-agro-500 bg-white"
+            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-stone-400 focus:border-stone-500 bg-white"
           >
             {SEASONAL_OPTIONS.map((opt) => (
               <option key={opt.value || 'auto'} value={opt.value}>
@@ -63,7 +63,7 @@ const AdminSeasonalSwitcher: React.FC = () => {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-agro-600 hover:bg-agro-700 rounded-lg transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-stone-800 hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           Salvar

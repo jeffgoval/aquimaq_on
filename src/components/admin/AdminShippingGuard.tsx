@@ -83,7 +83,7 @@ const AdminShippingGuard: React.FC = () => {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-agro-600 hover:bg-agro-700 rounded-lg transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-stone-800 hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Salvar
@@ -100,7 +100,7 @@ const AdminShippingGuard: React.FC = () => {
           value={globalMessage}
           onChange={(e) => setGlobalMessage(e.target.value)}
           placeholder="Ex.: Produtos com restrição logística só podem ser retirados na loja."
-          className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500 focus:border-agro-500"
+          className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-stone-400 focus:border-stone-500"
         />
       </div>
 
@@ -121,7 +121,7 @@ const AdminShippingGuard: React.FC = () => {
                 <select
                   value={rule.category}
                   onChange={(e) => updateRule(index, { category: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-stone-400"
                 >
                   {CATEGORY_OPTIONS.map((cat) => (
                     <option key={cat} value={cat}>
@@ -135,7 +135,7 @@ const AdminShippingGuard: React.FC = () => {
                 <select
                   value={rule.shipping_method}
                   onChange={(e) => updateRule(index, { shipping_method: e.target.value as ShippingRule['shipping_method'] })}
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-stone-400"
                 >
                   {SHIPPING_METHODS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -151,7 +151,7 @@ const AdminShippingGuard: React.FC = () => {
                   value={rule.message ?? ''}
                   onChange={(e) => updateRule(index, { message: e.target.value || undefined })}
                   placeholder="Ex.: Apenas retirada na loja."
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500 focus:border-agro-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-stone-400 focus:border-stone-500"
                 />
               </div>
             </div>
