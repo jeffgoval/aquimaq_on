@@ -3,6 +3,7 @@ import { Product, CartItem, ShippingOption } from '@/types';
 import { CartItemsSchema } from '../schemas/cartSchema';
 import { getCartSubtotal, getCartItemCount, getShippingCost, getGrandTotal } from '@/utils/cart-calculations';
 import { useToast } from '@/contexts/ToastContext';
+import { supabase } from '@/services/supabase';
 
 const CART_SHIPPING_KEY = 'cart_shipping';
 
@@ -66,6 +67,29 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         try { localStorage.setItem(CART_SHIPPING_KEY, JSON.stringify({ shippingZip, selectedShipping })); } catch { /* */ }
     }, [shippingZip, selectedShipping]);
+
+    // Sincroniza o carrinho com cart_sessions no Supabase (usuários autenticados).
+    // Permite que automações n8n detectem carrinhos abandonados.
+    // localStorage continua sendo a fonte de verdade; este sync é best-effort.
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user?.id) return;
+                if (cart.length === 0) {
+                    await supabase.from('cart_sessions').delete().eq('user_id', session.user.id);
+                } else {
+                    await supabase.from('cart_sessions').upsert({
+                        user_id: session.user.id,
+                        items: cart as unknown as Record<string, unknown>[],
+                        subtotal: getCartSubtotal(cart),
+                        item_count: getCartItemCount(cart),
+                    }, { onConflict: 'user_id' });
+                }
+            } catch { /* falha silenciosa — localStorage é fonte de verdade */ }
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, [cart]);
 
     const addToCart = useCallback((product: Product, quantity: number = 1) => {
         const qty = Math.max(1, Math.floor(quantity));
