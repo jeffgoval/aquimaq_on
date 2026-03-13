@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CookieConsent from '@/components/CookieConsent';
+import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import { useCart } from '@/features/cart';
 import { ProductCategory } from '@/types';
 import { parseCategoryFromUrl } from '@/utils/urlSearch';
@@ -57,6 +58,7 @@ const MainLayout: React.FC = () => {
 
             <Footer />
             <CookieConsent />
+            <FloatingWhatsApp />
         </div>
     );
 };
