@@ -82,11 +82,35 @@ const FAQPage: React.FC = () => {
         setOpenIndex(prev => (prev === index ? null : index));
     };
 
+    const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(faq => ({
+            "@type": "Question",
+            "name": faq.question,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.answer,
+            },
+        })),
+    };
+
+    const breadcrumbSchema = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Início", "item": "https://aquimaq.com.br/" },
+            { "@type": "ListItem", "position": 2, "name": "Perguntas Frequentes", "item": "https://aquimaq.com.br/faq" },
+        ],
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen py-12">
             <Helmet>
                 <title>Perguntas Frequentes | {storeName}</title>
                 <meta name="description" content={`Tire suas dúvidas sobre pedidos, entregas, pagamentos e mais na ${storeName}.`} />
+                <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+                <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
             </Helmet>
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

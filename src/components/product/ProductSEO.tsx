@@ -46,6 +46,16 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
         } : undefined
     };
 
+    const breadcrumbSchema = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Início", "item": "https://aquimaq.com.br/" },
+            { "@type": "ListItem", "position": 2, "name": product.category, "item": `https://aquimaq.com.br/?categoria=${encodeURIComponent(product.category)}` },
+            { "@type": "ListItem", "position": 3, "name": product.name, "item": window.location.href.split('?')[0] },
+        ],
+    };
+
     return (
         <Helmet>
             {/* Primary SEO Tags */}
@@ -71,6 +81,9 @@ const ProductSEO: React.FC<ProductSEOProps> = ({ product }) => {
             {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">
                 {JSON.stringify(schemaData)}
+            </script>
+            <script type="application/ld+json">
+                {JSON.stringify(breadcrumbSchema)}
             </script>
         </Helmet>
     );
