@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, ShieldCheck, MessageCircle, CreditCard } from 'lucide-react';
+import { Truck, ShieldCheck, CreditCard } from 'lucide-react';
 
 const TrustBar: React.FC = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -20,11 +20,6 @@ const TrustBar: React.FC = () => {
             title: "Compra 100% Segura",
             subtitle: "Seus dados protegidos"
         },
-        {
-            icon: <MessageCircle size={20} className="text-agro-700" />,
-            title: "Suporte Especializado",
-            subtitle: "Atendimento especializado"
-        }
     ];
 
     // Auto-rotate carousel in mobile
