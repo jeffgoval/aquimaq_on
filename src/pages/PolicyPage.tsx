@@ -98,7 +98,7 @@ const PolicyPage: React.FC<{ type: 'privacidade' | 'entrega' | 'trocas' }> = ({ 
                 </nav>
 
                 <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-                    <div className="bg-agro-600 px-6 py-8 md:px-10 md:py-12 text-white">
+                    <div className="bg-agro-700 px-6 py-8 md:px-10 md:py-12 text-white">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
                                 <policy.icon size={32} />

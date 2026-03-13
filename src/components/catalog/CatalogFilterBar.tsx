@@ -97,7 +97,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
                         <button
                             onClick={() => onInStockChange(!inStock)}
                             className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${inStock
-                                ? 'bg-agro-600 text-white border-agro-600'
+                                ? 'bg-agro-700 text-white border-agro-700'
                                 : 'bg-white text-gray-600 border-gray-200 hover:border-agro-300 hover:text-agro-700'
                                 }`}
                         >

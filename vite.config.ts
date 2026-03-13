@@ -20,7 +20,10 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
           supabase: ['@supabase/supabase-js'],
+          query: ['@tanstack/react-query'],
+          ui: ['lucide-react'],
         },
       },
     },

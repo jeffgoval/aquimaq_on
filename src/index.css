@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
 
 /* Tailwind v4: content é definido com @source (relativo a este ficheiro) */
 @source "./**/*.{js,ts,jsx,tsx}";

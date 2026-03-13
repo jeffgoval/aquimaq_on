@@ -214,7 +214,7 @@ const Header: React.FC<HeaderProps> = ({
                                                     className="w-9 h-9 rounded-full object-cover"
                                                 />
                                             ) : (
-                                                <span className="w-9 h-9 rounded-full bg-agro-600 text-white text-sm font-medium flex items-center justify-center">
+                                                <span className="w-9 h-9 rounded-full bg-agro-700 text-white text-sm font-medium flex items-center justify-center">
                                                     {getAvatarInitials(user)}
                                                 </span>
                                             )}
@@ -418,7 +418,7 @@ const Header: React.FC<HeaderProps> = ({
                                             {user.user_metadata?.avatar_url ? (
                                                 <img src={user.user_metadata.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />
                                             ) : (
-                                                <span className="w-12 h-12 rounded-full bg-agro-600 text-white text-base font-medium flex items-center justify-center">
+                                                <span className="w-12 h-12 rounded-full bg-agro-700 text-white text-base font-medium flex items-center justify-center">
                                                     {getAvatarInitials(user)}
                                                 </span>
                                             )}

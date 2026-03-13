@@ -89,11 +89,12 @@ const HeroBanner: React.FC = () => {
                         aria-hidden={index !== currentSlide}
                     >
                         <div className="absolute inset-0">
-                            <div
-                                className="w-full h-full bg-cover bg-center bg-no-repeat"
-                                style={{ backgroundImage: `url(${slide.image_url})` }}
-                                role="img"
-                                aria-label={slide.title}
+                            <img
+                                src={slide.image_url}
+                                alt={slide.title}
+                                loading={index === 0 ? 'eager' : 'lazy'}
+                                fetchPriority={index === 0 ? 'high' : 'low'}
+                                className="w-full h-full object-cover object-center"
                             />
                             <div className={`absolute inset-0 bg-gradient-to-r ${slide.color_gradient || 'from-agro-900 to-agro-800'} opacity-90 md:opacity-80 mix-blend-multiply`} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -114,13 +115,13 @@ const HeroBanner: React.FC = () => {
                                         slide.cta_link ? (
                                             <Link
                                                 to={slide.cta_link}
-                                                className="px-8 py-3.5 bg-agro-500 hover:bg-agro-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-600/30 transition-all transform hover:-translate-y-1 inline-flex items-center"
+                                                className="px-8 py-3.5 bg-agro-700 hover:bg-agro-800 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-700/30 transition-all transform hover:-translate-y-1 inline-flex items-center"
                                             >
                                                 {slide.cta_text}
                                                 <ArrowRight className="ml-2 h-5 w-5" />
                                             </Link>
                                         ) : (
-                                            <button className="px-8 py-3.5 bg-agro-500 hover:bg-agro-600 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-600/30 transition-all transform hover:-translate-y-1 flex items-center">
+                                            <button className="px-8 py-3.5 bg-agro-700 hover:bg-agro-800 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-700/30 transition-all transform hover:-translate-y-1 flex items-center">
                                                 {slide.cta_text}
                                                 <ArrowRight className="ml-2 h-5 w-5" />
                                             </button>

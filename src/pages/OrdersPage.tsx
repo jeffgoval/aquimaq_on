@@ -325,7 +325,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                     <button
                         onClick={handleReorder}
                         disabled={reordering}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-agro-700 hover:bg-agro-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
                     >
                         <ShoppingCart size={15} />
                         {reordering ? 'Adicionando ao carrinho...' : 'Recomprar tudo'}
@@ -409,7 +409,7 @@ const OrdersPage: React.FC = () => {
                                 key={f.key}
                                 onClick={() => setActiveFilter(f.key)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${activeFilter === f.key
-                                    ? 'bg-agro-600 text-white border-agro-600'
+                                    ? 'bg-agro-700 text-white border-agro-700'
                                     : 'bg-white text-slate-600 border-slate-200 hover:border-agro-300'
                                 }`}
                             >
@@ -461,7 +461,7 @@ const OrdersPage: React.FC = () => {
                     </p>
                     <Link
                         to={ROUTES.HOME}
-                        className="px-6 py-2.5 bg-agro-600 text-white rounded-lg text-sm font-semibold hover:bg-agro-700 transition-colors"
+                        className="px-6 py-2.5 bg-agro-700 text-white rounded-lg text-sm font-semibold hover:bg-agro-800 transition-colors"
                     >
                         Explorar produtos
                     </Link>

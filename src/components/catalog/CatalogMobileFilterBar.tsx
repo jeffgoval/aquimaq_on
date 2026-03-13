@@ -49,7 +49,7 @@ export const CatalogMobileFilterBar: React.FC<CatalogMobileFilterBarProps> = ({
             <button
                 onClick={() => onInStockChange(!inStock)}
                 className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${inStock
-                    ? 'bg-agro-600 text-white border-agro-600'
+                    ? 'bg-agro-700 text-white border-agro-700'
                     : 'bg-white text-gray-600 border-gray-200'
                     }`}
             >

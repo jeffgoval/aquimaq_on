@@ -39,7 +39,6 @@
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="canonical" content="https://aquimaq.com.br/" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Critical: garante que body/root tenham tamanho e fundo mesmo sem Tailwind -->
   <style>
     html,
@@ -65,21 +64,27 @@
   </div>
   <script type="module" src="/src/index.tsx"></script>
 
-  <!-- Chatwoot Widget -->
+  <!-- Chatwoot Widget — carregado na primeira interação do usuário ou após 5s -->
   <script>
-    (function(d,t) {
-      var BASE_URL="https://chatwoot.aquimaq.com.br";
-      var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-      g.src=BASE_URL+"/packs/js/sdk.js";
-      g.async=true;
-      s.parentNode.insertBefore(g,s);
-      g.onload=function(){
-        window.chatwootSDK.run({
-          websiteToken: 'Soh7cspZWdMoRK44Rqt5BNwP',
-          baseUrl: BASE_URL
-        })
+    (function() {
+      var loaded = false;
+      function loadChatwoot() {
+        if (loaded) return;
+        loaded = true;
+        var BASE_URL = "https://chatwoot.aquimaq.com.br";
+        var s = document.createElement('script');
+        s.src = BASE_URL + "/packs/js/sdk.js";
+        s.async = true;
+        s.onload = function() {
+          window.chatwootSDK.run({ websiteToken: 'Soh7cspZWdMoRK44Rqt5BNwP', baseUrl: BASE_URL });
+        };
+        document.body.appendChild(s);
       }
-    })(document,"script");
+      ['scroll', 'mousemove', 'touchstart', 'keydown'].forEach(function(ev) {
+        window.addEventListener(ev, loadChatwoot, { once: true, passive: true });
+      });
+      setTimeout(loadChatwoot, 5000);
+    })();
   </script>
 </body>
 
