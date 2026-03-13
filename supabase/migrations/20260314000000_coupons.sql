@@ -19,10 +19,29 @@ CREATE POLICY "Anyone can read active coupons" ON public.coupons
   FOR SELECT
   USING (active = true);
 
--- Apenas service_role pode inserir/atualizar/deletar (admin via supabaseAdmin)
+-- service_role (Edge Functions) pode escrever
 CREATE POLICY "Service role full access" ON public.coupons
   FOR ALL
-  USING (auth.role() = 'service_role');
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+-- admin e gerente autenticados podem escrever via painel
+CREATE POLICY "Admin and Gerente can manage coupons" ON public.coupons
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND role IN ('admin', 'gerente')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND role IN ('admin', 'gerente')
+    )
+  );
 
 -- Adicionar colunas de cupom em orders
 ALTER TABLE public.orders
