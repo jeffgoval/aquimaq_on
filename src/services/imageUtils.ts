@@ -10,41 +10,12 @@ export const IMAGE_SIZES = {
 
 type ImagePreset = keyof typeof IMAGE_SIZES;
 
-/**
- * Converte uma URL do Supabase Storage para a URL de transformação de imagem.
- * Suporte a width, height, quality e resize mode.
- * Para URLs externas (não-Supabase), retorna a URL original sem modificação.
- */
-export function getOptimizedUrl(
-    publicUrl: string,
-    options?: { width?: number; height?: number; quality?: number; resize?: 'cover' | 'contain' | 'fill' }
-): string {
-    if (!publicUrl) return publicUrl;
-    if (!publicUrl.includes('/storage/v1/object/public/')) return publicUrl;
-
-    const { width, height, quality = 80, resize = 'contain' } = options ?? {};
-    const renderUrl = publicUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-    const params = new URLSearchParams({ quality: String(quality), resize });
-    if (width) params.set('width', String(width));
-    if (height) params.set('height', String(height));
-    return `${renderUrl}?${params.toString()}`;
+export function getOptimizedUrl(publicUrl: string): string {
+    return publicUrl;
 }
 
-export function getPresetUrl(publicUrl: string, preset: ImagePreset): string {
-    return getOptimizedUrl(publicUrl, IMAGE_SIZES[preset]);
-}
-
-/**
- * Gera srcSet responsivo com 3 tamanhos para uso em <img srcSet>.
- * Retorna string vazia para URLs externas (sem transformação disponível).
- */
-export function buildSrcSet(publicUrl: string): string {
-    if (!publicUrl || !publicUrl.includes('/storage/v1/object/public/')) return '';
-    return [
-        `${getOptimizedUrl(publicUrl, { width: 400, quality: 75 })} 400w`,
-        `${getOptimizedUrl(publicUrl, { width: 800, quality: 80 })} 800w`,
-        `${getOptimizedUrl(publicUrl, { width: 1200, quality: 85 })} 1200w`,
-    ].join(', ');
+export function getPresetUrl(publicUrl: string, _preset: ImagePreset): string {
+    return publicUrl;
 }
 
 export async function compressImage(file: File, maxWidth = 1600, quality = 0.8): Promise<File> {
