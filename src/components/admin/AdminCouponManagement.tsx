@@ -227,7 +227,7 @@ const AdminCouponManagement: React.FC = () => {
                                 max={formData.discount_type === 'percentage' ? 100 : undefined}
                                 value={formData.discount_value}
                                 onChange={e => setFormData(p => ({ ...p, discount_value: parseFloat(e.target.value) || 0 }))}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
 
@@ -239,7 +239,7 @@ const AdminCouponManagement: React.FC = () => {
                                 step={0.01}
                                 value={formData.min_purchase_amount}
                                 onChange={e => setFormData(p => ({ ...p, min_purchase_amount: parseFloat(e.target.value) || 0 }))}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
 
@@ -251,7 +251,7 @@ const AdminCouponManagement: React.FC = () => {
                                 value={formData.max_uses ?? ''}
                                 onChange={e => setFormData(p => ({ ...p, max_uses: e.target.value ? parseInt(e.target.value) : null }))}
                                 placeholder="Ilimitado"
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-agro-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
 

@@ -14,10 +14,10 @@ CREATE TABLE public.coupons (
 
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
--- Clientes autenticados podem ler cupons ativos (para validação no frontend)
-CREATE POLICY "Clients read active coupons" ON public.coupons
+-- Qualquer visitante pode ler cupons ativos (validação real ocorre na Edge Function)
+CREATE POLICY "Anyone can read active coupons" ON public.coupons
   FOR SELECT
-  USING (active = true AND auth.role() = 'authenticated');
+  USING (active = true);
 
 -- Apenas service_role pode inserir/atualizar/deletar (admin via supabaseAdmin)
 CREATE POLICY "Service role full access" ON public.coupons
