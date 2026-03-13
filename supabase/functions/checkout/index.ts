@@ -12,6 +12,7 @@ function getAllowedOrigin(req: Request): string {
 interface OrderPayload {
     shipping_cost: number;
     shipping_method?: string | null;
+    coupon_code?: string | null;
     scheduled_delivery_date?: string | null;
     scheduled_delivery_notes?: string | null;
     shipping_address?: {
@@ -82,6 +83,10 @@ function parseBody(body: unknown): CheckoutBody | null {
     const order = b.order as OrderPayload;
     if (typeof order.shipping_cost !== "number" || order.shipping_cost < 0) return null;
     if (typeof b.back_url_base !== "string" || !b.back_url_base.trim()) return null;
+    // Normalise coupon_code (allow string or null/undefined)
+    if (order.coupon_code !== undefined && order.coupon_code !== null && typeof order.coupon_code !== "string") {
+        order.coupon_code = null;
+    }
     const base = (b.back_url_base as string).trim().replace(/\/$/, "");
     let payer: PayerPayload | undefined;
     if (b.payer && typeof b.payer === "object") {
@@ -227,7 +232,31 @@ Deno.serve(async (req) => {
         serverItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
     );
     const shippingCost = round2(Math.max(0, payload.order.shipping_cost));
-    const serverTotal = round2(serverSubtotal + shippingCost);
+
+    // 4b. Validate coupon server-side (anti-fraud)
+    let couponRow: Record<string, unknown> | null = null;
+    let discountAmount = 0;
+    if (payload.order.coupon_code) {
+        const { data: couponData } = await supabaseAdmin
+            .from("coupons")
+            .select("*")
+            .eq("code", payload.order.coupon_code.trim().toUpperCase())
+            .eq("active", true)
+            .single();
+        if (
+            couponData &&
+            (!couponData.expiration_date || new Date(couponData.expiration_date as string) > new Date()) &&
+            (couponData.max_uses === null || (couponData.used_count as number) < (couponData.max_uses as number)) &&
+            serverSubtotal >= (couponData.min_purchase_amount as number)
+        ) {
+            couponRow = couponData as Record<string, unknown>;
+            discountAmount = couponData.discount_type === "percentage"
+                ? round2(serverSubtotal * (couponData.discount_value as number) / 100)
+                : Math.min(couponData.discount_value as number, serverSubtotal);
+        }
+    }
+
+    const serverTotal = round2(Math.max(0, serverSubtotal + shippingCost - discountAmount));
 
     // 5. Criar pedido com valores server-side
     const { data: orderRow, error: orderError } = await supabaseAdmin
@@ -237,7 +266,9 @@ Deno.serve(async (req) => {
             status: "aguardando_pagamento",
             subtotal: serverSubtotal,
             shipping_cost: shippingCost,
+            discount_amount: discountAmount,
             total: serverTotal,
+            coupon_id: couponRow ? (couponRow.id as string) : null,
             shipping_method: payload.order.shipping_method ?? null,
             shipping_address: payload.order.shipping_address ?? null,
             scheduled_delivery_date: payload.order.scheduled_delivery_date ?? null,
@@ -264,6 +295,14 @@ Deno.serve(async (req) => {
     }));
     if (orderItems.length > 0) {
         await supabaseAdmin.from("order_items").insert(orderItems);
+    }
+
+    // 6b. Incrementar used_count do cupom (best-effort)
+    if (couponRow) {
+        await supabaseAdmin
+            .from("coupons")
+            .update({ used_count: (couponRow.used_count as number) + 1 })
+            .eq("id", couponRow.id as string);
     }
 
     // 7. Read payment settings from store_settings
@@ -309,6 +348,16 @@ Deno.serve(async (req) => {
                 category_id: "others",
                 quantity: 1,
                 unit_price: shippingCost,
+                currency_id: "BRL",
+            }]
+            : []),
+        ...(discountAmount > 0 && couponRow
+            ? [{
+                id: "coupon",
+                title: `Desconto: ${couponRow.code as string}`,
+                category_id: "others",
+                quantity: 1,
+                unit_price: -discountAmount,
                 currency_id: "BRL",
             }]
             : []),

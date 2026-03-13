@@ -2,9 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart, ChevronLeft, ChevronRight, Trash2, ImageOff, Loader2, LogIn,
-    Minus, Plus, MapPin, AlertTriangle, Zap, Package, Store,
+    Minus, Plus, MapPin, AlertTriangle, Zap, Package, Store, Tag, X,
 } from 'lucide-react';
-import { CartItem, ShippingOption } from '@/types';
+import { CartItem, Coupon, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 import ShippingCalculator from './ShippingCalculator';
@@ -35,6 +35,10 @@ interface CartProps {
     isProcessing?: boolean;
     hasPickupOnlyRestriction?: boolean;
     pickupOnlyMessage?: string | null;
+    appliedCoupon?: Coupon | null;
+    couponDiscount?: number;
+    onApplyCoupon?: (code: string) => Promise<void>;
+    onRemoveCoupon?: () => void;
 }
 
 const Cart: React.FC<CartProps> = ({
@@ -52,6 +56,10 @@ const Cart: React.FC<CartProps> = ({
     isProcessing = false,
     hasPickupOnlyRestriction = false,
     pickupOnlyMessage,
+    appliedCoupon = null,
+    couponDiscount = 0,
+    onApplyCoupon,
+    onRemoveCoupon,
 }) => {
     const navigate = useNavigate();
     const { profile, refreshProfile } = useAuth();
@@ -60,6 +68,23 @@ const Cart: React.FC<CartProps> = ({
     const { showToast } = useToast();
     const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
     const [showAddressModal, setShowAddressModal] = useState(false);
+    const [couponInput, setCouponInput] = useState('');
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState<string | null>(null);
+
+    const handleApplyCoupon = async () => {
+        if (!couponInput.trim() || !onApplyCoupon) return;
+        setCouponLoading(true);
+        setCouponError(null);
+        try {
+            await onApplyCoupon(couponInput.trim());
+            setCouponInput('');
+        } catch (err: unknown) {
+            setCouponError(err instanceof Error ? err.message : 'Cupom inválido.');
+        } finally {
+            setCouponLoading(false);
+        }
+    };
 
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
     const outOfStockItems = items.filter(i => (i.stock ?? 0) === 0);
@@ -359,6 +384,56 @@ const Cart: React.FC<CartProps> = ({
                                         : 'a calcular'}
                                 </span>
                             </div>
+
+                            {/* Coupon input / applied badge */}
+                            {appliedCoupon ? (
+                                <div className="flex items-center justify-between text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg">
+                                    <span className="flex items-center gap-1.5">
+                                        <Tag size={13} />
+                                        <span className="font-semibold font-mono tracking-wide">{appliedCoupon.code}</span>
+                                    </span>
+                                    <button
+                                        onClick={onRemoveCoupon}
+                                        className="text-emerald-500 hover:text-red-500 transition-colors ml-2"
+                                        aria-label="Remover cupom"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={couponInput}
+                                            onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(null); }}
+                                            onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+                                            placeholder="Código do cupom"
+                                            className="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-agro-400 placeholder:text-gray-300 uppercase"
+                                        />
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={couponLoading || !couponInput.trim()}
+                                            className="shrink-0 px-3 py-2 text-sm font-semibold bg-agro-600 hover:bg-agro-700 text-white rounded-lg transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                        >
+                                            {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Aplicar'}
+                                        </button>
+                                    </div>
+                                    {couponError && (
+                                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                            <AlertTriangle size={11} /> {couponError}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Coupon discount line */}
+                            {couponDiscount > 0 && (
+                                <div className="flex justify-between text-sm text-emerald-700">
+                                    <span>Desconto ({appliedCoupon?.code})</span>
+                                    <span className="font-bold">-{formatCurrency(couponDiscount)}</span>
+                                </div>
+                            )}
 
                             {/* PIX savings */}
                             {grandTotal > 0 && (

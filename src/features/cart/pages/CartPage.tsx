@@ -32,6 +32,10 @@ const CartPage: React.FC = () => {
         shippingCost,
         grandTotal,
         shippingZip,
+        appliedCoupon,
+        couponDiscount,
+        applyCoupon,
+        removeCoupon,
     } = useCart();
 
     const { showToast } = useToast();
@@ -79,6 +83,7 @@ const CartPage: React.FC = () => {
                 shippingCost,
                 selectedShipping,
                 profile,
+                couponCode: appliedCoupon?.code,
             });
 
             // 3. Redirect to Mercado Pago
@@ -109,6 +114,10 @@ const CartPage: React.FC = () => {
                 isProcessing={isProcessing}
                 hasPickupOnlyRestriction={cartHasPickupOnlyItems}
                 pickupOnlyMessage={settings?.shippingRestrictionMessage}
+                appliedCoupon={appliedCoupon}
+                couponDiscount={couponDiscount}
+                onApplyCoupon={applyCoupon}
+                onRemoveCoupon={removeCoupon}
             />
             {cart.length > 0 && recentProducts.length > 0 && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">

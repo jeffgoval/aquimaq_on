@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Product, CartItem, ShippingOption } from '@/types';
+import { Product, CartItem, Coupon, ShippingOption } from '@/types';
 import { CartItemsSchema } from '../schemas/cartSchema';
-import { getCartSubtotal, getCartItemCount, getShippingCost, getGrandTotal } from '@/utils/cart-calculations';
+import { getCartSubtotal, getCartItemCount, getShippingCost, getGrandTotal, getCouponDiscount } from '@/utils/cart-calculations';
+import { validateCoupon } from '@/services/couponService';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/services/supabase';
+
+const CART_COUPON_KEY = 'cart_coupon';
 
 const CART_SHIPPING_KEY = 'cart_shipping';
 
@@ -35,6 +38,10 @@ interface CartContextType {
     setShippingZip: (zip: string) => void;
     shippingCost: number;
     grandTotal: number;
+    appliedCoupon: Coupon | null;
+    couponDiscount: number;
+    applyCoupon: (code: string) => Promise<void>;
+    removeCoupon: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -56,6 +63,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const [shipping, setShipping] = useState(getInitialShipping);
     const { shippingZip, selectedShipping } = shipping;
+
+    const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => {
+        try {
+            const saved = localStorage.getItem(CART_COUPON_KEY);
+            return saved ? JSON.parse(saved) as Coupon : null;
+        } catch {
+            return null;
+        }
+    });
 
     const setShippingZip = (zip: string) => setShipping(prev => ({ ...prev, shippingZip: zip }));
     const setSelectedShipping = (option: ShippingOption | null) => setShipping(prev => ({ ...prev, selectedShipping: option }));
@@ -128,13 +144,28 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const clearCart = useCallback(() => {
         setCart([]);
         setShipping({ shippingZip: '', selectedShipping: null });
+        setAppliedCoupon(null);
         try { localStorage.removeItem(CART_SHIPPING_KEY); } catch { /* */ }
+        try { localStorage.removeItem(CART_COUPON_KEY); } catch { /* */ }
+    }, []);
+
+    const applyCoupon = useCallback(async (code: string) => {
+        const subtotal = getCartSubtotal(cart);
+        const coupon = await validateCoupon(code, subtotal);
+        setAppliedCoupon(coupon);
+        try { localStorage.setItem(CART_COUPON_KEY, JSON.stringify(coupon)); } catch { /* */ }
+    }, [cart]);
+
+    const removeCoupon = useCallback(() => {
+        setAppliedCoupon(null);
+        try { localStorage.removeItem(CART_COUPON_KEY); } catch { /* */ }
     }, []);
 
     const cartSubtotal = getCartSubtotal(cart);
     const cartItemCount = getCartItemCount(cart);
     const shippingCost = getShippingCost(selectedShipping);
-    const grandTotal = getGrandTotal(cartSubtotal, shippingCost);
+    const couponDiscount = getCouponDiscount(appliedCoupon, cartSubtotal);
+    const grandTotal = getGrandTotal(cartSubtotal, shippingCost, couponDiscount);
 
     return (
         <CartContext.Provider value={{
@@ -142,7 +173,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             cartSubtotal, cartItemCount,
             selectedShipping, setSelectedShipping,
             shippingZip, setShippingZip,
-            shippingCost, grandTotal
+            shippingCost, grandTotal,
+            appliedCoupon, couponDiscount, applyCoupon, removeCoupon,
         }}>
             {children}
         </CartContext.Provider>

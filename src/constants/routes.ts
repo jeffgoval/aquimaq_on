@@ -28,6 +28,7 @@ export const ROUTES = {
   ADMIN_SHIPPING_GUARD: '/admin/logistica',
   ADMIN_SEASONAL: '/admin/sazonalidade',
   ADMIN_REVIEWS: '/admin/avaliacoes',
+  ADMIN_COUPONS: '/admin/cupons',
   ACCOUNT: '/conta',
   ORDERS: '/meus-pedidos',
 } as const;
@@ -60,5 +61,6 @@ export const ROUTE_PATHS = {
   ADMIN_SHIPPING_GUARD: 'logistica',
   ADMIN_SEASONAL: 'sazonalidade',
   ADMIN_REVIEWS: 'avaliacoes',
+  ADMIN_COUPONS: 'cupons',
   ORDERS: 'meus-pedidos',
 } as const;

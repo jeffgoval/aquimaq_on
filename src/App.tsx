@@ -43,6 +43,7 @@ const AdminWhatsAppManagement = lazy(() => import('./components/admin/AdminWhats
 const AdminShippingGuard = lazy(() => import('./components/admin/AdminShippingGuard'));
 const AdminSeasonalPage = lazy(() => import('./components/admin/AdminSeasonalPage'));
 const AdminReviewsManagement = lazy(() => import('./components/admin/AdminReviewsManagement'));
+const AdminCouponManagement = lazy(() => import('./components/admin/AdminCouponManagement'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -122,6 +123,11 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente']}>
                         <AdminBannerManagement />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_COUPONS} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                        <AdminCouponManagement />
                     </ProtectedRoute>
                 } />
 

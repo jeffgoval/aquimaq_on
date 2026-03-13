@@ -16,6 +16,7 @@ import {
     Truck,
     Calendar,
     Star,
+    Tag,
 } from 'lucide-react';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ import { ROUTES } from '@/constants/routes';
 import { LogOut } from 'lucide-react';
 import packageJson from '../../../package.json';
 
-export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'SHIPPING_GUARD' | 'SEASONAL' | 'REVIEWS';
+export type AdminView = 'DASHBOARD' | 'ORDERS' | 'PRODUCTS' | 'BANNERS' | 'COUPONS' | 'USERS' | 'SETTINGS' | 'AI' | 'WHATSAPP' | 'SHIPPING_GUARD' | 'SEASONAL' | 'REVIEWS';
 
 const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN]: 'DASHBOARD',
@@ -37,6 +38,7 @@ const ADMIN_PATH_TO_VIEW: Record<string, AdminView> = {
     [ROUTES.ADMIN_SHIPPING_GUARD]: 'SHIPPING_GUARD',
     [ROUTES.ADMIN_SEASONAL]: 'SEASONAL',
     [ROUTES.ADMIN_REVIEWS]: 'REVIEWS',
+    [ROUTES.ADMIN_COUPONS]: 'COUPONS',
 };
 
 export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
@@ -51,6 +53,7 @@ export const ADMIN_VIEW_TO_PATH: Record<AdminView, string> = {
     SHIPPING_GUARD: ROUTES.ADMIN_SHIPPING_GUARD,
     SEASONAL: ROUTES.ADMIN_SEASONAL,
     REVIEWS: ROUTES.ADMIN_REVIEWS,
+    COUPONS: ROUTES.ADMIN_COUPONS,
 };
 
 interface AdminLayoutProps {
@@ -104,6 +107,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'ORDERS', label: 'Pedidos', icon: <ShoppingBag size={18} />, title: 'Gerir pedidos e estados de envio' },
         { id: 'PRODUCTS', label: 'Produtos', icon: <Package size={18} />, title: 'Catálogo de produtos da loja' },
         { id: 'BANNERS', label: 'Banners', icon: <Image size={18} />, title: 'Imagens de destaque na página inicial' },
+        { id: 'COUPONS', label: 'Cupons', icon: <Tag size={18} />, title: 'Cupons de desconto para clientes' },
         { id: 'SHIPPING_GUARD', label: 'Logística', icon: <Truck size={18} />, title: 'Regras de entrega por categoria (ex.: apenas retirada, frota regional)' },
         { id: 'SEASONAL', label: 'Sazonalidade', icon: <Calendar size={18} />, title: 'Fases de safra (plantio/colheita) para destacar produtos em época' },
         { id: 'REVIEWS', label: 'Avaliações', icon: <Star size={18} />, title: 'Moderar avaliações de produtos (ocultar ou eliminar)' },
@@ -113,7 +117,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} />, title: 'Dados da empresa, pagamento e marketing' },
     ] as NavItem[]).filter(item => {
         // Ver matriz de roles em App.tsx (AdminRoutes). Manter alinhado com ProtectedRoute por rota.
-        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false;
+        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false; // vendedor: sem Cupons
         if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
         if (isVendedor && item.id === 'WHATSAPP') return false; // WhatsApp: apenas admin/gerente
         if (isVendedor && ['SHIPPING_GUARD', 'SEASONAL', 'REVIEWS'].includes(item.id)) return false; // Logística, Sazonalidade, Avaliações: admin/gerente

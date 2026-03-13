@@ -118,3 +118,16 @@ export type PaymentStatus =
 
 // Navigation Types (Simplified for Catalog Only)
 export type ViewState = 'CATALOG' | 'PRODUCT_DETAIL' | 'CART' | 'WISHLIST';
+
+// Cupom de desconto
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_purchase_amount: number;
+  max_uses: number | null;
+  used_count: number;
+  expiration_date: string | null;
+  active: boolean;
+}
