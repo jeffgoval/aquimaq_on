@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from './Image';
+import { getOptimizedUrl, buildSrcSet } from '@/services/imageUtils';
 
 interface ProductGalleryProps {
   images: string[];
@@ -34,7 +35,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Main Image — pan zoom on hover */}
+      {/* Main Image — LCP: eager + fetchPriority=high + srcSet responsivo */}
       <div
         ref={containerRef}
         className="w-full h-[320px] sm:h-[420px] lg:h-[500px] rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden p-4 sm:p-6 cursor-zoom-in"
@@ -43,8 +44,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
         onMouseMove={handleMouseMove}
       >
         <Image
-          src={selectedImage}
+          src={getOptimizedUrl(selectedImage ?? '', { width: 800, quality: 85 })}
+          srcSet={buildSrcSet(selectedImage ?? '')}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
           alt={productName}
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
           className="w-full h-full object-contain pointer-events-none"
           style={{
             transform: zoomed ? 'scale(2)' : 'scale(1)',
@@ -54,7 +60,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
         />
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails — lazy, tamanho fixo 160px (2× para retina) */}
       {images.length > 1 && (
         <div className="flex overflow-x-auto gap-2 p-4 scrollbar-hide">
           {images.map((img, idx) => (
@@ -69,8 +75,10 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) 
               `}
             >
               <Image
-                src={img}
+                src={getOptimizedUrl(img, { width: 160, quality: 70 })}
                 alt={`${productName} - Vista ${idx + 1}`}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </button>

@@ -3,6 +3,8 @@ import { ImageOff } from 'lucide-react';
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     fallbackSrc?: string;
+    /** Hint de prioridade de fetch para o browser (melhora LCP). */
+    fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 /**
