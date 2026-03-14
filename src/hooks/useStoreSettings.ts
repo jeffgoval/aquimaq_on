@@ -9,24 +9,26 @@ export const useStoreSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getStoreSettings();
-        setSettings(data);
-      } catch (err) {
-        console.error(err);
-        setError('Falha ao carregar configurações da loja');
-        setSettings(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSettings();
+  const fetchSettings = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getStoreSettings();
+      setSettings(data);
+    } catch (err) {
+      console.error(err);
+      setError('Falha ao carregar configurações da loja');
+      setSettings(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const refreshSettings = fetchSettings;
 
   const saveSettings = useCallback(
     async (
@@ -44,6 +46,6 @@ export const useStoreSettings = () => {
     [settings]
   );
 
-  return { settings, isLoading, error, saveSettings };
+  return { settings, isLoading, error, saveSettings, refreshSettings };
 };
 

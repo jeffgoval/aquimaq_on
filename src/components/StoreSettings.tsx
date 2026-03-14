@@ -5,6 +5,7 @@ import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useStore } from '@/contexts/StoreContext';
 
 interface StoreSettingsProps {
     onBack: () => void;
@@ -43,6 +44,19 @@ interface StoreConfig {
     crossSellCategory: string;
 }
 
+interface FormErrors {
+    storeName?: string;
+    cnpj?: string;
+    phone?: string;
+    email?: string;
+    'address.zip'?: string;
+    'address.street'?: string;
+    'address.number'?: string;
+    'address.district'?: string;
+    'address.city'?: string;
+    'address.state'?: string;
+}
+
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
     credit_card: 'Cartão de Crédito',
     debit_card: 'Cartão de Débito',
@@ -63,6 +77,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
+    const { refreshSettings } = useStore();
     const [formData, setFormData] = useState<StoreConfig>({
         storeName: '',
         razaoSocial: '',
@@ -136,6 +151,35 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingAddress, setIsLoadingAddress] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [errors, setErrors] = useState<FormErrors>({});
+
+    const validate = (): FormErrors => {
+        const e: FormErrors = {};
+        if (!formData.storeName.trim())
+            e.storeName = 'Nome da loja é obrigatório';
+        const cnpjDigits = formData.cnpj.replace(/\D/g, '');
+        if (!cnpjDigits || cnpjDigits.length !== 14)
+            e.cnpj = 'CNPJ deve ter 14 dígitos';
+        const phoneDigits = formData.phone.replace(/\D/g, '');
+        if (!phoneDigits || phoneDigits.length < 10)
+            e.phone = 'Telefone inválido (mínimo 10 dígitos)';
+        if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+            e.email = 'E-mail inválido';
+        const zipDigits = formData.address.zip.replace(/\D/g, '');
+        if (!zipDigits || zipDigits.length !== 8)
+            e['address.zip'] = 'CEP deve ter 8 dígitos';
+        if (!formData.address.street.trim())
+            e['address.street'] = 'Logradouro é obrigatório';
+        if (!formData.address.number.trim())
+            e['address.number'] = 'Número é obrigatório';
+        if (!formData.address.district.trim())
+            e['address.district'] = 'Bairro é obrigatório';
+        if (!formData.address.city.trim())
+            e['address.city'] = 'Cidade é obrigatória';
+        if (!formData.address.state.trim() || formData.address.state.trim().length !== 2)
+            e['address.state'] = 'UF inválida';
+        return e;
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -145,6 +189,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         if (name === 'cnpj') formattedValue = maskDocument(value);
 
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
+        setErrors(prev => ({ ...prev, [name]: undefined }));
     };
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,6 +232,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 [field]: formattedValue
             }
         }));
+        setErrors(prev => ({ ...prev, [`address.${field}`]: undefined }));
 
         if (field === 'zip' && formattedValue.length === 9) {
             setIsLoadingAddress(true);
@@ -211,8 +257,25 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         setMessage(null);
+
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            const enderecoFields: (keyof FormErrors)[] = [
+                'address.zip', 'address.street', 'address.number',
+                'address.district', 'address.city', 'address.state',
+            ];
+            const hasEnderecoError = enderecoFields.some(f => validationErrors[f]);
+            const hasEmpresaError = ['storeName', 'cnpj', 'phone', 'email'].some(
+                f => validationErrors[f as keyof FormErrors]
+            );
+            if (hasEmpresaError) setActiveTab('empresa');
+            else if (hasEnderecoError) setActiveTab('endereco');
+            return;
+        }
+        setErrors({});
+        setIsLoading(true);
 
         const result = await saveSettings({
             storeName: formData.storeName,
@@ -247,6 +310,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         if (result.success) {
             setMessage({ type: 'success', text: 'Configurações da loja salvas com sucesso!' });
             setTimeout(() => setMessage(null), 3000);
+            refreshSettings();
         } else {
             setMessage({ type: 'error', text: result.error || 'Erro ao salvar configurações.' });
         }
@@ -282,22 +346,30 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
                         {/* Abas */}
                         <div className="flex border-b border-stone-200 overflow-x-auto">
-                            {TABS.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        'flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
-                                        activeTab === tab.id
-                                            ? 'border-stone-700 text-stone-900 bg-stone-50'
-                                            : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
-                                    )}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                </button>
-                            ))}
+                            {TABS.map((tab) => {
+                                const tabHasError =
+                                    (tab.id === 'empresa' && ['storeName', 'cnpj', 'phone', 'email'].some(f => errors[f as keyof FormErrors])) ||
+                                    (tab.id === 'endereco' && ['address.zip', 'address.street', 'address.number', 'address.district', 'address.city', 'address.state'].some(f => errors[f as keyof FormErrors]));
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            'flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
+                                            activeTab === tab.id
+                                                ? 'border-stone-700 text-stone-900 bg-stone-50'
+                                                : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
+                                        )}
+                                    >
+                                        {tab.icon}
+                                        {tab.label}
+                                        {tabHasError && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" aria-hidden="true" />
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-8">
@@ -344,7 +416,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Nome da Loja</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Nome da Loja <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="relative">
                                             <Store className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
@@ -352,9 +426,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 name="storeName"
                                                 value={formData.storeName}
                                                 onChange={handleChange}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                                aria-invalid={!!errors.storeName}
+                                                className={cn(
+                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                    errors.storeName
+                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                                )}
                                             />
                                         </div>
+                                        {errors.storeName && <p className="text-xs text-red-500">{errors.storeName}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-stone-700">Razão Social</label>
@@ -372,7 +453,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         <p className="text-xs text-stone-400">Exibida no rodapé (exigência CDC).</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">CNPJ</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            CNPJ <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="relative">
                                             <FileText className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
@@ -381,12 +464,21 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 value={formData.cnpj}
                                                 onChange={handleChange}
                                                 maxLength={18}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                                aria-invalid={!!errors.cnpj}
+                                                className={cn(
+                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                    errors.cnpj
+                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                                )}
                                             />
                                         </div>
+                                        {errors.cnpj && <p className="text-xs text-red-500">{errors.cnpj}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Telefone de Contato</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Telefone de Contato <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="relative">
                                             <Phone className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
@@ -395,9 +487,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 maxLength={15}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                                aria-invalid={!!errors.phone}
+                                                className={cn(
+                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                    errors.phone
+                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                                )}
                                             />
                                         </div>
+                                        {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-stone-700">Número WhatsApp</label>
@@ -419,7 +518,9 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                         <p className="text-xs text-stone-400">Usado no link &quot;Central de Vendas&quot; do header. Deixe vazio para usar o telefone de contato.</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">E-mail</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            E-mail <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="relative">
                                             <Mail className="absolute left-3.5 top-3 text-stone-400" size={18} />
                                             <input
@@ -427,9 +528,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 name="email"
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                                aria-invalid={!!errors.email}
+                                                className={cn(
+                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                    errors.email
+                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                                )}
                                             />
                                         </div>
+                                        {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-stone-700">Horário de Atendimento</label>
@@ -522,14 +630,22 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 <div className="grid grid-cols-12 gap-x-4 gap-y-6">
                                     {/* CEP */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">CEP</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            CEP <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="relative">
                                             <input
                                                 type="text"
                                                 value={formData.address.zip}
                                                 onChange={(e) => handleAddressChange('zip', e.target.value)}
                                                 maxLength={9}
-                                                className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                                aria-invalid={!!errors['address.zip']}
+                                                className={cn(
+                                                    'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                    errors['address.zip']
+                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                                )}
                                             />
                                             {isLoadingAddress && (
                                                 <div className="absolute right-3 top-2.5">
@@ -537,28 +653,47 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                                 </div>
                                             )}
                                         </div>
+                                        {errors['address.zip'] && <p className="text-xs text-red-500">{errors['address.zip']}</p>}
                                     </div>
 
                                     {/* Rua */}
                                     <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Logradouro</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Logradouro <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.address.street}
                                             onChange={(e) => handleAddressChange('street', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                            aria-invalid={!!errors['address.street']}
+                                            className={cn(
+                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                errors['address.street']
+                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                            )}
                                         />
+                                        {errors['address.street'] && <p className="text-xs text-red-500">{errors['address.street']}</p>}
                                     </div>
 
                                     {/* Número */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Número</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Número <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.address.number}
                                             onChange={(e) => handleAddressChange('number', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                            aria-invalid={!!errors['address.number']}
+                                            className={cn(
+                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                errors['address.number']
+                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                            )}
                                         />
+                                        {errors['address.number'] && <p className="text-xs text-red-500">{errors['address.number']}</p>}
                                     </div>
 
                                     {/* Complemento */}
@@ -574,36 +709,63 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
 
                                     {/* Bairro */}
                                     <div className="col-span-12 md:col-span-4 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Bairro</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Bairro <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.address.district}
                                             onChange={(e) => handleAddressChange('district', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                            aria-invalid={!!errors['address.district']}
+                                            className={cn(
+                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                errors['address.district']
+                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                            )}
                                         />
+                                        {errors['address.district'] && <p className="text-xs text-red-500">{errors['address.district']}</p>}
                                     </div>
 
                                     {/* Cidade */}
                                     <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Cidade</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            Cidade <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.address.city}
                                             onChange={(e) => handleAddressChange('city', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                            aria-invalid={!!errors['address.city']}
+                                            className={cn(
+                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                errors['address.city']
+                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                            )}
                                         />
+                                        {errors['address.city'] && <p className="text-xs text-red-500">{errors['address.city']}</p>}
                                     </div>
 
                                     {/* UF */}
                                     <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">UF</label>
+                                        <label className="text-sm font-semibold text-stone-700">
+                                            UF <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             maxLength={2}
                                             value={formData.address.state}
                                             onChange={(e) => handleAddressChange('state', e.target.value.toUpperCase())}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
+                                            aria-invalid={!!errors['address.state']}
+                                            className={cn(
+                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
+                                                errors['address.state']
+                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
+                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
+                                            )}
                                         />
+                                        {errors['address.state'] && <p className="text-xs text-red-500">{errors['address.state']}</p>}
                                     </div>
                                 </div>
                             </section>
@@ -748,6 +910,12 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 </div>
                             </section>
                             </>
+                            )}
+
+                            {Object.keys(errors).length > 0 && (
+                                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                    Corrija os campos obrigatórios antes de salvar.
+                                </p>
                             )}
 
                             <div className="pt-6 border-t border-stone-100 flex justify-end">

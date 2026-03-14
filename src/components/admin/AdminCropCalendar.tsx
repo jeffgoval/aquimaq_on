@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Calendar, Plus, Pencil, Trash2, X, Save } from 'lucide-react';
 import {
   getCropCalendar,
@@ -103,8 +104,11 @@ const AdminCropCalendar: React.FC = () => {
     showMessage('success', 'Atualizado.');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remover esta linha do calendário?')) return;
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
+
+  const doDelete = async (id: string) => {
     const { error } = await deleteCropCalendarRow(id);
     if (error) {
       showMessage('error', error.message || 'Erro ao remover.');
@@ -128,6 +132,7 @@ const AdminCropCalendar: React.FC = () => {
   };
 
   return (
+    <>
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center gap-2">
         <Calendar size={22} className="text-stone-600" />
@@ -312,6 +317,19 @@ const AdminCropCalendar: React.FC = () => {
         </div>
       )}
     </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Remover entrada"
+        description="Tem certeza que deseja remover esta linha do calendário de safra?"
+        confirmLabel="Remover"
+        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) doDelete(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+      />
+    </>
   );
 };
 

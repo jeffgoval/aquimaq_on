@@ -12,9 +12,9 @@ export interface StockAlertRow {
 }
 
 export interface DashboardStats {
-  totalRevenue: number;
-  totalOrders: number;
-  pendingOrders: number;
+  totalRevenue: number;      // receita do mês (excluindo cancelados)
+  pendingPayment: number;    // aguardando_pagamento
+  toDispatch: number;        // pago + em_separacao (prontos para enviar)
   totalClientes: number;
 }
 
@@ -46,27 +46,34 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
 
   const [
     { data: recentData },
-    { count: totalOrders },
-    { count: pendingCount },
+    { count: pendingPaymentCount },
+    { count: toDispatchCount },
     { data: monthOrders },
     clientesResult,
   ] = await Promise.all([
+    // Últimos 8 pedidos com nome do cliente
     applyVendedorFilter(
       supabase
         .from('orders')
-        .select('id, total, status, created_at, cliente_id')
+        .select('id, total, status, created_at, profiles:cliente_id(name, email)')
         .order('created_at', { ascending: false })
-        .limit(5)
+        .limit(8)
     ),
-    applyVendedorFilter(
-      supabase.from('orders').select('*', { count: 'exact', head: true })
-    ),
+    // Pedidos aguardando pagamento
     applyVendedorFilter(
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['aguardando_pagamento', 'pago', 'em_separacao'])
+        .eq('status', 'aguardando_pagamento')
     ),
+    // Pedidos prontos para despachar (pago + em_separacao)
+    applyVendedorFilter(
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pago', 'em_separacao'])
+    ),
+    // Receita do mês (excluindo cancelados)
     applyVendedorFilter(
       supabase
         .from('orders')
@@ -75,16 +82,8 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
         .neq('status', 'cancelado')
     ),
     vendedorId
-      // Vendedor: clientes únicos nos seus pedidos
-      ? supabase
-          .from('orders')
-          .select('cliente_id')
-          .eq('vendedor_id', vendedorId)
-      // Admin/gerente: total de perfis com role cliente
-      : supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'cliente'),
+      ? supabase.from('orders').select('cliente_id').eq('vendedor_id', vendedorId)
+      : supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'cliente'),
   ]);
 
   const totalRevenue = (monthOrders ?? []).reduce(
@@ -98,18 +97,10 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
 
   const stats: DashboardStats = {
     totalRevenue,
-    totalOrders: totalOrders ?? 0,
-    pendingOrders: pendingCount ?? 0,
+    pendingPayment: pendingPaymentCount ?? 0,
+    toDispatch: toDispatchCount ?? 0,
     totalClientes,
   };
-
-  const rows = (recentData ?? []) as Array<{
-    id: string;
-    total: number;
-    status: string;
-    created_at: string;
-    cliente_id: string;
-  }>;
 
   const formatRelativeDate = (iso: string): string => {
     const d = new Date(iso);
@@ -118,20 +109,22 @@ export const getDashboardStats = async (vendedorId?: string): Promise<{
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
     if (diffMins < 60) return `Há ${diffMins} min`;
-    if (diffHours < 24)
-      return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    if (diffHours < 24) return `Há ${diffHours}h`;
     if (diffDays === 1) return 'Ontem';
     if (diffDays < 7) return `Há ${diffDays} dias`;
     return d.toLocaleDateString('pt-BR');
   };
 
-  const recentOrders: RecentOrderRow[] = rows.map((o) => ({
-    id: o.id,
-    cliente: o.cliente_id ?? 'Cliente',
-    total: o.total,
-    status: o.status,
-    date: formatRelativeDate(o.created_at),
-  }));
+  const recentOrders: RecentOrderRow[] = (recentData ?? []).map((o: any) => {
+    const p = o.profiles as { name?: string; email?: string } | null;
+    return {
+      id: o.id,
+      cliente: p?.name || p?.email || 'Cliente',
+      total: o.total,
+      status: o.status,
+      date: formatRelativeDate(o.created_at),
+    };
+  });
 
   return { stats, recentOrders };
 };

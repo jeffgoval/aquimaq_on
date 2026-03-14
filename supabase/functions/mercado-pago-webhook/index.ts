@@ -34,6 +34,200 @@ function mapOrderStatus(paymentStatus: string): string {
     }
 }
 
+// ─── Melhor Envios: cria envio no carrinho após pagamento aprovado ────────────
+
+async function createMeShipment(
+    supabase: ReturnType<typeof createClient>,
+    orderId: string,
+): Promise<void> {
+    const meToken = Deno.env.get("MELHOR_ENVIO_TOKEN");
+    if (!meToken) {
+        console.warn("createMeShipment: MELHOR_ENVIO_TOKEN não configurado — pulando");
+        return;
+    }
+
+    // Busca pedido
+    const { data: order } = await supabase
+        .from("orders")
+        .select("id, shipping_method, shipping_address, subtotal, total, me_order_id, cliente_id")
+        .eq("id", orderId)
+        .maybeSingle();
+
+    if (!order) {
+        console.warn("createMeShipment: pedido não encontrado:", orderId);
+        return;
+    }
+
+    // Pula pedidos de retirada ou sem método ME
+    if (!order.shipping_method || !String(order.shipping_method).startsWith("me_")) {
+        console.log("createMeShipment: não é envio ME, pulando:", order.shipping_method);
+        return;
+    }
+
+    // Idempotente: já tem me_order_id
+    if (order.me_order_id) {
+        console.log("createMeShipment: já tem me_order_id, pulando");
+        return;
+    }
+
+    const serviceId = parseInt(String(order.shipping_method).replace("me_", ""), 10);
+    if (isNaN(serviceId)) {
+        console.warn("createMeShipment: service ID inválido:", order.shipping_method);
+        return;
+    }
+
+    // Busca itens + dimensões dos produtos
+    const { data: items } = await supabase
+        .from("order_items")
+        .select("product_name, quantity, unit_price, products(weight, width, height, length)")
+        .eq("order_id", orderId);
+
+    // Busca perfil do cliente
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("name, email, phone, document_number, zip_code, street, number, complement, neighborhood, city, state")
+        .eq("id", order.cliente_id)
+        .maybeSingle();
+
+    // Busca dados da loja (remetente)
+    const { data: store } = await supabase
+        .from("store_settings")
+        .select("store_name, cnpj, email, phone, origin_cep, origin_street, origin_number, origin_district, origin_city, origin_state")
+        .maybeSingle();
+
+    const IS_PRODUCTION = Deno.env.get("PRODUCTION_MELHOR_ENVIO") === "true";
+    const ME_API = IS_PRODUCTION
+        ? "https://www.melhorenvio.com.br/api/v2"
+        : "https://sandbox.melhorenvio.com.br/api/v2";
+
+    // Endereço de destino: prioriza shipping_address do pedido, fallback para perfil
+    const addr = (order.shipping_address ?? {}) as Record<string, string>;
+    const destZip = (addr.zip_code ?? profile?.zip_code ?? "").replace(/\D/g, "");
+    const destStreet = addr.street ?? profile?.street ?? "";
+    const destNumber = addr.number ?? profile?.number ?? "S/N";
+    const destComplement = addr.complement ?? profile?.complement ?? "";
+    const destDistrict = addr.neighborhood ?? profile?.neighborhood ?? "";
+    const destCity = addr.city ?? profile?.city ?? "";
+    const destState = addr.state ?? profile?.state ?? "";
+
+    // CEP de origem: store_settings > env var
+    const originZip = ((store?.origin_cep ?? Deno.env.get("CEP_ORIGEM") ?? "")).replace(/\D/g, "");
+
+    // Lista de produtos para o ME
+    const products = (items ?? []).map((item: Record<string, unknown>) => {
+        const prod = item.products as Record<string, unknown> | null;
+        return {
+            name: (item.product_name as string) ?? "Produto",
+            quantity: item.quantity as number,
+            unitary_value: Number(item.unit_price),
+            weight: Number(prod?.weight ?? 0.5),
+        };
+    });
+
+    if (products.length === 0) {
+        console.warn("createMeShipment: nenhum item encontrado para o pedido:", orderId);
+        return;
+    }
+
+    // Volume agregado: maiores dimensões + peso total
+    const totalWeight = products.reduce(
+        (sum: number, p: { weight: number; quantity: number }) => sum + p.weight * p.quantity,
+        0,
+    );
+    const volumes = [{
+        height: Math.max(2, ...(items ?? []).map((i: Record<string, unknown>) => {
+            const p = i.products as Record<string, unknown> | null;
+            return Number(p?.height ?? 10);
+        })),
+        width: Math.max(11, ...(items ?? []).map((i: Record<string, unknown>) => {
+            const p = i.products as Record<string, unknown> | null;
+            return Number(p?.width ?? 15);
+        })),
+        length: Math.max(16, ...(items ?? []).map((i: Record<string, unknown>) => {
+            const p = i.products as Record<string, unknown> | null;
+            return Number(p?.length ?? 15);
+        })),
+        weight: Math.max(0.1, totalWeight),
+    }];
+
+    const cartPayload = {
+        service: serviceId,
+        from: {
+            name: store?.store_name ?? "Aquimaq",
+            phone: ((store?.phone as string) ?? "").replace(/\D/g, ""),
+            email: (store?.email as string) ?? "",
+            document: ((store?.cnpj as string) ?? "").replace(/\D/g, ""),
+            company_document: ((store?.cnpj as string) ?? "").replace(/\D/g, ""),
+            address: (store?.origin_street as string) ?? "",
+            number: (store?.origin_number as string) ?? "S/N",
+            district: (store?.origin_district as string) ?? "",
+            city: (store?.origin_city as string) ?? "",
+            country_id: "BR",
+            postal_code: originZip,
+        },
+        to: {
+            name: profile?.name ?? "Cliente",
+            phone: ((profile?.phone as string) ?? "").replace(/\D/g, ""),
+            email: (profile?.email as string) ?? "",
+            document: ((profile?.document_number as string) ?? "").replace(/\D/g, ""),
+            address: destStreet,
+            number: destNumber,
+            complement: destComplement,
+            district: destDistrict,
+            city: destCity,
+            state_abbr: destState,
+            country_id: "BR",
+            postal_code: destZip,
+        },
+        products,
+        volumes,
+        options: {
+            insurance_value: Number(order.subtotal ?? order.total ?? 0),
+            receipt: false,
+            own_hand: false,
+            non_commercial: true,
+        },
+    };
+
+    const cartRes = await fetch(`${ME_API}/me/cart`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${meToken}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "AquimaqApp (suporte@aquimaq.com.br)",
+        },
+        body: JSON.stringify(cartPayload),
+    });
+
+    if (!cartRes.ok) {
+        const errText = await cartRes.text().catch(() => "");
+        console.error("createMeShipment: ME cart API error:", cartRes.status, errText);
+        return;
+    }
+
+    const cartData = await cartRes.json() as Record<string, unknown>;
+    const meOrderId = cartData.id as string | undefined;
+
+    if (!meOrderId) {
+        console.error("createMeShipment: ME cart API não retornou id:", JSON.stringify(cartData));
+        return;
+    }
+
+    const { error: updateErr } = await supabase
+        .from("orders")
+        .update({ me_order_id: meOrderId, updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+
+    if (updateErr) {
+        console.error("createMeShipment: falha ao salvar me_order_id:", updateErr.message);
+    } else {
+        console.log(`createMeShipment: envio criado — order=${orderId}, me_order_id=${meOrderId}`);
+    }
+}
+
+// ─── Handler principal ────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
     let body: Record<string, unknown> = {};
     try {
@@ -208,6 +402,13 @@ Deno.serve(async (req) => {
             }
         }
         // Se claimRow for null, outro webhook já decrementou — nada a fazer
+
+        // 4. Criar envio no Melhor Envios (não bloqueia o webhook se falhar)
+        try {
+            await createMeShipment(supabase, orderIdUuid);
+        } catch (meErr) {
+            console.error("createMeShipment falhou inesperadamente:", meErr);
+        }
     }
 
     console.log("Webhook processed:", JSON.stringify({

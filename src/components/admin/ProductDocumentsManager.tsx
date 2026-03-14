@@ -10,6 +10,7 @@ import {
   processProductDocument,
   deleteProductDocument,
 } from '@/services/productDocumentsService';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface ProductDocumentsManagerProps {
   productId: string;
@@ -106,8 +107,11 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
     }
   }
 
-  async function handleDelete(doc: ProductDocument) {
-    if (!confirm(`Remover "${doc.title}"? Esta ação também remove os dados da IA.`)) return;
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<ProductDocument | null>(null);
+
+  const handleDelete = (doc: ProductDocument) => setConfirmDeleteDoc(doc);
+
+  async function doDelete(doc: ProductDocument) {
     setDeleting(doc.id);
     try {
       await deleteProductDocument(doc.id, doc.file_url);
@@ -120,6 +124,7 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
   }
 
   return (
+    <>
     <div className="space-y-4">
       {/* Upload: div em vez de form para não aninhar no form do produto (o Enviar submetia o form errado). */}
       <div className="bg-stone-50 rounded-lg p-4 space-y-3 border border-stone-200 border-dashed">
@@ -262,6 +267,19 @@ const ProductDocumentsManager: React.FC<ProductDocumentsManagerProps> = ({ produ
         Os documentos enviados alimentam a IA de atendimento para responder perguntas sobre este produto.
       </p>
     </div>
+
+    <ConfirmDialog
+      open={!!confirmDeleteDoc}
+      title="Remover Documento"
+      description={confirmDeleteDoc ? `Remover "${confirmDeleteDoc.title}"? Esta ação também apaga os dados da IA associados a este documento.` : ''}
+      confirmLabel="Remover"
+      onCancel={() => setConfirmDeleteDoc(null)}
+      onConfirm={() => {
+        if (confirmDeleteDoc) doDelete(confirmDeleteDoc);
+        setConfirmDeleteDoc(null);
+      }}
+    />
+    </>
   );
 };
 

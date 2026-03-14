@@ -5,12 +5,13 @@ import { useStoreSettings, StoreSettings } from '@/hooks/useStoreSettings';
 interface StoreContextValue {
     settings: StoreSettings | null;
     isLoading: boolean;
+    refreshSettings: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { settings, isLoading } = useStoreSettings();
+    const { settings, isLoading, refreshSettings } = useStoreSettings();
 
     const favicon = settings?.logoUrl ?? '/logo%20aquimaq.png';
     const storeName = settings?.storeName ?? 'Aquimaq';
@@ -49,7 +50,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } : null;
 
     return (
-        <StoreContext.Provider value={{ settings, isLoading }}>
+        <StoreContext.Provider value={{ settings, isLoading, refreshSettings }}>
             <Helmet>
                 <title>{storeName}</title>
                 <link rel="icon" href={favicon} />

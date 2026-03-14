@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     ShoppingBag,
     Search,
@@ -72,7 +73,8 @@ const AdminOrdersManagement: React.FC = () => {
     const [orders, setOrders] = useState<PedidoComCliente[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [searchParams] = useSearchParams();
+    const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') ?? 'all');
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<PedidoComCliente | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);

@@ -3,6 +3,7 @@ import { Tag, Plus, Pencil, Trash2, X, Save, ToggleLeft, ToggleRight } from 'luc
 import { supabase } from '@/services/supabase';
 import { formatCurrency } from '@/utils/format';
 import type { Coupon } from '@/types';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 type CouponForm = Omit<Coupon, 'id' | 'used_count'>;
 
@@ -23,6 +24,7 @@ const AdminCouponManagement: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [formData, setFormData] = useState<CouponForm>(emptyForm());
 
@@ -140,8 +142,9 @@ const AdminCouponManagement: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Tem certeza que deseja excluir este cupom?')) return;
+    const handleDelete = (id: string) => setConfirmDeleteId(id);
+
+    const doDelete = async (id: string) => {
         setDeletingId(id);
         try {
             const { error } = await supabase.from('coupons').delete().eq('id', id);
@@ -158,6 +161,7 @@ const AdminCouponManagement: React.FC = () => {
     const isFormOpen = isCreating || !!editing;
 
     return (
+        <>
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -382,6 +386,19 @@ const AdminCouponManagement: React.FC = () => {
                 )}
             </div>
         </div>
+
+        <ConfirmDialog
+            open={!!confirmDeleteId}
+            title="Excluir Cupom"
+            description="Tem certeza que deseja excluir este cupom? Essa ação não pode ser desfeita."
+            confirmLabel="Excluir"
+            onCancel={() => setConfirmDeleteId(null)}
+            onConfirm={() => {
+                if (confirmDeleteId) doDelete(confirmDeleteId);
+                setConfirmDeleteId(null);
+            }}
+        />
+        </>
     );
 };
 

@@ -1,97 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    ShoppingBag,
-    Package,
-    Users,
-    TrendingUp,
-    Clock,
-    ArrowUpRight,
-    ArrowDownRight,
-    RotateCcw,
-    AlertTriangle,
-    CalendarX2,
-    ShoppingCart,
-    MapPin,
+    DollarSign, Package, Clock, AlertTriangle,
+    ChevronRight, RotateCcw, CalendarX2, ShoppingCart,
+    MapPin, Truck, CheckCircle,
 } from 'lucide-react';
 import {
     getDashboardStats,
     restoreStockFromUnpaidOrders,
     getStockAlerts,
     type StockAlertRow,
+    type RecentOrderRow,
 } from '@/services/adminService';
 import { useAuth } from '@/contexts/AuthContext';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { ROUTES } from '@/constants/routes';
 
-interface StatCardProps {
-    title: string;
-    value: string | number;
-    change?: number;
-    icon: React.ReactNode;
-}
+const fmt = (v: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon }) => (
-    <div className="bg-white rounded-xl p-5 border border-stone-100">
-        <div className="flex items-start justify-between">
-            <div>
-                <p className="text-stone-400 text-[12px] font-medium uppercase tracking-wide mb-1">{title}</p>
-                <p className="text-2xl font-semibold text-stone-800">{value}</p>
-                {change !== undefined && (
-                    <div className={`flex items-center gap-1 mt-1.5 text-[12px] font-medium ${change >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {change >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                        <span>{Math.abs(change)}% vs mês anterior</span>
-                    </div>
-                )}
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-stone-50 flex items-center justify-center text-stone-400">
-                {icon}
-            </div>
-        </div>
-    </div>
-);
-
-interface RecentOrderProps {
-    id: string;
-    cliente: string;
-    total: number;
-    status: string;
-    date: string;
-}
+const mesAtual = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-    'aguardando_pagamento': { label: 'Aguardando', color: 'text-amber-600 bg-amber-50' },
-    'pago': { label: 'Pago', color: 'text-emerald-600 bg-emerald-50' },
-    'em_separacao': { label: 'Separando', color: 'text-blue-600 bg-blue-50' },
-    'enviado': { label: 'Enviado', color: 'text-violet-600 bg-violet-50' },
-    'entregue': { label: 'Entregue', color: 'text-emerald-600 bg-emerald-50' },
-    'cancelado': { label: 'Cancelado', color: 'text-stone-500 bg-stone-100' },
-};
-
-const RecentOrderRow: React.FC<RecentOrderProps> = ({ id, cliente, total, status, date }) => {
-    const config = statusConfig[status] || statusConfig['aguardando_pagamento'];
-
-    return (
-        <tr className="border-b border-stone-50 last:border-0">
-            <td className="py-3 px-4">
-                <span className="font-mono text-[12px] text-stone-500">#{id.slice(-6).toUpperCase()}</span>
-            </td>
-            <td className="py-3 px-4">
-                <span className="text-[13px] text-stone-700">{cliente}</span>
-            </td>
-            <td className="py-3 px-4">
-                <span className="text-[13px] font-medium text-stone-700">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
-                </span>
-            </td>
-            <td className="py-3 px-4">
-                <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${config.color}`}>
-                    {config.label}
-                </span>
-            </td>
-            <td className="py-3 px-4 text-right">
-                <span className="text-[12px] text-stone-400">{date}</span>
-            </td>
-        </tr>
-    );
+    aguardando_pagamento: { label: 'Aguardando pagamento', color: 'text-amber-700 bg-amber-50' },
+    pago:                { label: 'Pago',                  color: 'text-blue-700 bg-blue-50' },
+    em_separacao:        { label: 'Em separação',          color: 'text-blue-700 bg-blue-50' },
+    enviado:             { label: 'Enviado',               color: 'text-violet-700 bg-violet-50' },
+    entregue:            { label: 'Entregue',              color: 'text-emerald-700 bg-emerald-50' },
+    cancelado:           { label: 'Cancelado',             color: 'text-stone-500 bg-stone-100' },
 };
 
 interface AdminDashboardProps {
@@ -101,276 +37,265 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const { user, hasRole } = useAuth();
     const isVendedor = hasRole(['vendedor']);
+    const navigate = useNavigate();
 
-    const [stats, setStats] = useState({
-        totalRevenue: 0,
-        totalOrders: 0,
-        pendingOrders: 0,
-        totalClientes: 0,
-    });
-    const [recentOrders, setRecentOrders] = useState<RecentOrderProps[]>([]);
+    const goOrders = (status?: string) => {
+        const path = ROUTES.ADMIN_ORDERS + (status ? `?status=${status}` : '');
+        navigate(path);
+    };
+
+    const [stats, setStats] = useState({ totalRevenue: 0, pendingPayment: 0, toDispatch: 0, totalClientes: 0 });
+    const [recentOrders, setRecentOrders] = useState<RecentOrderRow[]>([]);
     const [stockAlerts, setStockAlerts] = useState<StockAlertRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [restoreStockLoading, setRestoreStockLoading] = useState(false);
-    const [restoreStockMessage, setRestoreStockMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [restoreLoading, setRestoreLoading] = useState(false);
+    const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+    const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
     useEffect(() => {
         let mounted = true;
-        const timeoutId = setTimeout(() => {
+        const timeout = setTimeout(() => {
             if (mounted && loading) {
-                setError('A conexão está lenta. Algumas informações podem não carregar.');
+                setError('Demorou a carregar. Pode tentar recarregar a página.');
                 setLoading(false);
             }
         }, 8000);
 
-        const load = async () => {
+        (async () => {
             try {
-                // Vendedor vê apenas suas próprias estatísticas
                 const vendedorId = isVendedor ? user?.id : undefined;
-                const [{ stats: nextStats, recentOrders: nextRecent }, alerts] = await Promise.all([
+                const [{ stats: s, recentOrders: r }, alerts] = await Promise.all([
                     getDashboardStats(vendedorId),
-                    !isVendedor ? getStockAlerts() : Promise.resolve([]),
+                    getStockAlerts(),
                 ]);
                 if (mounted) {
-                    setStats(nextStats);
-                    setRecentOrders(nextRecent);
+                    setStats(s);
+                    setRecentOrders(r);
                     setStockAlerts(alerts);
                     setError(null);
                 }
-            } catch (e) {
-                if (mounted) {
-                    if (import.meta.env.DEV) console.error('AdminDashboard load:', e);
-                    setError('Não foi possível carregar os dados do painel.');
-                }
+            } catch {
+                if (mounted) setError('Não foi possível carregar. Tente outra vez.');
             } finally {
-                if (mounted) {
-                    setLoading(false);
-                    clearTimeout(timeoutId);
-                }
+                if (mounted) { setLoading(false); clearTimeout(timeout); }
             }
-        };
-        load();
-        return () => {
-            mounted = false;
-            clearTimeout(timeoutId);
-        };
+        })();
+
+        return () => { mounted = false; clearTimeout(timeout); };
     }, [isVendedor, user?.id]);
 
     if (loading) {
         return (
-            <div className="space-y-6 max-w-6xl mx-auto">
-                <div>
-                    <h1 className="text-xl font-semibold text-stone-800">Dashboard</h1>
-                    <p className="text-stone-400 text-[13px] mt-0.5">Carregando dados...</p>
+            <div className="max-w-4xl mx-auto space-y-4 animate-pulse">
+                <div className="h-8 w-48 bg-stone-100 rounded-lg" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => <div key={i} className="h-28 bg-stone-100 rounded-2xl" />)}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="bg-white rounded-xl p-5 border border-stone-100 h-[104px]">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-3 pt-1">
-                                    <div className="w-20 h-3 bg-stone-100 rounded"></div>
-                                    <div className="w-24 h-6 bg-stone-100 rounded"></div>
-                                </div>
-                                <div className="w-10 h-10 rounded-lg bg-stone-50"></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-pulse">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="bg-white border border-stone-100 rounded-xl p-4 h-[74px] flex gap-3 items-center">
-                            <div className="w-10 h-10 rounded-lg bg-stone-50"></div>
-                            <div className="space-y-2 flex-1">
-                                <div className="w-24 h-3 bg-stone-100 rounded"></div>
-                                <div className="w-32 h-2.5 bg-stone-50 rounded"></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="bg-white rounded-xl border border-stone-100 h-[300px] animate-pulse">
-                    <div className="px-5 py-4 border-b border-stone-50">
-                        <div className="w-32 h-4 bg-stone-100 rounded"></div>
-                    </div>
-                </div>
+                <div className="h-64 bg-stone-100 rounded-2xl" />
+                <div className="h-48 bg-stone-100 rounded-2xl" />
             </div>
         );
     }
 
+    const urgentCount = stats.pendingPayment + stockAlerts.filter(a => a.alertType === 'expired' || a.stock <= 0).length;
+
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
-            {/* Page Header */}
-            <div className="flex items-center justify-between">
+        <>
+        <div className="max-w-4xl mx-auto space-y-5">
+
+            {/* Cabeçalho */}
+            <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-semibold text-stone-800 flex items-center gap-2">
-                        <LayoutDashboard className="text-stone-400" size={24} />
-                        Dashboard
+                    <h1 className="text-xl font-bold text-stone-800">
+                        {isVendedor ? 'Minhas Vendas' : 'Painel da Loja'}
                     </h1>
-                    <p className="text-stone-400 text-[13px] mt-0.5">
-                        {isVendedor
-                            ? 'Resumo das suas vendas e pedidos'
-                            : 'Visão geral do negócio, pedidos, produtos e usuários'}
+                    <p className="text-stone-400 text-sm mt-0.5 capitalize">{mesAtual}</p>
+                    <p className="text-stone-500 text-sm mt-1">
+                        Aqui vê o resumo das vendas e o que precisa de atenção.
                     </p>
                 </div>
                 {error && (
-                    <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg flex items-center gap-2 relative">
-                        <span>{error}</span>
-                        <div className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></div>
-                        <div className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                    </div>
-                )}
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    title="Receita (mês)"
-                    value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalRevenue)}
-                    icon={<TrendingUp size={20} />}
-                />
-                <StatCard
-                    title="Pedidos"
-                    value={stats.totalOrders}
-                    icon={<ShoppingBag size={20} />}
-                />
-                <StatCard
-                    title="Pendentes"
-                    value={stats.pendingOrders}
-                    icon={<Clock size={20} />}
-                />
-                <StatCard
-                    title="Clientes"
-                    value={stats.totalClientes}
-                    icon={<Users size={20} />}
-                />
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <button
-                    onClick={() => onNavigate('ORDERS')}
-                    className="group flex items-center gap-3 bg-white border border-stone-100 rounded-xl p-4 text-left hover:border-stone-200 transition-colors"
-                >
-                    <div className="w-10 h-10 rounded-lg bg-stone-50 flex items-center justify-center text-stone-400 group-hover:bg-stone-100 transition-colors">
-                        <ShoppingBag size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-[13px] font-medium text-stone-700">Gerenciar Pedidos</h3>
-                        <p className="text-stone-400 text-[12px]">Ver todos os pedidos</p>
-                    </div>
-                </button>
-                <button
-                    onClick={() => onNavigate('PRODUCTS')}
-                    className="group flex items-center gap-3 bg-white border border-stone-100 rounded-xl p-4 text-left hover:border-stone-200 transition-colors"
-                >
-                    <div className="w-10 h-10 rounded-lg bg-stone-50 flex items-center justify-center text-stone-400 group-hover:bg-stone-100 transition-colors">
-                        <Package size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-[13px] font-medium text-stone-700">Gerenciar Produtos</h3>
-                        <p className="text-stone-400 text-[12px]">Editar preços e estoque</p>
-                    </div>
-                </button>
-                {!isVendedor && (
-                <button
-                    onClick={() => onNavigate('USERS')}
-                    className="group flex items-center gap-3 bg-white border border-stone-100 rounded-xl p-4 text-left hover:border-stone-200 transition-colors"
-                >
-                    <div className="w-10 h-10 rounded-lg bg-stone-50 flex items-center justify-center text-stone-400 group-hover:bg-stone-100 transition-colors">
-                        <Users size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-[13px] font-medium text-stone-700">Gerenciar Usuários</h3>
-                        <p className="text-stone-400 text-[12px]">Administrar acessos</p>
-                    </div>
-                </button>
-                )}
-            </div>
-
-            {/* Restaurar estoque de pedidos não pagos — apenas admin/gerente */}
-            {!isVendedor && (
-            <div className="bg-amber-50/80 border border-amber-100 rounded-xl p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h3 className="text-[13px] font-medium text-amber-800 flex items-center gap-2">
-                            <RotateCcw size={18} />
-                            Estoque de pedidos não pagos
-                        </h3>
-                        <p className="text-amber-700/80 text-[12px] mt-0.5">
-                            Repõe o estoque dos produtos que foram reservados em pedidos ainda não pagos (evita zerar estoque em testes).
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            setRestoreStockMessage(null);
-                            setRestoreStockLoading(true);
-                            try {
-                                await restoreStockFromUnpaidOrders();
-                                setRestoreStockMessage({ type: 'success', text: 'Estoque restaurado.' });
-                            } catch (e) {
-                                const msg = e instanceof Error ? e.message : 'Erro ao restaurar estoque.';
-                                setRestoreStockMessage({ type: 'error', text: msg });
-                            } finally {
-                                setRestoreStockLoading(false);
-                            }
-                        }}
-                        disabled={restoreStockLoading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-[13px] font-medium hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                        {restoreStockLoading ? 'Restaurando...' : 'Restaurar estoque'}
-                    </button>
-                </div>
-                {restoreStockMessage && (
-                    <p className={`mt-3 text-[12px] font-medium ${restoreStockMessage.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
-                        {restoreStockMessage.text}
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg">
+                        {error}
                     </p>
                 )}
             </div>
+
+            {/* Atenção agora */}
+            {urgentCount > 0 && (
+                <button
+                    onClick={() => goOrders('aguardando_pagamento')}
+                    className="w-full flex items-center justify-between gap-3 bg-red-600 text-white px-5 py-4 rounded-2xl text-left hover:bg-red-700 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle size={20} className="shrink-0" />
+                        <span className="font-semibold">
+                            {urgentCount === 1
+                                ? 'Há 1 coisa para resolver'
+                                : `Há ${urgentCount} coisas para resolver`}
+                        </span>
+                    </div>
+                    <span className="text-sm opacity-90">Ver o que é</span>
+                    <ChevronRight size={18} className="shrink-0 opacity-70" />
+                </button>
             )}
 
-            {/* Stock Alerts */}
-            {!isVendedor && stockAlerts.length > 0 && (
-                <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-red-50 flex items-center justify-between bg-red-50/50">
-                        <h2 className="text-[14px] font-medium text-red-700 flex items-center gap-2">
-                            <AlertTriangle size={15} className="text-red-500" />
-                            Alertas de Estoque ({stockAlerts.length})
-                        </h2>
+            {/* 3 cards principais */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                {/* Faturado este mês */}
+                <div className="bg-emerald-600 text-white rounded-2xl p-5">
+                    <div className="flex items-center gap-2 opacity-80 mb-2">
+                        <DollarSign size={16} />
+                        <span className="text-sm font-medium">Faturado este mês</span>
+                    </div>
+                    <p className="text-3xl font-bold leading-none">{fmt(stats.totalRevenue)}</p>
+                    <p className="text-emerald-200 text-xs mt-2">Pedidos pagos em {mesAtual}</p>
+                </div>
+
+                {/* À espera que o cliente pague */}
+                <button
+                    onClick={() => goOrders('aguardando_pagamento')}
+                    className={`rounded-2xl p-5 text-left transition-colors ${
+                        stats.pendingPayment > 0
+                            ? 'bg-amber-50 border-2 border-amber-300 hover:bg-amber-100'
+                            : 'bg-white border border-stone-100 hover:border-stone-200'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 text-stone-400 mb-2">
+                        <Clock size={16} />
+                        <span className="text-sm font-medium text-stone-500">À espera que o cliente pague</span>
+                    </div>
+                    <p className={`text-3xl font-bold leading-none ${stats.pendingPayment > 0 ? 'text-amber-700' : 'text-stone-800'}`}>
+                        {stats.pendingPayment}
+                    </p>
+                    <p className="text-stone-400 text-xs mt-2 flex items-center gap-1">
+                        {stats.pendingPayment > 0 ? 'Toque para ver' : 'Nenhum pendente'}
+                        {stats.pendingPayment > 0 && <ChevronRight size={12} />}
+                    </p>
+                </button>
+
+                {/* Prontos para enviar */}
+                <button
+                    onClick={() => goOrders('pago')}
+                    className={`rounded-2xl p-5 text-left transition-colors ${
+                        stats.toDispatch > 0
+                            ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100'
+                            : 'bg-white border border-stone-100 hover:border-stone-200'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <Truck size={16} className="text-stone-400" />
+                        <span className="text-sm font-medium text-stone-500">Prontos para enviar</span>
+                    </div>
+                    <p className={`text-3xl font-bold leading-none ${stats.toDispatch > 0 ? 'text-blue-700' : 'text-stone-800'}`}>
+                        {stats.toDispatch}
+                    </p>
+                    <p className="text-stone-400 text-xs mt-2 flex items-center gap-1">
+                        {stats.toDispatch > 0 ? 'Pagos e à espera de envio' : 'Nenhum para enviar'}
+                        {stats.toDispatch > 0 && <ChevronRight size={12} />}
+                    </p>
+                </button>
+            </div>
+
+            {/* Últimos pedidos */}
+            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+                <div className="px-5 py-3 bg-stone-50 border-b border-stone-100 flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-stone-700">Últimos pedidos</h2>
+                    <button
+                        onClick={() => onNavigate('ORDERS')}
+                        className="text-xs text-stone-400 hover:text-stone-700 font-medium flex items-center gap-1"
+                    >
+                        Ver todos os pedidos <ChevronRight size={13} />
+                    </button>
+                </div>
+
+                {recentOrders.length === 0 ? (
+                    <div className="px-5 py-10 text-center">
+                        <CheckCircle size={32} className="text-stone-200 mx-auto mb-2" />
+                        <p className="text-stone-400 text-sm">Nenhum pedido ainda.</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-stone-50">
+                        {recentOrders.map((order) => {
+                            const cfg = statusConfig[order.status] ?? statusConfig['aguardando_pagamento'];
+                            return (
+                                <button
+                                    key={order.id}
+                                    onClick={() => onNavigate('ORDERS')}
+                                    className="w-full flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-stone-50 transition-colors text-left"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-stone-800 truncate">{order.cliente}</p>
+                                        <p className="text-xs text-stone-400 mt-0.5">{order.date}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>
+                                            {cfg.label}
+                                        </span>
+                                        <span className="text-sm font-bold text-stone-800 w-24 text-right">
+                                            {fmt(order.total)}
+                                        </span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Produtos a rever */}
+            {stockAlerts.length > 0 && (
+                <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+                    <div className="px-5 py-3 bg-stone-50 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <div>
+                            <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+                                <AlertTriangle size={15} className="text-amber-500" />
+                                Produtos a rever ({stockAlerts.length})
+                            </h2>
+                            <p className="text-xs text-stone-500 mt-0.5">
+                                Produtos com stock baixo, em falta ou validade próxima.
+                            </p>
+                        </div>
                         <button
                             onClick={() => onNavigate('PRODUCTS')}
-                            className="text-red-400 hover:text-red-600 text-[12px] font-medium flex items-center gap-1"
+                            className="text-xs text-stone-400 hover:text-stone-700 font-medium flex items-center gap-1 self-start sm:self-center"
                         >
-                            Gerenciar produtos <ArrowUpRight size={14} />
+                            Ir para produtos <ChevronRight size={13} />
                         </button>
                     </div>
                     <div className="divide-y divide-stone-50">
                         {stockAlerts.map((alert) => {
-                            const alertMeta = {
-                                expired:   { label: 'Vencido',         color: 'text-red-700 bg-red-100',      icon: <CalendarX2 size={13} /> },
-                                expiring:  { label: 'Vencendo',        color: 'text-orange-700 bg-orange-100', icon: <CalendarX2 size={13} /> },
-                                reorder:   { label: 'Repor Estoque',   color: 'text-amber-700 bg-amber-100',  icon: <ShoppingCart size={13} /> },
-                                low_stock: { label: 'Estoque Baixo',   color: 'text-yellow-700 bg-yellow-100', icon: <Package size={13} /> },
+                            const meta = {
+                                expired:   { label: 'Vencido',        bg: 'text-red-700 bg-red-100',      icon: <CalendarX2 size={12} /> },
+                                expiring:  { label: 'Vencendo em breve', bg: 'text-orange-700 bg-orange-100', icon: <CalendarX2 size={12} /> },
+                                reorder:   { label: 'Estoque crítico', bg: 'text-amber-700 bg-amber-100',  icon: <ShoppingCart size={12} /> },
+                                low_stock: { label: 'Estoque baixo',   bg: 'text-yellow-700 bg-yellow-100', icon: <Package size={12} /> },
                             }[alert.alertType];
                             return (
-                                <div key={alert.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                                <div
+                                    key={alert.id}
+                                    className="px-5 py-3 flex items-center justify-between gap-4 cursor-pointer hover:bg-stone-50 transition-colors"
+                                    onClick={() => onNavigate('PRODUCTS')}
+                                >
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${alertMeta.color}`}>
-                                            {alertMeta.icon} {alertMeta.label}
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${meta.bg}`}>
+                                            {meta.icon} {meta.label}
                                         </span>
-                                        <span className="text-[13px] text-stone-700 truncate">{alert.name}</span>
+                                        <span className="text-sm text-stone-700 truncate font-medium">{alert.name}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 shrink-0 text-[12px] text-stone-400">
+                                    <div className="flex items-center gap-3 shrink-0 text-xs text-stone-400">
                                         {alert.warehouseLocation && (
-                                            <span className="flex items-center gap-1 hidden sm:flex">
-                                                <MapPin size={12} /> {alert.warehouseLocation}
+                                            <span className="hidden sm:flex items-center gap-1">
+                                                <MapPin size={11} /> {alert.warehouseLocation}
                                             </span>
                                         )}
                                         {alert.expiryDate && (
-                                            <span>Val: {new Date(alert.expiryDate).toLocaleDateString('pt-BR')}</span>
+                                            <span>Validade: {new Date(alert.expiryDate).toLocaleDateString('pt-BR')}</span>
                                         )}
-                                        <span className={`font-semibold ${alert.stock <= 0 ? 'text-red-600' : 'text-stone-600'}`}>
-                                            {alert.stock} un.
+                                        <span className={`font-bold ${alert.stock <= 0 ? 'text-red-600' : 'text-stone-600'}`}>
+                                            {alert.stock <= 0 ? 'Zerado' : `${alert.stock} un.`}
                                         </span>
                                     </div>
                                 </div>
@@ -380,37 +305,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 </div>
             )}
 
-            {/* Recent Orders Table */}
-            <div className="bg-white rounded-xl border border-stone-100 overflow-hidden">
-                <div className="px-5 py-4 border-b border-stone-50 flex items-center justify-between">
-                    <h2 className="text-[14px] font-medium text-stone-700">Pedidos Recentes</h2>
+            {/* Libertar stock — utilitário discreto, só admin/gerente */}
+            {!isVendedor && (
+                <div className="flex items-center justify-between px-1">
+                    <p className="text-xs text-stone-400">
+                        Pode repor o stock que estava reservado em pedidos não pagos.
+                    </p>
                     <button
-                        onClick={() => onNavigate('ORDERS')}
-                        className="text-stone-400 hover:text-stone-600 text-[12px] font-medium flex items-center gap-1"
+                        onClick={() => setShowRestoreConfirm(true)}
+                        disabled={restoreLoading}
+                        className="text-xs text-stone-400 hover:text-amber-700 font-medium flex items-center gap-1 underline underline-offset-2 transition-colors disabled:opacity-50"
                     >
-                        Ver todos <ArrowUpRight size={14} />
+                        <RotateCcw size={12} />
+                        {restoreLoading ? 'A repor...' : 'Libertar stock de pedidos não pagos'}
                     </button>
+                    {restoreMsg && (
+                        <p className="text-xs text-emerald-600 font-medium">{restoreMsg}</p>
+                    )}
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-stone-25">
-                            <tr className="border-b border-stone-50">
-                                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Pedido</th>
-                                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Cliente</th>
-                                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Total</th>
-                                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Status</th>
-                                <th className="text-right px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {recentOrders.map((order) => (
-                                <RecentOrderRow key={order.id} {...order} />
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            )}
+
         </div>
+
+        <ConfirmDialog
+            open={showRestoreConfirm}
+            title="Libertar stock de pedidos não pagos"
+            description="Isto devolve ao stock as quantidades reservadas em pedidos que não foram pagos. O inventário é atualizado de imediato."
+            confirmLabel="Libertar stock"
+            confirmClassName="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+            onCancel={() => setShowRestoreConfirm(false)}
+            onConfirm={async () => {
+                setShowRestoreConfirm(false);
+                setRestoreLoading(true);
+                setRestoreMsg(null);
+                try {
+                    await restoreStockFromUnpaidOrders();
+                    setRestoreMsg('Stock reposto com sucesso.');
+                    setTimeout(() => setRestoreMsg(null), 4000);
+                } catch (e) {
+                    setRestoreMsg(e instanceof Error ? e.message : 'Erro ao repor.');
+                } finally {
+                    setRestoreLoading(false);
+                }
+            }}
+        />
+        </>
     );
 };
 

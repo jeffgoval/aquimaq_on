@@ -22,6 +22,7 @@ import {
 } from '@/services/bannerService';
 import { getStoreSettings, saveStoreSettings } from '@/services/storeSettingsService';
 import ImageUploader from './ImageUploader';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const colorOptions = [
     { value: 'from-agro-900 to-agro-800', label: 'Verde Escuro' },
@@ -603,30 +604,14 @@ const AdminBannerManagement: React.FC = () => {
                 </div>
             )}
 
-            {deletingId && (
-                <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
-                        <h3 className="text-lg font-semibold text-stone-900 mb-2">Confirmar Exclusão</h3>
-                        <p className="text-stone-500 mb-6 font-medium text-[14px]">
-                            Tem certeza que deseja excluir este banner? Essa ação não pode ser desfeita.
-                        </p>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setDeletingId(null)}
-                                className="px-4 py-2 font-medium text-[13px] text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="px-4 py-2 font-medium text-[13px] text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                            >
-                                Excluir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmDialog
+                open={!!deletingId}
+                title="Confirmar Exclusão"
+                description="Tem certeza que deseja excluir este banner? Essa ação não pode ser desfeita."
+                confirmLabel="Excluir"
+                onCancel={() => setDeletingId(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 };

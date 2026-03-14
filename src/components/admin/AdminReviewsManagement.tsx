@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Star, Eye, EyeOff, Trash2, RefreshCw } from 'lucide-react';
 import {
   getReviewsForAdmin,
@@ -50,8 +51,11 @@ const AdminReviewsManagement: React.FC = () => {
     showMessage('success', current ? 'Avaliação ocultada.' : 'Avaliação exibida.');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Eliminar esta avaliação? Esta ação não pode ser desfeita.')) return;
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
+
+  const doDelete = async (id: string) => {
     const { error } = await deleteReview(id);
     if (error) {
       showMessage('error', error.message || 'Erro ao eliminar.');
@@ -62,6 +66,7 @@ const AdminReviewsManagement: React.FC = () => {
   };
 
   return (
+    <>
     <div className="max-w-6xl space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -202,6 +207,19 @@ const AdminReviewsManagement: React.FC = () => {
         )}
       </div>
     </div>
+
+    <ConfirmDialog
+      open={!!confirmDeleteId}
+      title="Eliminar Avaliação"
+      description="Tem certeza que deseja eliminar esta avaliação? Esta ação não pode ser desfeita."
+      confirmLabel="Eliminar"
+      onCancel={() => setConfirmDeleteId(null)}
+      onConfirm={() => {
+        if (confirmDeleteId) doDelete(confirmDeleteId);
+        setConfirmDeleteId(null);
+      }}
+    />
+    </>
   );
 };
 

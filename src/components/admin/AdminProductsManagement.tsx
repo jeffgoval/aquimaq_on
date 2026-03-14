@@ -17,6 +17,7 @@ import { supabase } from '@/services/supabase';
 import { Product, ProductCategory } from '@/types';
 import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
@@ -380,37 +381,17 @@ const AdminProductsManagement: React.FC = () => {
             )}
         </div>
 
-        {/* Modal de confirmação de desativação */}
-        {confirmDeactivate && (
-            <div className="fixed inset-0 bg-stone-900/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-xl">
-                    <h3 className="text-lg font-semibold text-stone-900 mb-2">Desativar Produto</h3>
-                    <p className="text-stone-500 mb-1 font-medium text-[14px]">
-                        Tem certeza que deseja desativar <span className="text-stone-800 font-semibold">"{confirmDeactivate.name}"</span>?
-                    </p>
-                    <p className="text-stone-400 text-xs mb-6">
-                        O produto ficará oculto na loja. Você pode reativá-lo a qualquer momento.
-                    </p>
-                    <div className="flex gap-3 justify-end">
-                        <button
-                            onClick={() => setConfirmDeactivate(null)}
-                            className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={() => {
-                                doToggleActive(confirmDeactivate.id, true);
-                                setConfirmDeactivate(null);
-                            }}
-                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                        >
-                            Desativar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+        <ConfirmDialog
+            open={!!confirmDeactivate}
+            title="Desativar Produto"
+            description={confirmDeactivate ? `Tem certeza que deseja desativar "${confirmDeactivate.name}"? O produto ficará oculto na loja. Você pode reativá-lo a qualquer momento.` : ''}
+            confirmLabel="Desativar"
+            onCancel={() => setConfirmDeactivate(null)}
+            onConfirm={() => {
+                if (confirmDeactivate) doToggleActive(confirmDeactivate.id, true);
+                setConfirmDeactivate(null);
+            }}
+        />
         </>
     );
 };

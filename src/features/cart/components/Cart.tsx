@@ -439,9 +439,9 @@ const Cart: React.FC<CartProps> = ({
                             {grandTotal > 0 && (
                                 <div className="flex items-center justify-between text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg">
                                     <span className="flex items-center gap-1.5">
-                                        <Zap size={13} /> Desconto Pix (5%)
+                                        <Zap size={13} /> Pague com Pix e economize 5%
                                     </span>
-                                    <span className="font-bold">-{formatCurrency(grandTotal * PIX_DISCOUNT)}</span>
+                                    <span className="font-bold">{formatCurrency(grandTotal * PIX_DISCOUNT)}</span>
                                 </div>
                             )}
 
@@ -455,7 +455,7 @@ const Cart: React.FC<CartProps> = ({
                                         </span>
                                         {grandTotal > 0 && (
                                             <span className="text-xs text-emerald-600 font-medium mt-0.5 block">
-                                                ou {formatCurrency(grandTotal * (1 - PIX_DISCOUNT))} no Pix
+                                                Pix: {formatCurrency(grandTotal * (1 - PIX_DISCOUNT))} (5% off)
                                             </span>
                                         )}
                                     </div>
