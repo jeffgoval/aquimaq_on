@@ -98,8 +98,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         );
     }
 
-    const urgentCount = stats.pendingPayment + stockAlerts.filter(a => a.alertType === 'expired' || a.stock <= 0).length;
-
     return (
         <>
         <div className="max-w-4xl mx-auto space-y-5">
@@ -122,26 +120,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 )}
             </div>
 
-            {/* Atenção agora */}
-            {urgentCount > 0 && (
-                <button
-                    onClick={() => goOrders('aguardando_pagamento')}
-                    className="w-full flex items-center justify-between gap-3 bg-red-600 text-white px-5 py-4 rounded-2xl text-left hover:bg-red-700 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <AlertTriangle size={20} className="shrink-0" />
-                        <span className="font-semibold">
-                            {urgentCount === 1
-                                ? 'Há 1 coisa para resolver'
-                                : `Há ${urgentCount} coisas para resolver`}
-                        </span>
-                    </div>
-                    <span className="text-sm opacity-90">Ver o que é</span>
-                    <ChevronRight size={18} className="shrink-0 opacity-70" />
-                </button>
-            )}
-
-            {/* 3 cards principais */}
+            {/* Resumo do mês */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
                 {/* Faturado este mês */}
