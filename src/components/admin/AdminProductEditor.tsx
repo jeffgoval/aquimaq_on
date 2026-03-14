@@ -12,6 +12,9 @@ import {
     TrendingUp,
     BookOpen,
     Warehouse,
+    Loader2,
+    CheckCircle,
+    AlertCircle,
 } from 'lucide-react';
 import ProductDocumentsManager from './ProductDocumentsManager';
 import {
@@ -21,11 +24,11 @@ import {
 } from '@/services/productService';
 import { Product, ProductCategory } from '@/types';
 import ImageUploader from './ImageUploader';
-
+import { cn } from '@/utils/cn';
 
 interface AdminProductEditorProps {
-    productId?: string; // undefined = novo produto
-    vendedorId?: string; // quando criado por um vendedor, associa ao seu id
+    productId?: string;
+    vendedorId?: string;
     onBack: () => void;
     onSave: () => void;
 }
@@ -69,12 +72,20 @@ const categoryOptions = [
     { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
 ];
 
-const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
-    productId,
-    vendedorId,
-    onBack,
-    onSave
-}) => {
+const inputCls = 'w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300 bg-white';
+const labelCls = 'block text-xs font-medium text-stone-600 mb-1.5';
+
+const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
+    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-2">
+            <span className="text-stone-400">{icon}</span>
+            <h2 className="text-sm font-semibold text-stone-800">{title}</h2>
+        </div>
+        <div className="p-5 space-y-4">{children}</div>
+    </div>
+);
+
+const AdminProductEditor: React.FC<AdminProductEditorProps> = ({ productId, vendedorId, onBack, onSave }) => {
     const { cultures: availableCultures } = useCropCalendar();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -107,19 +118,12 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
         supplier: '',
     });
 
-    // Load product if editing
-    useEffect(() => {
-        if (productId) {
-            loadProduct();
-        }
-    }, [productId]);
+    useEffect(() => { if (productId) loadProduct(); }, [productId]);
 
     const loadProduct = async () => {
         if (!productId) return;
-
         setLoading(true);
         const data = await getProductRowById(productId);
-
         if (data) {
             setFormData({
                 name: data.name || '',
@@ -155,10 +159,8 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-
         if (type === 'checkbox') {
-            const checked = (e.target as HTMLInputElement).checked;
-            setFormData(prev => ({ ...prev, [name]: checked }));
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
         } else if (type === 'number') {
             setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
         } else {
@@ -167,11 +169,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
     };
 
     const handleImagesChange = (images: string[]) => {
-        setFormData(prev => ({
-            ...prev,
-            imageUrl: images[0] || '',
-            gallery: images.slice(1),
-        }));
+        setFormData(prev => ({ ...prev, imageUrl: images[0] || '', gallery: images.slice(1) }));
     };
 
     const generateSlug = () => {
@@ -193,14 +191,11 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!formData.name.trim()) {
             setMessage({ type: 'error', text: 'Nome é obrigatório.' });
             return;
         }
-
         setSaving(true);
-
         const productData = {
             name: formData.name,
             description: formData.description,
@@ -226,7 +221,6 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
             warehouse_location: formData.warehouseLocation || null,
             reorder_point: formData.reorderPoint ?? null,
             supplier: formData.supplier || null,
-            // Associa ao vendedor quando criado por um vendedor
             ...(vendedorId && !productId ? { vendedor_id: vendedorId } : {}),
         };
 
@@ -236,10 +230,8 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
             } else {
                 await createProduct(productData);
             }
-            setMessage({ type: 'success', text: productId ? 'Produto atualizado!' : 'Produto criado!' });
-            setTimeout(() => {
-                onSave();
-            }, 1000);
+            setMessage({ type: 'success', text: productId ? 'Produto atualizado.' : 'Produto criado.' });
+            setTimeout(() => onSave(), 1000);
         } catch (err) {
             setMessage({ type: 'error', text: `Erro: ${err instanceof Error ? err.message : 'Falha ao salvar.'}` });
         } finally {
@@ -251,242 +243,191 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" />
+            <div className="py-16 flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+
             {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
                 <button
                     onClick={onBack}
                     className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
                 >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={18} />
                 </button>
-                <div>
-                    <h1 className="text-xl font-semibold text-stone-800">
-                        {productId ? 'Editar Produto' : 'Novo Produto'}
+                <div className="flex-1">
+                    <h1 className="text-lg font-semibold text-stone-800">
+                        {productId ? 'Editar produto' : 'Novo produto'}
                     </h1>
-                    <p className="text-stone-400 text-[13px]">
+                    <p className="text-xs text-stone-500 mt-0.5">
                         {productId ? 'Atualize as informações do produto' : 'Preencha as informações do produto'}
                     </p>
                 </div>
+                {message && (
+                    <span className={cn(
+                        'flex items-center gap-1.5 text-xs font-medium',
+                        message.type === 'success' ? 'text-emerald-600' : 'text-red-600'
+                    )}>
+                        {message.type === 'success' ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+                        {message.text}
+                    </span>
+                )}
             </div>
 
-            {/* Feedback */}
-            {message && (
-                <div className={`mb-4 px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    }`}>
-                    {message.text}
-                </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-6">
+
                 {/* Images */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5">
-                    <h2 className="text-[14px] font-medium text-stone-700 mb-4 flex items-center gap-2">
-                        <Package size={16} className="text-stone-400" />
-                        Imagens
-                    </h2>
+                <SectionCard title="Imagens" icon={<Package size={15} />}>
                     <ImageUploader
                         images={allImages}
                         onChange={handleImagesChange}
                         maxImages={6}
                     />
-                </div>
-
+                </SectionCard>
 
                 {/* Basic Info */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                        <FileText size={16} className="text-stone-400" />
-                        Informações Básicas
-                    </h2>
-
+                <SectionCard title="Informações básicas" icon={<FileText size={15} />}>
                     <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Nome do Produto *
-                        </label>
+                        <label className={labelCls}>Nome do produto <span className="text-red-400">*</span></label>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                            className={inputCls}
                             placeholder="Ex: Enxada Forjada 2,5kg"
                             required
                         />
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Descrição
-                        </label>
+                        <label className={labelCls}>Descrição</label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
                             rows={3}
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 resize-none"
+                            className={cn(inputCls, 'resize-none')}
                             placeholder="Descrição detalhada do produto..."
                         />
                     </div>
-
                     <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Especificações Técnicas
-                        </label>
+                        <label className={labelCls}>Especificações técnicas</label>
                         <textarea
                             name="technicalSpecs"
                             value={formData.technicalSpecs}
                             onChange={handleChange}
                             rows={3}
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 resize-none font-mono"
+                            className={cn(inputCls, 'resize-none font-mono')}
                             placeholder="Peso: 2,5kg | Material: Aço Carbono | ..."
                         />
                     </div>
-
-                    <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Categoria
-                        </label>
-                        <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
-                        >
-                            {categoryOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Cultura (safra)
-                        </label>
-                        <select
-                            name="culture"
-                            value={formData.culture}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 bg-white"
-                        >
-                            <option value="">— Nenhuma —</option>
-                            {availableCultures.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Controle de Estoque Agrícola */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                        <Warehouse size={16} className="text-stone-400" />
-                        Controle de Estoque Agrícola
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Fornecedor
-                            </label>
+                            <label className={labelCls}>Categoria</label>
+                            <select name="category" value={formData.category} onChange={handleChange} className={inputCls}>
+                                {categoryOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Cultura (safra)</label>
+                            <select name="culture" value={formData.culture} onChange={handleChange} className={inputCls}>
+                                <option value="">— Nenhuma —</option>
+                                {availableCultures.map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </SectionCard>
+
+                {/* Warehouse */}
+                <SectionCard title="Controle de estoque agrícola" icon={<Warehouse size={15} />}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelCls}>Fornecedor</label>
                             <input
                                 type="text"
                                 name="supplier"
                                 value={formData.supplier}
                                 onChange={handleChange}
                                 placeholder="Ex.: Bayer, Basf, Syngenta"
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Localização no Depósito
-                            </label>
+                            <label className={labelCls}>Localização no depósito</label>
                             <input
                                 type="text"
                                 name="warehouseLocation"
                                 value={formData.warehouseLocation}
                                 onChange={handleChange}
                                 placeholder="Ex.: A3-P2, Corredor B"
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Número do Lote
-                            </label>
+                            <label className={labelCls}>Número do lote</label>
                             <input
                                 type="text"
                                 name="batchNumber"
                                 value={formData.batchNumber}
                                 onChange={handleChange}
                                 placeholder="Ex.: LOT-2024-001"
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Data de Validade
-                            </label>
+                            <label className={labelCls}>Data de validade</label>
                             <input
                                 type="date"
                                 name="expiryDate"
                                 value={formData.expiryDate}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Ponto de Recompra (unidades)
-                            </label>
+                            <label className={labelCls}>Ponto de recompra (unidades)</label>
                             <input
                                 type="number"
                                 name="reorderPoint"
                                 value={formData.reorderPoint ?? ''}
-                                onChange={(e) => setFormData(prev => ({
+                                onChange={e => setFormData(prev => ({
                                     ...prev,
                                     reorderPoint: e.target.value ? parseInt(e.target.value) : null,
                                 }))}
                                 min="0"
                                 placeholder="Ex.: 10"
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
-                            <p className="text-[11px] text-stone-400 mt-1">Alerta quando estoque atingir este valor</p>
+                            <p className="text-xs text-stone-400 mt-1">Alerta quando estoque atingir este valor</p>
                         </div>
                     </div>
-                </div>
+                </SectionCard>
 
                 {/* Pricing */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                        <DollarSign size={16} className="text-stone-400" />
-                        Preço e Estoque
-                    </h2>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <SectionCard title="Preço e estoque" icon={<DollarSign size={15} />}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Preço *
-                            </label>
+                            <label className={labelCls}>Preço <span className="text-red-400">*</span></label>
                             <input
                                 type="text"
                                 inputMode="decimal"
                                 name="price"
                                 value={formData.price}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Preço Antigo
-                            </label>
+                            <label className={labelCls}>Preço antigo</label>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -494,112 +435,89 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 value={formData.oldPrice || ''}
                                 onChange={handleChange}
                                 onBlur={calculateDiscount}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                                 placeholder="Opcional"
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Desconto %
-                            </label>
+                            <label className={labelCls}>Desconto %</label>
                             <input
                                 type="text"
                                 inputMode="decimal"
                                 name="discount"
                                 value={formData.discount || ''}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                                 placeholder="Auto"
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Estoque
-                            </label>
+                            <label className={labelCls}>Estoque</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 name="stock"
                                 value={formData.stock}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                             />
                         </div>
                     </div>
 
-                    {/* Wholesale Configuration */}
-                    <div className="border-t border-stone-100 pt-4 mt-2">
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.wholesaleMinAmount !== null}
-                                    onChange={(e) => {
-                                        if (e.target.checked) {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                wholesaleMinAmount: 1000,
-                                                wholesaleDiscountPercent: 5
-                                            }));
-                                        } else {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                wholesaleMinAmount: null,
-                                                wholesaleDiscountPercent: null
-                                            }));
-                                        }
-                                    }}
-                                    className="w-4 h-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500"
-                                />
-                                <span className="text-[13px] font-medium text-stone-700">Ativar Desconto de Atacado</span>
-                            </label>
-                        </div>
+                    {/* Wholesale */}
+                    <div className="border-t border-stone-100 pt-4">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={formData.wholesaleMinAmount !== null}
+                                onChange={e => {
+                                    if (e.target.checked) {
+                                        setFormData(prev => ({ ...prev, wholesaleMinAmount: 1000, wholesaleDiscountPercent: 5 }));
+                                    } else {
+                                        setFormData(prev => ({ ...prev, wholesaleMinAmount: null, wholesaleDiscountPercent: null }));
+                                    }
+                                }}
+                                className="w-4 h-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500"
+                            />
+                            <span className="text-sm font-medium text-stone-700">Ativar desconto de atacado</span>
+                        </label>
 
                         {formData.wholesaleMinAmount !== null && (
-                            <div className="bg-stone-50 p-4 rounded-lg grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
+                            <div className="mt-3 bg-stone-50 p-4 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                        Meta de Valor (R$)
-                                    </label>
+                                    <label className={labelCls}>Meta de valor (R$)</label>
                                     <input
                                         type="text"
                                         inputMode="decimal"
                                         name="wholesaleMinAmount"
                                         value={formData.wholesaleMinAmount || ''}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                        className={inputCls}
                                         placeholder="Ex: 2000.00"
                                     />
-                                    <p className="text-[11px] text-stone-400 mt-1">Valor mín. deste produto no carrinho</p>
+                                    <p className="text-xs text-stone-400 mt-1">Valor mín. deste produto no carrinho</p>
                                 </div>
                                 <div>
-                                    <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                        Desconto (% OFF)
-                                    </label>
+                                    <label className={labelCls}>Desconto (% OFF)</label>
                                     <input
                                         type="text"
                                         inputMode="decimal"
                                         name="wholesaleDiscountPercent"
                                         value={formData.wholesaleDiscountPercent || ''}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                        className={inputCls}
                                         placeholder="Ex: 5"
                                     />
-                                    <p className="text-[11px] text-stone-400 mt-1">% aplicada ao atingir a meta</p>
+                                    <p className="text-xs text-stone-400 mt-1">% aplicada ao atingir a meta</p>
                                 </div>
                             </div>
                         )}
                     </div>
-                </div>
+                </SectionCard>
 
                 {/* Flags */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                        <Tag size={16} className="text-stone-400" />
-                        Destaques
-                    </h2>
-
-                    <div className="flex flex-wrap gap-4">
+                <SectionCard title="Destaques" icon={<Tag size={15} />}>
+                    <div className="flex flex-wrap gap-5">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
@@ -608,7 +526,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 onChange={handleChange}
                                 className="w-4 h-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500"
                             />
-                            <span className="text-[13px] text-stone-600">Ativo (visível na loja)</span>
+                            <span className="text-sm text-stone-600">Ativo (visível na loja)</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -618,9 +536,8 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 onChange={handleChange}
                                 className="w-4 h-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
                             />
-                            <span className="text-[13px] text-stone-600 flex items-center gap-1">
-                                <Sparkles size={14} className="text-emerald-500" />
-                                Novidade
+                            <span className="text-sm text-stone-600 flex items-center gap-1">
+                                <Sparkles size={13} className="text-emerald-500" /> Novidade
                             </span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -631,102 +548,87 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                                 onChange={handleChange}
                                 className="w-4 h-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500"
                             />
-                            <span className="text-[13px] text-stone-600 flex items-center gap-1">
-                                <TrendingUp size={14} className="text-amber-500" />
-                                Mais Vendido
+                            <span className="text-sm text-stone-600 flex items-center gap-1">
+                                <TrendingUp size={13} className="text-amber-500" /> Mais vendido
                             </span>
                         </label>
                     </div>
-                </div>
+                </SectionCard>
 
                 {/* SEO */}
-                <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                    <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                        <SearchIcon size={16} className="text-stone-400" />
-                        SEO (Opcional)
-                    </h2>
-
+                <SectionCard title="SEO (opcional)" icon={<SearchIcon size={15} />}>
                     <div>
-                        <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                            Slug da URL
-                        </label>
+                        <label className={labelCls}>Slug da URL</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
                                 name="slug"
                                 value={formData.slug}
                                 onChange={handleChange}
-                                className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400 font-mono"
+                                className={cn(inputCls, 'font-mono flex-1')}
                                 placeholder="enxada-forjada-2-5kg"
                             />
                             <button
                                 type="button"
                                 onClick={generateSlug}
-                                className="px-3 py-2 text-stone-500 hover:text-stone-700 hover:bg-stone-50 border border-stone-200 rounded-lg text-[12px] font-medium"
+                                className="px-3 py-2 text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-50 border border-stone-200 rounded-lg transition-colors"
                             >
                                 Gerar
                             </button>
                         </div>
                     </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Título SEO
-                            </label>
+                            <label className={labelCls}>Título SEO</label>
                             <input
                                 type="text"
                                 name="seoTitle"
                                 value={formData.seoTitle}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                                 placeholder="Título para motores de busca"
                             />
                         </div>
                         <div>
-                            <label className="block text-[12px] font-medium text-stone-500 uppercase tracking-wide mb-1.5">
-                                Descrição SEO
-                            </label>
+                            <label className={labelCls}>Descrição SEO</label>
                             <input
                                 type="text"
                                 name="seoDescription"
                                 value={formData.seoDescription}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] focus:outline-none focus:border-stone-400"
+                                className={inputCls}
                                 placeholder="Meta description"
                             />
                         </div>
                     </div>
-                </div>
+                </SectionCard>
 
-                {/* Documentos — só exibe ao editar produto existente */}
+                {/* Documents */}
                 {productId && (
-                    <div className="bg-white rounded-xl border border-stone-100 p-5 space-y-4">
-                        <h2 className="text-[14px] font-medium text-stone-700 flex items-center gap-2">
-                            <BookOpen size={16} className="text-stone-400" />
-                            Bulas e Manuais
-                            <span className="ml-auto text-[11px] font-normal text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full">RAG · IA de Atendimento</span>
-                        </h2>
+                    <SectionCard title="Bulas e manuais" icon={<BookOpen size={15} />}>
+                        <p className="text-xs text-stone-400 -mt-2 mb-2">
+                            Documentos indexados na IA de atendimento (RAG).
+                        </p>
                         <ProductDocumentsManager productId={productId} />
-                    </div>
+                    </SectionCard>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-3 pt-2 pb-6">
                     <button
                         type="button"
                         onClick={onBack}
-                        className="px-4 py-2 text-stone-500 hover:text-stone-700 text-[13px] font-medium"
+                        className="px-4 py-2 text-sm font-medium text-stone-500 hover:text-stone-700 transition-colors"
                     >
                         Cancelar
                     </button>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 px-5 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700 disabled:opacity-50"
+                        className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-700 rounded-lg disabled:opacity-50 transition-colors"
                     >
-                        <Save size={16} />
-                        {saving ? 'Salvando...' : (productId ? 'Atualizar' : 'Criar Produto')}
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        {saving ? 'Salvando...' : (productId ? 'Atualizar' : 'Criar produto')}
                     </button>
                 </div>
             </form>
@@ -735,4 +637,3 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 };
 
 export default AdminProductEditor;
-

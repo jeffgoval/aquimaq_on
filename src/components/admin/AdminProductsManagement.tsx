@@ -3,14 +3,13 @@ import {
     Package,
     Search,
     Plus,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Pencil,
-    Sparkles,
-    TrendingUp,
     Eye,
-    EyeOff
+    EyeOff,
+    CheckCircle,
+    AlertCircle,
 } from 'lucide-react';
 import { getProductsAdmin } from '@/services/productService';
 import { supabase } from '@/services/supabase';
@@ -19,6 +18,7 @@ import type { ProductRow } from '@/types/database';
 import AdminProductEditor from './AdminProductEditor';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/utils/cn';
 
 const PAGE_SIZE = 20;
 
@@ -29,13 +29,22 @@ interface ProductWithFlags extends Product {
 }
 
 const categoryOptions = [
-    { value: 'all', label: 'Todas as Categorias' },
+    { value: 'all', label: 'Todas as categorias' },
     { value: 'Ferramentas Manuais', label: 'Ferramentas Manuais' },
     { value: 'Peças de Reposição', label: 'Peças de Reposição' },
     { value: 'Acessórios', label: 'Acessórios' },
     { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
     { value: 'Itens de Prateleira', label: 'Itens de Prateleira' },
 ];
+
+const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+const getStockBadge = (stock: number) => {
+    if (stock === 0) return { label: 'Esgotado', cls: 'text-red-600 bg-red-50 border-red-200' };
+    if (stock <= 5) return { label: 'Baixo', cls: 'text-amber-600 bg-amber-50 border-amber-200' };
+    return { label: 'OK', cls: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+};
 
 const AdminProductsManagement: React.FC = () => {
     const { user, hasRole } = useAuth();
@@ -46,24 +55,19 @@ const AdminProductsManagement: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-    // Editor state
     const [editingProductId, setEditingProductId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [savedScroll, setSavedScroll] = useState(0);
     const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: string; name: string } | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
 
-    useEffect(() => {
-        loadProducts();
-    }, []);
+    useEffect(() => { loadProducts(); }, []);
 
     const loadProducts = async () => {
         try {
             setLoading(true);
             const data = await getProductsAdmin();
-
-            const mapped = (data || []).map((p: ProductRow) => ({
+            setProducts((data || []).map((p: ProductRow) => ({
                 id: p.id,
                 name: p.name,
                 description: p.description,
@@ -78,24 +82,27 @@ const AdminProductsManagement: React.FC = () => {
                 is_new: p.is_new,
                 is_best_seller: p.is_best_seller,
                 is_active: p.is_active !== false,
-            }));
-
-            setProducts(mapped);
-        } catch (error) {
-            console.error('Error loading products:', error);
-            setMessage({ type: 'error', text: 'Erro ao carregar produtos.' });
+            })));
+        } catch {
+            showMessage('error', 'Erro ao carregar produtos.');
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredProducts = React.useMemo(() => {
-        return products.filter(product => {
-            const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+    const showMessage = (type: 'success' | 'error', text: string) => {
+        setMessage({ type, text });
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    const filteredProducts = React.useMemo(() =>
+        products.filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
             return matchesSearch && matchesCategory;
-        });
-    }, [products, searchQuery, categoryFilter]);
+        }),
+        [products, searchQuery, categoryFilter]
+    );
 
     const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
     const safePage = Math.min(currentPage, totalPages);
@@ -104,19 +111,8 @@ const AdminProductsManagement: React.FC = () => {
     const handleSearchChange = (value: string) => { setSearchQuery(value); setCurrentPage(1); };
     const handleCategoryFilterChange = (value: string) => { setCategoryFilter(value); setCurrentPage(1); };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-    };
-
-    const getStockStatus = (stock: number) => {
-        if (stock === 0) return { label: 'Esgotado', color: 'text-red-600 bg-red-50' };
-        if (stock <= 5) return { label: 'Baixo', color: 'text-amber-600 bg-amber-50' };
-        return { label: 'OK', color: 'text-emerald-600 bg-emerald-50' };
-    };
-
     const handleToggleActive = (id: string, currentStatus: boolean, e: React.MouseEvent, name: string) => {
         e.stopPropagation();
-        // Confirmar antes de desativar (oculta produto da loja)
         if (currentStatus) {
             setConfirmDeactivate({ id, name });
         } else {
@@ -129,10 +125,9 @@ const AdminProductsManagement: React.FC = () => {
             const { error } = await (supabase.from('products') as any).update({ is_active: !currentStatus }).eq('id', id);
             if (error) throw error;
             setProducts(prev => prev.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
-            setMessage({ type: 'success', text: `Produto ${currentStatus ? 'desativado' : 'ativado'}.` });
-            setTimeout(() => setMessage(null), 2000);
-        } catch (err) {
-            setMessage({ type: 'error', text: 'Erro ao alterar status do produto.' });
+            showMessage('success', `Produto ${currentStatus ? 'desativado' : 'ativado'}.`);
+        } catch {
+            showMessage('error', 'Erro ao alterar status do produto.');
         }
     };
 
@@ -151,11 +146,9 @@ const AdminProductsManagement: React.FC = () => {
     const handleEditorSave = () => {
         handleEditorClose();
         loadProducts();
-        setMessage({ type: 'success', text: 'Produto salvo com sucesso!' });
-        setTimeout(() => setMessage(null), 3000);
+        showMessage('success', 'Produto salvo com sucesso.');
     };
 
-    // Show editor if creating or editing
     if (isCreating || editingProductId) {
         return (
             <AdminProductEditor
@@ -169,156 +162,153 @@ const AdminProductsManagement: React.FC = () => {
 
     return (
         <>
-        <div className="space-y-5 max-w-6xl mx-auto">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+
+            {/* Header */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-semibold text-stone-800">Produtos</h1>
-                    <p className="text-stone-400 text-[13px] mt-0.5">
-                        {products.length} produtos cadastrados
+                    <h1 className="text-lg font-semibold text-stone-800">Produtos</h1>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                        {products.length} produto{products.length !== 1 ? 's' : ''} cadastrado{products.length !== 1 ? 's' : ''}
                     </p>
                 </div>
-                <button
-                    onClick={() => handleEditorOpen()}
-                    className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700 transition-colors"
-                >
-                    <Plus size={16} />
-                    Novo Produto
-                </button>
-            </div>
-
-            {/* Feedback */}
-            {message && (
-                <div className={`px-3 py-2 rounded-lg text-[13px] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    }`}>
-                    {message.text}
+                <div className="flex items-center gap-3">
+                    {message && (
+                        <span className={cn(
+                            'flex items-center gap-1.5 text-xs font-medium',
+                            message.type === 'success' ? 'text-emerald-600' : 'text-red-600'
+                        )}>
+                            {message.type === 'success' ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+                            {message.text}
+                        </span>
+                    )}
+                    <button
+                        onClick={() => handleEditorOpen()}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-700 rounded-lg transition-colors"
+                    >
+                        <Plus size={14} />
+                        Novo produto
+                    </button>
                 </div>
-            )}
+            </div>
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-2.5 text-stone-300" size={16} />
+                    <Search className="absolute left-3 top-2.5 text-stone-300" size={15} />
                     <input
                         type="text"
                         placeholder="Buscar por nome..."
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] placeholder-stone-400 focus:outline-none focus:border-stone-300"
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-200 rounded-lg placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300"
                         value={searchQuery}
-                        onChange={(e) => handleSearchChange(e.target.value)}
+                        onChange={e => handleSearchChange(e.target.value)}
                     />
                 </div>
-                <div className="sm:w-48 relative">
+                <div className="sm:w-52">
                     <select
-                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-[13px] text-stone-600 focus:outline-none focus:border-stone-300 appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 text-sm bg-white border border-stone-200 rounded-lg text-stone-600 focus:outline-none focus:ring-2 focus:ring-stone-300"
                         value={categoryFilter}
-                        onChange={(e) => handleCategoryFilterChange(e.target.value)}
+                        onChange={e => handleCategoryFilterChange(e.target.value)}
                     >
-                        {categoryOptions.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
+                        {categoryOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-2.5 text-stone-400 pointer-events-none" size={16} />
                 </div>
             </div>
 
-            {/* Products Table */}
-            <div className="bg-white rounded-xl border border-stone-100 overflow-hidden">
+            {/* Table */}
+            <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
                 {loading ? (
-                    <div className="p-8 text-center">
-                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500 mb-2"></div>
-                        <p className="text-stone-400 text-[13px]">Carregando...</p>
+                    <div className="py-16 flex justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-stone-100">
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Produto</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Categoria</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Preço</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Estoque</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide">Tags</th>
-                                    <th className="px-4 py-3 text-[11px] font-medium text-stone-400 uppercase tracking-wide text-right">Ações</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 min-w-[180px]">Produto</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 w-px whitespace-nowrap">Categoria</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 w-px whitespace-nowrap">Preço</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 w-px whitespace-nowrap">Estoque</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 w-px whitespace-nowrap">Status</th>
+                                    <th className="px-4 py-2 text-xs font-medium text-stone-400 w-px whitespace-nowrap text-right">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-stone-50">
+                            <tbody className="divide-y divide-stone-100">
                                 {filteredProducts.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="px-4 py-8 text-center text-stone-400 text-[13px]">
+                                        <td colSpan={6} className="px-4 py-10 text-center text-sm text-stone-400">
                                             Nenhum produto encontrado.
                                         </td>
                                     </tr>
-                                ) : pagedProducts.map((product) => {
-                                    const stockStatus = getStockStatus(product.stock);
-
+                                ) : pagedProducts.map(product => {
+                                    const stock = getStockBadge(product.stock);
                                     return (
-                                        <tr key={product.id} className="hover:bg-stone-25 group">
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-3">
+                                        <tr key={product.id} className="hover:bg-stone-50 transition-colors">
+                                            <td className="px-4 py-1.5 min-w-[180px] align-middle">
+                                                <div className="flex items-center gap-2">
                                                     {product.imageUrl ? (
                                                         <img
                                                             src={product.imageUrl}
                                                             alt=""
-                                                            className={`w-10 h-10 rounded-lg object-contain bg-white transition-opacity ${!product.is_active ? 'opacity-50 grayscale' : ''}`}
+                                                            className={cn(
+                                                                'w-11 h-11 rounded object-contain bg-stone-50 border border-stone-100 shrink-0 transition-opacity',
+                                                                !product.is_active && 'opacity-40 grayscale'
+                                                            )}
                                                         />
                                                     ) : (
-                                                        <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-stone-400 border border-stone-100">
-                                                            <Package size={16} />
+                                                        <div className="w-11 h-11 rounded bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-400 shrink-0">
+                                                            <Package size={18} />
                                                         </div>
                                                     )}
-                                                    <div>
-                                                        <span className={`text-[13px] font-medium block ${!product.is_active ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className={cn(
+                                                            'text-sm font-medium',
+                                                            product.is_active ? 'text-stone-800' : 'text-stone-400 line-through'
+                                                        )}>
                                                             {product.name}
                                                         </span>
-                                                        <button
-                                                            onClick={(e) => handleToggleActive(product.id, !!product.is_active, e, product.name)}
-                                                            className={`mt-0.5 text-[10px] flex items-center gap-1 font-medium px-1.5 py-0.5 rounded transition-colors
-                                                                ${product.is_active ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'text-stone-500 bg-stone-100 hover:bg-stone-200'}
-                                                            `}
-                                                        >
-                                                            {product.is_active ? <Eye size={10} /> : <EyeOff size={10} />}
-                                                            {product.is_active ? 'Ativo' : 'Inativo'}
-                                                        </button>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className="text-[12px] text-stone-500 bg-stone-50 px-2 py-0.5 rounded">
+                                            <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
+                                                <span className="text-xs text-stone-500 bg-stone-50 border border-stone-200 px-2 py-0.5 rounded-full">
                                                     {product.category}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className="text-[13px] font-medium text-stone-700">
+                                            <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
+                                                <span className="text-sm font-medium text-stone-700">
                                                     {formatCurrency(product.price)}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[13px] text-stone-600">{product.stock}</span>
-                                                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${stockStatus.color}`}>
-                                                        {stockStatus.label}
+                                                    <span className="text-sm text-stone-600">{product.stock}</span>
+                                                    <span className={cn('text-xs px-1.5 py-0.5 rounded-full border font-medium', stock.cls)}>
+                                                        {stock.label}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-1">
-                                                    {product.is_new && (
-                                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-emerald-600 bg-emerald-50">
-                                                            <Sparkles size={10} /> Novo
-                                                        </span>
+                                            <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
+                                                <button
+                                                    onClick={e => handleToggleActive(product.id, !!product.is_active, e, product.name)}
+                                                    className={cn(
+                                                        'inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded border font-medium transition-colors',
+                                                        product.is_active
+                                                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                                                            : 'text-stone-500 bg-stone-50 border-stone-200 hover:bg-stone-100'
                                                     )}
-                                                    {product.is_best_seller && (
-                                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-amber-600 bg-amber-50">
-                                                            <TrendingUp size={10} /> Top
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                >
+                                                    {product.is_active ? <Eye size={10} /> : <EyeOff size={10} />}
+                                                    {product.is_active ? 'Ativo' : 'Inativo'}
+                                                </button>
                                             </td>
-                                            <td className="px-4 py-3 text-right">
+                                            <td className="px-4 py-1.5 text-right align-middle w-px whitespace-nowrap">
                                                 <button
                                                     onClick={() => handleEditorOpen(product.id)}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-stone-500 hover:text-stone-700 hover:bg-stone-50 rounded-lg text-[12px] font-medium transition-colors"
-                                                    aria-label="Editar produto"
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded transition-colors"
                                                 >
                                                     <Pencil size={12} />
                                                     Editar
@@ -335,19 +325,17 @@ const AdminProductsManagement: React.FC = () => {
 
             {/* Pagination */}
             {!loading && filteredProducts.length > PAGE_SIZE && (
-                <div className="flex items-center justify-between text-[13px] text-stone-500">
+                <div className="flex items-center justify-between text-xs text-stone-500">
                     <span>
-                        {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} —
-                        página {safePage} de {totalPages}
+                        {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} — página {safePage} de {totalPages}
                     </span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={safePage === 1}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Página anterior"
                         >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft size={15} />
                         </button>
                         {Array.from({ length: totalPages }, (_, i) => i + 1)
                             .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
@@ -358,11 +346,14 @@ const AdminProductsManagement: React.FC = () => {
                             }, [])
                             .map((p, idx) =>
                                 p === '...'
-                                    ? <span key={`ellipsis-${idx}`} className="px-1">…</span>
+                                    ? <span key={`e-${idx}`} className="px-1">…</span>
                                     : <button
                                         key={p}
                                         onClick={() => setCurrentPage(p as number)}
-                                        className={`w-7 h-7 rounded-lg text-[12px] font-medium transition-colors ${safePage === p ? 'bg-stone-800 text-white' : 'hover:bg-stone-100'}`}
+                                        className={cn(
+                                            'w-7 h-7 rounded-lg text-xs font-medium transition-colors',
+                                            safePage === p ? 'bg-stone-900 text-white' : 'hover:bg-stone-100'
+                                        )}
                                     >
                                         {p}
                                     </button>
@@ -372,9 +363,8 @@ const AdminProductsManagement: React.FC = () => {
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={safePage === totalPages}
                             className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Próxima página"
                         >
-                            <ChevronRight size={16} />
+                            <ChevronRight size={15} />
                         </button>
                     </div>
                 </div>
@@ -383,7 +373,7 @@ const AdminProductsManagement: React.FC = () => {
 
         <ConfirmDialog
             open={!!confirmDeactivate}
-            title="Desativar Produto"
+            title="Desativar produto"
             description={confirmDeactivate ? `Tem certeza que deseja desativar "${confirmDeactivate.name}"? O produto ficará oculto na loja. Você pode reativá-lo a qualquer momento.` : ''}
             confirmLabel="Desativar"
             onCancel={() => setConfirmDeactivate(null)}
@@ -397,4 +387,3 @@ const AdminProductsManagement: React.FC = () => {
 };
 
 export default AdminProductsManagement;
-
