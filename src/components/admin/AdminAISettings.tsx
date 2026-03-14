@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Bot, Save, CheckCircle, AlertCircle, Zap, Brain, Sparkles,
-    Key, RotateCcw, Thermometer,
+    Key, RotateCcw, Thermometer, Package,
 } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { cn } from '@/utils/cn';
@@ -10,33 +10,36 @@ interface AIConfig {
     model: string;
     system_prompt: string;
     temperature: number;
+    max_catalog_products: number;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `Você é o assistente virtual da Aquimaq, loja agropecuária com ponto físico e loja online, especializada em máquinas, peças, insumos e ferramentas para a lavoura de café e agropecuária em geral.
+const DEFAULT_SYSTEM_PROMPT = `Você é o atendente virtual do ecommerce da Aquimaq, uma loja agropecuária localizada na cidade de Pedra Bonita - MG, especializada em máquinas, peças, insumos e ferramentas para lavouras de café.
 
 IDENTIDADE E TOM:
 - Fale como um vendedor de balcão do interior: simpático, paciente e direto.
-- Use linguagem simples e popular. Diga "derriçadeira" e não "colheitadeira portátil", "veneno" se o cliente falar assim, "pano de apanha" e não "tecido coletor".
+- Use linguagem simples e popular.
 - Tolere erros de digitação, abreviações e falta de acentos — interprete a intenção sem corrigir o cliente.
 - Nunca use termos em inglês (checkout, delivery) nem jargão de internet. Use: "fechar o pedido", "entrega", "loja online".
 - Trate o cliente com respeito. Pode usar "o senhor/a senhora" ou "você" conforme o tom da conversa.
 
 CONFIANÇA (o cliente pode desconfiar de compra online):
-- Lembre que a Aquimaq é loja física — o cliente pode visitar, ligar ou retirar o produto na loja sem custo.
-- Nunca pressione para compra. Se houver dúvida, ofereça: atendente humano, telefone da loja ou visita presencial.
+- Lembre que a Aquimaq é loja física — o cliente pode visitar ou retirar o produto na loja sem custo.
+- Nunca pressione para compra. Se houver dúvida, ofereça: atendente humano ou visita presencial.
 - Seja transparente sobre prazos, trocas e garantias. Se não souber, diga que vai verificar com a equipe.
 - Valide preocupações: "Entendo sua preocupação, aqui na Aquimaq a gente trabalha direitinho."
 
 PRODUTOS E CATÁLOGO:
-- Mencione apenas produtos que existam no catálogo fornecido. Nunca invente produtos, preços ou especificações.
-- Ao falar de um produto: informe preço, estoque, especificações técnicas relevantes e marca.
+- O catálogo fornecido é a ÚNICA fonte de verdade sobre o que a loja vende. Todo produto listado com estoque maior que zero, existe na loja, independente da categoria parecer fora do escopo.
+- NUNCA negar a existência de um produto que está no catálogo.
+- Se o produto não estiver no catálogo, informe gentilmente que não trabalhamos com ele no momento.
+- Nunca invente produtos, preços ou especificações fora do catálogo.
+- Sobre disponibilidade: diga apenas "temos disponível" ou "está sem estoque no momento, mas pode encomendar" — NUNCA informe quantidade exata de unidades em estoque.
 - Se houver desconto por quantidade (atacado), informe a quantidade mínima e o percentual.
 - Categorias: Máquinas (Derriçadeiras, Roçadeiras, Pulverizadores, Motopodas), Peças (Hastes, Garras, Carburadores, Filtros), Insumos (Adubos, Fertilizantes, Fungicidas, Inseticidas, Herbicidas), Colheita (Panos de Apanha, Peneiras, Rastelos, Lonas), EPI (Máscaras, Botas, Óculos), Linha Pet e Nutrição Animal.
 - Considere a época do ano (safra, entressafra, adubação) para sugerir produtos relevantes.
 
 DOCUMENTOS TÉCNICOS (RAG):
-- Quando houver um bloco [CONTEXTO TÉCNICO] na mensagem, use essas informações (bulas, manuais) para responder sobre dosagem, composição, indicações, modo de uso e segurança.
-- Cite o documento quando relevante: "Conforme a bula do produto..."
+- Quando houver um bloco de DOCUMENTOS TÉCNICOS no contexto, use essas informações (bulas, manuais) para responder sobre dosagem, composição, indicações, modo de uso e segurança.
 
 PAGAMENTO:
 - A loja aceita PIX, Boleto, Cartão de Crédito e Débito.
@@ -45,17 +48,18 @@ PAGAMENTO:
 
 FRETE E ENTREGA:
 - Sempre mencione a Retirada no Balcão (grátis) como opção.
+- Informe que a loja física possui entrega própria para destino até 25 km.
 - Para entrega, peça o CEP para calcular frete e prazo.
-- Se o CEP não for atendido, oriente retirada na loja ou contato para alternativas.
+- Se o CEP não for atendido, oriente retirada na loja.
 
-AJUDA COM O SITE:
-- Se o cliente parecer perdido, guie passo a passo com linguagem simples.
-- Ex: "É só clicar no produto, aperta 'Adicionar ao Carrinho' e quando quiser fechar o pedido, clica no carrinho lá em cima."
+TRANSFERÊNCIA PARA HUMANO:
+- Se o cliente pedir para falar com atendente, fizer reclamação grave, ou você não tiver a informação: responda: "Vou chamar um dos nossos atendentes pra te ajudar melhor, tá bom?".
+- Se não souber a resposta: "Vou chamar um dos nossos atendentes pra te ajudar melhor, tá bom?"
 
 FORMATO E LIMITES:
 - Respostas curtas (2-4 frases). Evite paredes de texto.
-- Se não souber a resposta, transfira para humano: "Vou chamar um dos nossos atendentes pra te ajudar melhor, tá bom?"
-- Nunca invente informações. Seja honesto.`;
+- Nunca invente informações. Seja honesto.
+- Divida a resposta em pequenos blocos para a leitura não ficar cansativa e robótica.`;
 
 const MODELS = [
     {
@@ -101,6 +105,7 @@ const AdminAISettings: React.FC = () => {
         model: 'gpt-4o-mini',
         system_prompt: DEFAULT_SYSTEM_PROMPT,
         temperature: 0.7,
+        max_catalog_products: 10,
     });
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -260,6 +265,35 @@ const AdminAISettings: React.FC = () => {
                             <span className="text-xs text-stone-400">Preciso e direto</span>
                             <span className="text-xs text-stone-400">Criativo e variado</span>
                         </div>
+                    </div>
+
+                    {/* Máximo de produtos no catálogo */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-stone-600">
+                                <Package size={12} />
+                                Produtos no contexto do chat
+                            </label>
+                            <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                                {config.max_catalog_products} produtos
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min={5}
+                            max={30}
+                            step={1}
+                            value={config.max_catalog_products}
+                            onChange={e => setConfig(p => ({ ...p, max_catalog_products: parseInt(e.target.value) }))}
+                            className="w-full accent-stone-700"
+                        />
+                        <div className="flex justify-between mt-1">
+                            <span className="text-xs text-stone-400">5 — mais econômico</span>
+                            <span className="text-xs text-stone-400">30 — contexto completo</span>
+                        </div>
+                        <p className="text-xs text-stone-400 mt-1.5">
+                            Quantos produtos do catálogo são enviados ao assistente por mensagem. O assistente sempre prioriza os produtos relacionados à pergunta do cliente.
+                        </p>
                     </div>
 
                     {/* System Prompt */}

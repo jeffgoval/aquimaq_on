@@ -6,7 +6,8 @@
  *
  * Variáveis de ambiente necessárias (Supabase secrets):
  *   CHATWOOT_URL             — ex: https://app.chatwoot.com
- *   CHATWOOT_API_TOKEN       — User Access Token do agente/bot
+ *   CHATWOOT_API_TOKEN       — Token do Agent Bot no Chatwoot. Não usar token de agente humano,
+ *                              senão a conversa é atribuída a esse agente; o pré-atendimento (IA) é feito no n8n.
  *   CHATWOOT_ACCOUNT_ID      — ID da conta Chatwoot
  *   CHATWOOT_WHATSAPP_INBOX_ID — ID da caixa de entrada WhatsApp
  *
