@@ -1,8 +1,7 @@
 import React from 'react';
 import { Zap, Users } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
-
-const PIX_DISCOUNT = 0.05;
+import { useStore } from '@/contexts/StoreContext';
 
 interface ProductPriceBlockProps {
   price: number;
@@ -21,7 +20,8 @@ export const ProductPriceBlock: React.FC<ProductPriceBlockProps> = ({
   wholesaleMinAmount,
   wholesaleDiscountPercent,
 }) => {
-  const pixPrice = price * (1 - PIX_DISCOUNT);
+  const { settings } = useStore();
+  const pixPrice = price * (1 - (settings?.pixDiscount ?? 0.05));
   const installmentValue = price / maxInstallments;
   const hasWholesale =
     wholesaleMinAmount != null && wholesaleDiscountPercent != null;
@@ -53,7 +53,7 @@ export const ProductPriceBlock: React.FC<ProductPriceBlockProps> = ({
             <Zap size={14} />
             {formatCurrency(pixPrice)} no Pix
             <span className="bg-green-200 text-green-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5">
-              5% OFF
+              {((settings?.pixDiscount ?? 0.05) * 100).toFixed(0)}% OFF
             </span>
           </span>
         </div>

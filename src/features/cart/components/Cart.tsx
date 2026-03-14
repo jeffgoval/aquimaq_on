@@ -17,8 +17,6 @@ import { useStore } from '@/contexts/StoreContext';
 import AddressEditModal from './AddressEditModal';
 import { ProfileRow } from '@/types/database';
 
-const PIX_DISCOUNT = 0.05;
-
 interface CartProps {
     items: CartItem[];
     cartSubtotal: number;
@@ -65,6 +63,7 @@ const Cart: React.FC<CartProps> = ({
     const { profile, refreshProfile } = useAuth();
     const { settings } = useStore();
     const FREE_SHIPPING_THRESHOLD = settings?.freeShippingThreshold ?? 350;
+    const PIX_DISCOUNT = settings?.pixDiscount ?? 0.05;
     const { showToast } = useToast();
     const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
     const [showAddressModal, setShowAddressModal] = useState(false);
@@ -439,7 +438,7 @@ const Cart: React.FC<CartProps> = ({
                             {grandTotal > 0 && (
                                 <div className="flex items-center justify-between text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg">
                                     <span className="flex items-center gap-1.5">
-                                        <Zap size={13} /> Pague com Pix e economize 5%
+                                        <Zap size={13} /> Pague com Pix e economize {(PIX_DISCOUNT * 100).toFixed(0)}%
                                     </span>
                                     <span className="font-bold">{formatCurrency(grandTotal * PIX_DISCOUNT)}</span>
                                 </div>
@@ -455,7 +454,7 @@ const Cart: React.FC<CartProps> = ({
                                         </span>
                                         {grandTotal > 0 && (
                                             <span className="text-xs text-emerald-600 font-medium mt-0.5 block">
-                                                Pix: {formatCurrency(grandTotal * (1 - PIX_DISCOUNT))} (5% off)
+                                                Pix: {formatCurrency(grandTotal * (1 - PIX_DISCOUNT))} ({(PIX_DISCOUNT * 100).toFixed(0)}% off)
                                             </span>
                                         )}
                                     </div>

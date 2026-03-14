@@ -44,6 +44,7 @@ interface StoreConfig {
     acceptedPaymentTypes: string[];
     reclameAquiUrl: string;
     freeShippingThreshold: number;
+    pixDiscount: number;
     crossSellEnabled: boolean;
     crossSellCategory: string;
 }
@@ -153,6 +154,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         acceptedPaymentTypes: ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
         reclameAquiUrl: '',
         freeShippingThreshold: 350,
+        pixDiscount: 0.05,
         crossSellEnabled: true,
         crossSellCategory: '',
     });
@@ -187,6 +189,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ALL_PAYMENT_TYPES,
                 reclameAquiUrl: settings.reclameAquiUrl || '',
                 freeShippingThreshold: settings.freeShippingThreshold ?? 350,
+                pixDiscount: settings.pixDiscount ?? 0.05,
                 crossSellEnabled: settings.crossSellEnabled ?? true,
                 crossSellCategory: settings.crossSellCategory ?? '',
             });
@@ -320,6 +323,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             acceptedPaymentTypes: formData.acceptedPaymentTypes,
             reclameAquiUrl: formData.reclameAquiUrl,
             freeShippingThreshold: formData.freeShippingThreshold,
+            pixDiscount: formData.pixDiscount,
             crossSellEnabled: formData.crossSellEnabled,
             crossSellCategory: formData.crossSellCategory || null,
         });
@@ -627,6 +631,24 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     <option key={n} value={n}>{n === 1 ? 'À vista' : `Até ${n}x`}</option>
                                 ))}
                             </select>
+                        </Field>
+                    </SectionCard>
+
+                    <SectionCard title="Desconto PIX" description="Percentual de desconto aplicado para pagamento via PIX." locked={!isAdmin}>
+                        <Field label="Desconto PIX (%)" hint="Ex: 5 para 5% de desconto. Aplicado automaticamente nos preços exibidos na loja.">
+                            <div className="flex items-center gap-2 max-w-xs">
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    step={0.5}
+                                    disabled={!isAdmin}
+                                    value={+(formData.pixDiscount * 100).toFixed(2)}
+                                    onChange={e => isAdmin && setFormData(p => ({ ...p, pixDiscount: Number(e.target.value) / 100 }))}
+                                    className={cn(inputCls(undefined, !isAdmin))}
+                                />
+                                <span className="text-sm text-stone-500 font-medium shrink-0">%</span>
+                            </div>
                         </Field>
                     </SectionCard>
                 </div>

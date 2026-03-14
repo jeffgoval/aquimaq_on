@@ -20,7 +20,6 @@ const getShippingRestriction = (
   return rules.find((r) => r.category === category) ?? null;
 };
 
-const PIX_DISCOUNT = 0.05;
 const LOW_STOCK_THRESHOLD = 5;
 
 interface ProductCardProps {
@@ -44,7 +43,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     const isOutOfStock = product.stock === 0;
     const isLowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
-    const pixPrice = product.price * (1 - PIX_DISCOUNT);
+    const pixPrice = product.price * (1 - (settings?.pixDiscount ?? 0.05));
 
     const [showSavedFeedback, setShowSavedFeedback] = React.useState(false);
 

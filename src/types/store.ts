@@ -55,6 +55,7 @@ export interface StoreSettings {
   bannerSlideIntervalMs?: number;
   reclameAquiUrl: string;
   freeShippingThreshold: number;
+  pixDiscount: number;
   crossSellEnabled: boolean;
   crossSellCategory: string | null;
   navigationMenu?: NavigationMenuItem[];
@@ -90,6 +91,7 @@ export interface StoreSettingsDB {
   banner_slide_interval_ms?: number | null;
   reclame_aqui_url?: string | null;
   free_shipping_threshold?: number | null;
+  pix_discount?: number | null;
   cross_sell_enabled?: boolean | null;
   cross_sell_category?: string | null;
   navigation_menu?: NavigationMenuItem[] | null;
@@ -152,6 +154,7 @@ export const storeSettingsFromDB = (row: StoreSettingsDB | null): StoreSettings 
     bannerSlideIntervalMs: r.banner_slide_interval_ms ?? 5000,
     reclameAquiUrl: r.reclame_aqui_url ?? '',
     freeShippingThreshold: Number(r.free_shipping_threshold ?? 350),
+    pixDiscount: Number(r.pix_discount ?? 0.05),
     crossSellEnabled: r.cross_sell_enabled ?? true,
     crossSellCategory: r.cross_sell_category ?? null,
     navigationMenu: (r.navigation_menu as NavigationMenuItem[] | null) ?? [],
@@ -191,6 +194,7 @@ export const storeSettingsToDB = (
   if (s.bannerSlideIntervalMs !== undefined) out.banner_slide_interval_ms = s.bannerSlideIntervalMs;
   if (s.reclameAquiUrl !== undefined) out.reclame_aqui_url = s.reclameAquiUrl || null;
   if (s.freeShippingThreshold !== undefined) out.free_shipping_threshold = s.freeShippingThreshold;
+  if (s.pixDiscount !== undefined) out.pix_discount = s.pixDiscount;
   if (s.crossSellEnabled !== undefined) out.cross_sell_enabled = s.crossSellEnabled;
   if (s.crossSellCategory !== undefined) out.cross_sell_category = s.crossSellCategory || null;
   if (s.navigationMenu !== undefined) out.navigation_menu = s.navigationMenu;
