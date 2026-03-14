@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, RefreshCw, FileText } from 'lucide-react';
+import {
+  MessageSquare, RefreshCw, FileText, CheckCircle, AlertCircle,
+  Pencil, X, Save, Clock, User, Hash
+} from 'lucide-react';
 import {
   getWhatsappTemplates,
   updateWhatsappTemplate,
@@ -11,6 +14,9 @@ import type {
   WhatsappTemplateMetaStatus,
   OrderFollowUpPayload,
 } from '@/types/whatsapp';
+import { cn } from '@/utils/cn';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const META_STATUS_OPTIONS: { value: WhatsappTemplateMetaStatus; label: string }[] = [
   { value: 'rascunho', label: 'Rascunho' },
@@ -18,57 +24,95 @@ const META_STATUS_OPTIONS: { value: WhatsappTemplateMetaStatus; label: string }[
   { value: 'aprovado', label: 'Aprovado pela Meta' },
 ];
 
-const STATUS_OPTIONS = [
+const LOG_STATUS_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Pendentes' },
   { value: 'processed', label: 'Enviados' },
   { value: 'failed', label: 'Falhas' },
 ];
 
+const EVENT_LABELS: Record<string, string> = {
+  'cart.abandoned': 'Carrinho abandonado',
+  'order.follow_up': 'Lembrete de pagamento',
+};
+
+const META_STATUS_STYLES: Record<WhatsappTemplateMetaStatus, string> = {
+  rascunho: 'bg-stone-50 text-stone-600 border-stone-200',
+  submetido: 'bg-blue-50 text-blue-700 border-blue-200',
+  aprovado: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
+
+const LOG_STATUS_STYLES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  processed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  failed: 'bg-red-50 text-red-700 border-red-200',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const formatDate = (iso: string | null): string => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 };
 
-const payloadSummary = (log: N8nWebhookLogRow): string => {
+const getLogRecipient = (log: N8nWebhookLogRow): { name: string; phone: string; ref?: string } => {
   const p = log.payload as Record<string, unknown> | null;
-  if (!p) return '—';
-  const name = (p.name as string) ?? '';
-  const phone = (p.phone as string) ?? '';
+  if (!p) return { name: '—', phone: '—' };
+  const name = (p.name as string) || '—';
+  const phone = (p.phone as string) || '—';
   if (log.event_type === 'order.follow_up') {
-    const orderId = (p as OrderFollowUpPayload).order_id;
-    return `${name || '—'} · ${phone || '—'} · Pedido #${orderId ? String(orderId).slice(-8) : '—'}`;
+    const orderId = (p as unknown as OrderFollowUpPayload).order_id;
+    return { name, phone, ref: orderId ? `#${String(orderId).slice(-8)}` : undefined };
   }
-  return `${name || '—'} · ${phone || '—'}`;
+  return { name, phone };
 };
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const Badge: React.FC<{ label: string; className: string }> = ({ label, className }) => (
+  <span className={cn('text-xs border rounded-full px-2 py-0.5 font-medium', className)}>
+    {label}
+  </span>
+);
+
+type TabId = 'modelos' | 'historico';
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const AdminWhatsAppManagement: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabId>('modelos');
+
+  // Templates state
   const [templates, setTemplates] = useState<WhatsappTemplateRow[]>([]);
-  const [logs, setLogs] = useState<N8nWebhookLogRow[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
-  const [loadingLogs, setLoadingLogs] = useState(true);
-  const [logStatusFilter, setLogStatusFilter] = useState('all');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
   const [editMetaStatus, setEditMetaStatus] = useState<WhatsappTemplateMetaStatus>('rascunho');
   const [editMetaNotes, setEditMetaNotes] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  // Logs state
+  const [logs, setLogs] = useState<N8nWebhookLogRow[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
+  const [logStatusFilter, setLogStatusFilter] = useState('all');
+
+  // Feedback
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const loadTemplates = async () => {
     try {
       setLoadingTemplates(true);
-      const data = await getWhatsappTemplates();
-      setTemplates(data);
-    } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
-      setMessage({ type: 'error', text: 'Erro ao carregar modelos.' });
+      setTemplates(await getWhatsappTemplates());
+    } catch {
+      showMessage('error', 'Erro ao carregar modelos.');
     } finally {
       setLoadingTemplates(false);
     }
@@ -77,26 +121,16 @@ const AdminWhatsAppManagement: React.FC = () => {
   const loadLogs = async () => {
     try {
       setLoadingLogs(true);
-      const data = await getWebhookLogs({
-        status: logStatusFilter === 'all' ? undefined : logStatusFilter,
-        limit: 100,
-      });
-      setLogs(data);
-    } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
-      setMessage({ type: 'error', text: 'Erro ao carregar histórico (verifique permissões RLS).' });
+      setLogs(await getWebhookLogs({ status: logStatusFilter === 'all' ? undefined : logStatusFilter, limit: 100 }));
+    } catch {
+      showMessage('error', 'Erro ao carregar histórico (verifique permissões RLS).');
     } finally {
       setLoadingLogs(false);
     }
   };
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  useEffect(() => {
-    loadLogs();
-  }, [logStatusFilter]);
+  useEffect(() => { loadTemplates(); }, []);
+  useEffect(() => { loadLogs(); }, [logStatusFilter]);
 
   const startEdit = (t: WhatsappTemplateRow) => {
     setEditingId(t.id);
@@ -105,257 +139,315 @@ const AdminWhatsAppManagement: React.FC = () => {
     setEditMetaNotes(t.meta_notes ?? '');
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
+  const cancelEdit = () => setEditingId(null);
 
   const saveTemplate = async () => {
     if (!editingId) return;
+    setSavingTemplate(true);
     try {
       await updateWhatsappTemplate(editingId, {
         body: editBody,
         meta_status: editMetaStatus,
         meta_notes: editMetaNotes || null,
       });
-      setMessage({ type: 'success', text: 'Modelo guardado.' });
-      setTimeout(() => setMessage(null), 3000);
+      showMessage('success', 'Modelo salvo.');
       setEditingId(null);
       loadTemplates();
-    } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
-      setMessage({ type: 'error', text: 'Erro ao guardar modelo.' });
+    } catch {
+      showMessage('error', 'Erro ao salvar modelo.');
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; className: string }> = {
-      pending: { label: 'Pendente', className: 'bg-amber-50 text-amber-700' },
-      processed: { label: 'Enviado', className: 'bg-emerald-50 text-emerald-700' },
-      failed: { label: 'Falha', className: 'bg-red-50 text-red-700' },
-    };
-    const c = map[status] ?? { label: status, className: 'bg-stone-100 text-stone-600' };
-    return <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${c.className}`}>{c.label}</span>;
-  };
-
-  const metaStatusBadge = (s: string) => {
-    const map: Record<string, { label: string; className: string }> = {
-      rascunho: { label: 'Rascunho', className: 'bg-stone-100 text-stone-600' },
-      submetido: { label: 'Submetido', className: 'bg-blue-50 text-blue-700' },
-      aprovado: { label: 'Aprovado', className: 'bg-emerald-50 text-emerald-700' },
-    };
-    const c = map[s] ?? { label: s, className: 'bg-stone-100 text-stone-600' };
-    return <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${c.className}`}>{c.label}</span>;
-  };
+  const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+    { id: 'modelos', label: 'Modelos', icon: FileText },
+    { id: 'historico', label: 'Histórico de Envios', icon: MessageSquare },
+  ];
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-xl font-semibold text-stone-800">Mensagens WhatsApp</h1>
-        <p className="text-stone-500 text-[13px] mt-0.5">
-          Modelos para submissão à Meta e histórico de envios (carrinho abandonado / lembrete de pagamento).
-        </p>
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-stone-800">WhatsApp</h1>
+          <p className="text-xs text-stone-500 mt-0.5">
+            Mensagens automáticas enviadas para clientes via WhatsApp — carrinho abandonado e lembretes de pagamento.
+          </p>
+        </div>
+        {message && (
+          <span className={cn(
+            'flex items-center gap-1.5 text-xs font-medium',
+            message.type === 'success' ? 'text-emerald-600' : 'text-red-600'
+          )}>
+            {message.type === 'success' ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+            {message.text}
+          </span>
+        )}
       </div>
 
-      {message && (
-        <div
-          className={`px-3 py-2 rounded-lg text-[13px] ${
-            message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-          }`}
-        >
-          {message.text}
+      {/* Tabs */}
+      <div className="flex border-b border-stone-200 gap-1">
+        {TABS.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+                activeTab === tab.id
+                  ? 'border-stone-800 text-stone-900'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+              )}
+            >
+              <Icon size={14} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Tab: Modelos ── */}
+      {activeTab === 'modelos' && (
+        <div className="space-y-4">
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-2">
+            <p className="text-xs text-stone-600 leading-relaxed">
+              O WhatsApp Business <strong>não permite enviar mensagens livres</strong> para clientes. Toda mensagem automática precisa usar um modelo de texto pré-aprovado pela Meta.
+            </p>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Edite o texto, use{' '}
+              <code className="font-mono bg-white border border-stone-200 px-1.5 py-0.5 rounded">{'{{1}}'}</code>,{' '}
+              <code className="font-mono bg-white border border-stone-200 px-1.5 py-0.5 rounded">{'{{2}}'}</code>{' '}
+              para os valores variáveis (nome do cliente, valor do pedido...), marque como <strong>Submetido à Meta</strong> e aguarde a aprovação antes de ativar os envios automáticos.
+            </p>
+          </div>
+
+          {loadingTemplates ? (
+            <div className="py-12 flex justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="py-12 text-center text-sm text-stone-400">
+              Nenhum modelo cadastrado.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {templates.map(t => {
+                const isEditing = editingId === t.id;
+                return (
+                  <div key={t.id} className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+                    {/* Template header */}
+                    <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <code className="text-xs font-mono text-stone-400 shrink-0">{t.slug}</code>
+                        <span className="text-sm font-medium text-stone-800 truncate">{t.name}</span>
+                        <Badge
+                          label={META_STATUS_OPTIONS.find(o => o.value === t.meta_status)?.label ?? t.meta_status}
+                          className={META_STATUS_STYLES[t.meta_status as WhatsappTemplateMetaStatus] ?? 'bg-stone-50 text-stone-500 border-stone-200'}
+                        />
+                      </div>
+                      {!isEditing ? (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(t)}
+                          className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors shrink-0"
+                        >
+                          <Pencil size={12} />
+                          Editar
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={saveTemplate}
+                            disabled={savingTemplate}
+                            className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 disabled:opacity-50 transition-colors"
+                          >
+                            <Save size={12} />
+                            {savingTemplate ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 transition-colors"
+                          >
+                            <X size={12} />
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Template body */}
+                    <div className="p-5 space-y-4">
+                      {isEditing ? (
+                        <>
+                          <div>
+                            <label className="block text-xs font-medium text-stone-600 mb-1.5">Texto da mensagem</label>
+                            <textarea
+                              value={editBody}
+                              onChange={e => setEditBody(e.target.value)}
+                              rows={5}
+                              className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-stone-300"
+                              placeholder="Texto com {{1}}, {{2}}..."
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-stone-600 mb-1.5">Estado Meta</label>
+                              <select
+                                value={editMetaStatus}
+                                onChange={e => setEditMetaStatus(e.target.value as WhatsappTemplateMetaStatus)}
+                                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300"
+                              >
+                                {META_STATUS_OPTIONS.map(o => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-stone-600 mb-1.5">ID / Notas Meta</label>
+                              <input
+                                type="text"
+                                value={editMetaNotes}
+                                onChange={e => setEditMetaNotes(e.target.value)}
+                                placeholder="ID do template aprovado..."
+                                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <pre className="text-sm text-stone-700 whitespace-pre-wrap font-sans leading-relaxed">{t.body}</pre>
+                          {t.meta_notes && (
+                            <p className="text-xs text-stone-400 flex items-center gap-1">
+                              <Hash size={11} />
+                              {t.meta_notes}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Modelos para submissão à Meta */}
-      <section className="bg-white rounded-xl border border-stone-100 overflow-hidden">
-        <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-          <FileText size={18} className="text-stone-500" />
-          <h2 className="text-[15px] font-medium text-stone-800">Modelos para submissão à Meta</h2>
-        </div>
-        <div className="p-4 space-y-4">
-          <p className="text-stone-500 text-[13px]">
-            Edite o texto dos modelos e marque o estado da submissão à Meta. Use placeholders como{' '}
-            <code className="bg-stone-100 px-1 rounded text-[12px]">{'{{1}}'}</code>,{' '}
-            <code className="bg-stone-100 px-1 rounded text-[12px]">{'{{2}}'}</code> conforme a documentação da Meta.
+      {/* ── Tab: Histórico ── */}
+      {activeTab === 'historico' && (
+        <div className="space-y-4">
+          <p className="text-xs text-stone-500 leading-relaxed">
+            Registo de todas as mensagens WhatsApp disparadas automaticamente para clientes — quem recebeu, qual o motivo e se a entrega foi bem-sucedida. <strong className="text-stone-600">Falhas repetidas</strong> indicam problema na integração com a Meta (token expirado, modelo não aprovado).
           </p>
-          {loadingTemplates ? (
-            <div className="py-6 flex justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {templates.map((t) => (
-                <li
-                  key={t.id}
-                  className="border border-stone-100 rounded-lg p-4 bg-stone-25/50"
+          {/* Filters */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {LOG_STATUS_OPTIONS.map(o => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setLogStatusFilter(o.value)}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                    logStatusFilter === o.value
+                      ? 'bg-stone-800 text-white border-stone-800'
+                      : 'text-stone-600 border-stone-200 hover:bg-stone-50'
+                  )}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[12px] text-stone-500">{t.slug}</span>
-                      <span className="text-[13px] font-medium text-stone-700">{t.name}</span>
-                      {metaStatusBadge(t.meta_status)}
-                    </div>
-                    {editingId !== t.id ? (
-                      <button
-                        type="button"
-                        onClick={() => startEdit(t)}
-                        className="text-[12px] text-stone-500 hover:text-stone-700"
-                      >
-                        Editar
-                      </button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={saveTemplate}
-                          className="text-[12px] text-emerald-600 hover:text-emerald-700 font-medium"
-                        >
-                          Guardar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelEdit}
-                          className="text-[12px] text-stone-500 hover:text-stone-700"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {editingId === t.id ? (
-                    <div className="space-y-3">
-                      <textarea
-                        value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-[13px] resize-y"
-                        placeholder="Texto do modelo com {{1}}, {{2}}..."
-                      />
-                      <div className="flex flex-wrap gap-3 items-center">
-                        <label className="flex items-center gap-2 text-[13px] text-stone-600">
-                          Estado Meta:
-                          <select
-                            value={editMetaStatus}
-                            onChange={(e) => setEditMetaStatus(e.target.value as WhatsappTemplateMetaStatus)}
-                            className="px-2 py-1 border border-stone-200 rounded text-[12px]"
-                          >
-                            {META_STATUS_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <input
-                          type="text"
-                          value={editMetaNotes}
-                          onChange={(e) => setEditMetaNotes(e.target.value)}
-                          placeholder="Notas / ID template Meta"
-                          className="flex-1 min-w-[180px] px-2 py-1 border border-stone-200 rounded text-[12px]"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <pre className="text-[12px] text-stone-600 whitespace-pre-wrap font-sans">{t.body}</pre>
-                  )}
-                  {t.meta_notes && editingId !== t.id && (
-                    <p className="text-[11px] text-stone-400 mt-1">Notas: {t.meta_notes}</p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      {/* Histórico de envios */}
-      <section className="bg-white rounded-xl border border-stone-100 overflow-hidden">
-        <div className="px-4 py-3 border-b border-stone-100 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <MessageSquare size={18} className="text-stone-500" />
-            <h2 className="text-[15px] font-medium text-stone-800">Histórico de envios</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={logStatusFilter}
-              onChange={(e) => setLogStatusFilter(e.target.value)}
-              className="px-2 py-1.5 border border-stone-200 rounded-lg text-[12px] text-stone-600"
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
                   {o.label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
             <button
               type="button"
               onClick={loadLogs}
-              className="p-1.5 text-stone-500 hover:bg-stone-100 rounded-lg"
-              title="Atualizar"
+              disabled={loadingLogs}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-500 border border-stone-200 rounded-lg hover:bg-stone-50 disabled:opacity-50 transition-colors"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={12} className={loadingLogs ? 'animate-spin' : ''} />
+              Atualizar
             </button>
           </div>
-        </div>
-        <div className="overflow-x-auto">
-          {loadingLogs ? (
-            <div className="py-8 flex justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
-            </div>
-          ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-stone-100">
-                  <th className="px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">
-                    Tipo
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">
-                    Destinatário
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">
-                    Criado
-                  </th>
-                  <th className="px-4 py-2.5 text-[11px] font-medium text-stone-400 uppercase tracking-wide">
-                    Processado
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-50">
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-stone-400 text-[13px]">
-                      Nenhum registo na fila.
-                    </td>
-                  </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-stone-25/50">
-                      <td className="px-4 py-2.5">
-                        <span className="text-[12px] font-mono text-stone-600">
-                          {log.event_type === 'cart.abandoned' ? 'Carrinho abandonado' : 'Lembrete pagamento'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-[12px] text-stone-600">
-                        {payloadSummary(log)}
-                      </td>
-                      <td className="px-4 py-2.5">{statusBadge(log.status)}</td>
-                      <td className="px-4 py-2.5 text-[12px] text-stone-500">
-                        {formatDate(log.created_at)}
-                      </td>
-                      <td className="px-4 py-2.5 text-[12px] text-stone-500">
-                        {formatDate(log.processed_at)}
-                      </td>
+
+          {/* Table */}
+          <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+            {loadingLogs ? (
+              <div className="py-12 flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="py-12 text-center text-sm text-stone-400">
+                Nenhum registo encontrado.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-stone-100">
+                      <th className="px-4 py-3 text-xs font-medium text-stone-400">Evento</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-400">Destinatário</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-400">Status</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-400">Criado</th>
+                      <th className="px-4 py-3 text-xs font-medium text-stone-400">Processado</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {logs.map(log => {
+                      const recipient = getLogRecipient(log);
+                      const statusStyle = LOG_STATUS_STYLES[log.status] ?? 'bg-stone-50 text-stone-500 border-stone-200';
+                      const statusLabel = { pending: 'Pendente', processed: 'Enviado', failed: 'Falha' }[log.status] ?? log.status;
+                      return (
+                        <tr key={log.id} className="hover:bg-stone-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <span className="text-xs font-medium text-stone-700">
+                              {EVENT_LABELS[log.event_type] ?? log.event_type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="flex items-center gap-1 text-xs text-stone-700">
+                                <User size={11} className="text-stone-400" />
+                                {recipient.name}
+                              </span>
+                              <span className="text-xs text-stone-400">{recipient.phone}</span>
+                              {recipient.ref && (
+                                <span className="flex items-center gap-1 text-xs text-stone-400">
+                                  <Hash size={10} />
+                                  {recipient.ref}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge label={statusLabel} className={statusStyle} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="flex items-center gap-1 text-xs text-stone-500">
+                              <Clock size={11} className="text-stone-300" />
+                              {formatDate(log.created_at)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-stone-500">
+                            {formatDate(log.processed_at)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </section>
+      )}
+
     </div>
   );
 };

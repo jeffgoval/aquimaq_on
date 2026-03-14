@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Store, MapPin, FileText, Phone, Upload, Mail, Instagram, Facebook, Youtube, CreditCard, Clock, Star, TrendingUp, Truck } from 'lucide-react';
+import {
+    Save, Store, MapPin, CreditCard, Truck, Bot, Upload,
+    Instagram, Facebook, Youtube, Lock, CheckCircle, AlertCircle,
+    Phone, Mail, Clock, Star, ShoppingBag
+} from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
 import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StoreSettingsProps {
     onBack: () => void;
 }
 
-/** Formulário alinhado a StoreSettings (camelCase) para evitar duplicação */
 interface StoreConfig {
     storeName: string;
     razaoSocial: string;
@@ -44,6 +48,11 @@ interface StoreConfig {
     crossSellCategory: string;
 }
 
+interface AIConfig {
+    model: string;
+    system_prompt: string;
+}
+
 interface FormErrors {
     storeName?: string;
     cnpj?: string;
@@ -66,18 +75,81 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
 
-type SettingsTab = 'empresa' | 'endereco' | 'pagamento' | 'vendas';
-
-const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'empresa', label: 'Empresa', icon: <Store size={16} /> },
-    { id: 'endereco', label: 'Endereço', icon: <MapPin size={16} /> },
-    { id: 'pagamento', label: 'Pagamento', icon: <CreditCard size={16} /> },
-    { id: 'vendas', label: 'Marketing', icon: <TrendingUp size={16} /> },
+const AI_MODELS = [
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Rápido e econômico — ideal para atendimento' },
+    { value: 'gpt-4o', label: 'GPT-4o', description: 'Mais capaz — recomendado para respostas complexas' },
+    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Legado' },
 ];
+
+const DEFAULT_SYSTEM_PROMPT = `Você é um assistente virtual da loja. Responda dúvidas sobre produtos, pedidos e políticas da loja de forma clara e objetiva. Se não souber a resposta, informe que um atendente irá ajudar em breve.`;
+
+const CROSS_SELL_CATEGORIES = [
+    { value: 'mais-vendidos', label: 'Mais Vendidos' },
+    { value: 'ferramentas-manuais', label: 'Ferramentas Manuais' },
+    { value: 'pecas', label: 'Peças e Componentes' },
+    { value: 'acessorios', label: 'Acessórios' },
+];
+
+type SettingsTab = 'loja' | 'endereco' | 'pagamento' | 'frete' | 'ia';
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const SectionCard: React.FC<{
+    title: string;
+    description?: string;
+    children: React.ReactNode;
+    locked?: boolean;
+}> = ({ title, description, children, locked }) => (
+    <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-stone-100 flex items-start justify-between gap-3">
+            <div>
+                <h3 className="text-sm font-semibold text-stone-800">{title}</h3>
+                {description && <p className="text-xs text-stone-500 mt-0.5">{description}</p>}
+            </div>
+            {locked && (
+                <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 shrink-0">
+                    <Lock size={11} />
+                    Somente admin
+                </span>
+            )}
+        </div>
+        <div className="p-5">{children}</div>
+    </div>
+);
+
+const Field: React.FC<{
+    label: string;
+    children: React.ReactNode;
+    error?: string;
+    hint?: string;
+    required?: boolean;
+    span?: 'half' | 'full';
+}> = ({ label, children, error, hint, required, span = 'full' }) => (
+    <div className={span === 'half' ? '' : 'col-span-full'}>
+        <label className="block text-xs font-medium text-stone-600 mb-1.5">
+            {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+        </label>
+        {children}
+        {hint && !error && <p className="mt-1 text-xs text-stone-400">{hint}</p>}
+        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
+);
+
+const inputCls = (error?: string, disabled?: boolean) =>
+    cn(
+        'w-full px-3 py-2 text-sm border rounded-lg transition-colors',
+        'focus:outline-none focus:ring-2 focus:ring-stone-300',
+        error ? 'border-red-300 bg-red-50' : 'border-stone-200',
+        disabled && 'bg-stone-50 text-stone-400 cursor-not-allowed'
+    );
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
     const { refreshSettings } = useStore();
+    const { isAdmin } = useAuth();
+
     const [formData, setFormData] = useState<StoreConfig>({
         storeName: '',
         razaoSocial: '',
@@ -87,20 +159,8 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         whatsapp: '',
         email: '',
         openingHours: '',
-        address: {
-            zip: '',
-            street: '',
-            number: '',
-            complement: '',
-            district: '',
-            city: '',
-            state: ''
-        },
-        socialMedia: {
-            instagram: '',
-            facebook: '',
-            youtube: ''
-        },
+        address: { zip: '', street: '', number: '', complement: '', district: '', city: '', state: '' },
+        socialMedia: { instagram: '', facebook: '', youtube: '' },
         logoUrl: '',
         maxInstallments: 12,
         acceptedPaymentTypes: ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
@@ -110,7 +170,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         crossSellCategory: '',
     });
 
-    // Sync formData with loaded settings (camelCase)
+    const [aiConfig, setAiConfig] = useState<AIConfig>({
+        model: 'gpt-4o-mini',
+        system_prompt: DEFAULT_SYSTEM_PROMPT,
+    });
+
     useEffect(() => {
         if (settings) {
             setFormData({
@@ -129,16 +193,16 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                     complement: settings.address.complement || '',
                     district: settings.address.district || '',
                     city: settings.address.city || '',
-                    state: settings.address.state || ''
+                    state: settings.address.state || '',
                 },
                 socialMedia: {
                     instagram: settings.socialMedia?.instagram || '',
                     facebook: settings.socialMedia?.facebook || '',
-                    youtube: settings.socialMedia?.youtube || ''
+                    youtube: settings.socialMedia?.youtube || '',
                 },
                 logoUrl: settings.logoUrl || '',
                 maxInstallments: settings.maxInstallments ?? 12,
-                acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ['credit_card', 'debit_card', 'bank_transfer', 'ticket'],
+                acceptedPaymentTypes: settings.acceptedPaymentTypes ?? ALL_PAYMENT_TYPES,
                 reclameAquiUrl: settings.reclameAquiUrl || '',
                 freeShippingThreshold: settings.freeShippingThreshold ?? 350,
                 crossSellEnabled: settings.crossSellEnabled ?? true,
@@ -147,135 +211,121 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         }
     }, [settings]);
 
-    const [activeTab, setActiveTab] = useState<SettingsTab>('empresa');
-    const [isLoading, setIsLoading] = useState(false);
+    useEffect(() => {
+        if (!isAdmin) return;
+        supabase
+            .from('store_settings' as never)
+            .select('ai_config')
+            .limit(1)
+            .single()
+            .then(({ data }: { data: { ai_config?: AIConfig } | null }) => {
+                if (data?.ai_config) setAiConfig(prev => ({ ...prev, ...data.ai_config }));
+            });
+    }, [isAdmin]);
+
+    const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+        { id: 'loja', label: 'Loja', icon: Store },
+        { id: 'endereco', label: 'Endereço', icon: MapPin },
+        { id: 'pagamento', label: 'Pagamento', icon: CreditCard },
+        { id: 'frete', label: 'Frete', icon: Truck },
+        ...(isAdmin ? [{ id: 'ia' as SettingsTab, label: 'IA', icon: Bot }] : []),
+    ];
+
+    const [activeTab, setActiveTab] = useState<SettingsTab>('loja');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [errors, setErrors] = useState<FormErrors>({});
 
     const validate = (): FormErrors => {
         const e: FormErrors = {};
-        if (!formData.storeName.trim())
-            e.storeName = 'Nome da loja é obrigatório';
-        const cnpjDigits = formData.cnpj.replace(/\D/g, '');
-        if (!cnpjDigits || cnpjDigits.length !== 14)
-            e.cnpj = 'CNPJ deve ter 14 dígitos';
-        const phoneDigits = formData.phone.replace(/\D/g, '');
-        if (!phoneDigits || phoneDigits.length < 10)
-            e.phone = 'Telefone inválido (mínimo 10 dígitos)';
-        if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-            e.email = 'E-mail inválido';
-        const zipDigits = formData.address.zip.replace(/\D/g, '');
-        if (!zipDigits || zipDigits.length !== 8)
-            e['address.zip'] = 'CEP deve ter 8 dígitos';
-        if (!formData.address.street.trim())
-            e['address.street'] = 'Logradouro é obrigatório';
-        if (!formData.address.number.trim())
-            e['address.number'] = 'Número é obrigatório';
-        if (!formData.address.district.trim())
-            e['address.district'] = 'Bairro é obrigatório';
-        if (!formData.address.city.trim())
-            e['address.city'] = 'Cidade é obrigatória';
-        if (!formData.address.state.trim() || formData.address.state.trim().length !== 2)
-            e['address.state'] = 'UF inválida';
+        if (!formData.storeName.trim()) e.storeName = 'Obrigatório';
+        if ((formData.cnpj.replace(/\D/g, '')).length !== 14) e.cnpj = 'CNPJ deve ter 14 dígitos';
+        if ((formData.phone.replace(/\D/g, '')).length < 10) e.phone = 'Telefone inválido';
+        if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'E-mail inválido';
+        if ((formData.address.zip.replace(/\D/g, '')).length !== 8) e['address.zip'] = 'CEP inválido';
+        if (!formData.address.street.trim()) e['address.street'] = 'Obrigatório';
+        if (!formData.address.number.trim()) e['address.number'] = 'Obrigatório';
+        if (!formData.address.district.trim()) e['address.district'] = 'Obrigatório';
+        if (!formData.address.city.trim()) e['address.city'] = 'Obrigatório';
+        if (formData.address.state.trim().length !== 2) e['address.state'] = 'UF inválida';
         return e;
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        let formattedValue = value;
-
-        if (name === 'phone') formattedValue = maskPhone(value);
-        if (name === 'cnpj') formattedValue = maskDocument(value);
-
-        setFormData(prev => ({ ...prev, [name]: formattedValue }));
+        let v = value;
+        if (name === 'phone' || name === 'whatsapp') v = maskPhone(value);
+        if (name === 'cnpj') v = maskDocument(value);
+        setFormData(prev => ({ ...prev, [name]: v }));
         setErrors(prev => ({ ...prev, [name]: undefined }));
     };
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-
+        if (!e.target.files?.length) return;
         const file = e.target.files[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `logo-${Date.now()}.${fileExt}`;
-
+        const fileName = `logo-${Date.now()}.${file.name.split('.').pop()}`;
+        setIsUploadingLogo(true);
         try {
-            setIsLoading(true);
-            const { error: uploadError } = await supabase.storage
-                .from('store-assets')
-                .upload(fileName, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data } = supabase.storage
-                .from('store-assets')
-                .getPublicUrl(fileName);
-
+            const { error } = await supabase.storage.from('store-assets').upload(fileName, file);
+            if (error) throw error;
+            const { data } = supabase.storage.from('store-assets').getPublicUrl(fileName);
             setFormData(prev => ({ ...prev, logoUrl: data.publicUrl }));
-            setMessage({ type: 'success', text: 'Logo carregada com sucesso!' });
-        } catch (error) {
-            console.error('Error uploading logo:', error);
+        } catch {
             setMessage({ type: 'error', text: 'Erro ao carregar logo.' });
         } finally {
-            setIsLoading(false);
+            setIsUploadingLogo(false);
         }
     };
 
     const handleAddressChange = async (field: string, value: string) => {
-        let formattedValue = value;
-        if (field === 'zip') formattedValue = maskCEP(value);
-
-        setFormData(prev => ({
-            ...prev,
-            address: {
-                ...prev.address,
-                [field]: formattedValue
-            }
-        }));
+        const v = field === 'zip' ? maskCEP(value) : value;
+        setFormData(prev => ({ ...prev, address: { ...prev.address, [field]: v } }));
         setErrors(prev => ({ ...prev, [`address.${field}`]: undefined }));
-
-        if (field === 'zip' && formattedValue.length === 9) {
+        if (field === 'zip' && v.length === 9) {
             setIsLoadingAddress(true);
-            const addressData = await fetchAddressByCEP(formattedValue);
+            const addr = await fetchAddressByCEP(v);
             setIsLoadingAddress(false);
-
-            if (addressData) {
+            if (addr) {
                 setFormData(prev => ({
                     ...prev,
                     address: {
                         ...prev.address,
-                        street: addressData.street,
-                        district: addressData.district,
-                        city: addressData.city,
-                        state: addressData.state,
-                        complement: addressData.complement || prev.address.complement
-                    }
+                        street: addr.street,
+                        district: addr.district,
+                        city: addr.city,
+                        state: addr.state,
+                        complement: addr.complement || prev.address.complement,
+                    },
                 }));
             }
         }
     };
 
+    const togglePaymentType = (type: string) => {
+        setFormData(prev => ({
+            ...prev,
+            acceptedPaymentTypes: prev.acceptedPaymentTypes.includes(type)
+                ? prev.acceptedPaymentTypes.filter(t => t !== type)
+                : [...prev.acceptedPaymentTypes, type],
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage(null);
-
-        const validationErrors = validate();
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            const enderecoFields: (keyof FormErrors)[] = [
-                'address.zip', 'address.street', 'address.number',
-                'address.district', 'address.city', 'address.state',
-            ];
-            const hasEnderecoError = enderecoFields.some(f => validationErrors[f]);
-            const hasEmpresaError = ['storeName', 'cnpj', 'phone', 'email'].some(
-                f => validationErrors[f as keyof FormErrors]
-            );
-            if (hasEmpresaError) setActiveTab('empresa');
+        const errs = validate();
+        if (Object.keys(errs).length > 0) {
+            setErrors(errs);
+            const hasLojaError = ['storeName', 'cnpj', 'phone', 'email'].some(f => errs[f as keyof FormErrors]);
+            const hasEnderecoError = Object.keys(errs).some(k => k.startsWith('address.'));
+            if (hasLojaError) setActiveTab('loja');
             else if (hasEnderecoError) setActiveTab('endereco');
             return;
         }
         setErrors({});
-        setIsLoading(true);
+        setIsSaving(true);
 
         const result = await saveSettings({
             storeName: formData.storeName,
@@ -293,7 +343,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 complement: formData.address.complement,
                 district: formData.address.district,
                 city: formData.address.city,
-                state: formData.address.state
+                state: formData.address.state,
             },
             socialMedia: formData.socialMedia,
             logoUrl: formData.logoUrl || undefined,
@@ -305,10 +355,24 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             crossSellCategory: formData.crossSellCategory || null,
         });
 
-        setIsLoading(false);
+        // Save AI config (admin only)
+        if (isAdmin && result.success) {
+            const sb = supabase as never as {
+                from: (t: string) => {
+                    select: (c: string) => { limit: (n: number) => { single: () => Promise<{ data: { id: string } | null }> } };
+                    update: (d: object) => { eq: (k: string, v: string) => Promise<{ error: unknown }> };
+                };
+            };
+            const { data: row } = await sb.from('store_settings').select('id').limit(1).single();
+            if (row) {
+                await sb.from('store_settings').update({ ai_config: aiConfig }).eq('id', row.id);
+            }
+        }
+
+        setIsSaving(false);
 
         if (result.success) {
-            setMessage({ type: 'success', text: 'Configurações da loja salvas com sucesso!' });
+            setMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
             setTimeout(() => setMessage(null), 3000);
             refreshSettings();
         } else {
@@ -316,625 +380,419 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         }
     };
 
-    return (
-        <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
-            {isLoadingSettings ? (
-                <div className="flex items-center justify-center py-32">
-                    <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-stone-200 border-t-stone-600 mb-4"></div>
-                        <p className="text-stone-600 font-medium">Carregando configurações...</p>
-                    </div>
+    if (isLoadingSettings) {
+        return (
+            <div className="flex items-center justify-center py-32">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-stone-200 border-t-stone-600 mb-3" />
+                    <p className="text-sm text-stone-500">Carregando configurações...</p>
                 </div>
-            ) : (
-                <>
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h1 className="text-xl font-semibold text-stone-800 flex items-center gap-2">
-                                <Store className="text-stone-600" size={24} />
-                                Configurações da Loja
-                            </h1>
-                            <p className="text-stone-500 text-sm mt-0.5">Dados da empresa e endereço de origem para frete.</p>
-                        </div>
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold text-stone-800">Configurações</h1>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                        {isAdmin ? 'Acesso completo' : 'Gerente — pagamento e IA são somente leitura'}
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {message && (
+                        <span className={cn(
+                            'flex items-center gap-1.5 text-xs font-medium',
+                            message.type === 'success' ? 'text-emerald-600' : 'text-red-600'
+                        )}>
+                            {message.type === 'success'
+                                ? <CheckCircle size={14} />
+                                : <AlertCircle size={14} />}
+                            {message.text}
+                        </span>
+                    )}
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-700 disabled:opacity-50 transition-colors"
+                    >
+                        <Save size={14} />
+                        {isSaving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-stone-200 gap-1">
+                {TABS.map(tab => {
+                    const Icon = tab.icon;
+                    const tabErrors: Record<string, (keyof FormErrors)[]> = {
+                        loja: ['storeName', 'cnpj', 'phone', 'email'],
+                        endereco: ['address.zip', 'address.street', 'address.number', 'address.district', 'address.city', 'address.state'],
+                    };
+                    const hasError = (tabErrors[tab.id] || []).some(f => errors[f]);
+                    return (
                         <button
-                            onClick={onBack}
-                            className="text-stone-500 hover:text-stone-700 font-medium text-sm"
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+                                activeTab === tab.id
+                                    ? 'border-stone-800 text-stone-900'
+                                    : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300',
+                                hasError && 'text-red-500'
+                            )}
                         >
-                            Voltar
+                            <Icon size={14} />
+                            {tab.label}
+                            {hasError && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
                         </button>
-                    </div>
+                    );
+                })}
+            </div>
 
-                    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-                        {/* Abas */}
-                        <div className="flex border-b border-stone-200 overflow-x-auto">
-                            {TABS.map((tab) => {
-                                const tabHasError =
-                                    (tab.id === 'empresa' && ['storeName', 'cnpj', 'phone', 'email'].some(f => errors[f as keyof FormErrors])) ||
-                                    (tab.id === 'endereco' && ['address.zip', 'address.street', 'address.number', 'address.district', 'address.city', 'address.state'].some(f => errors[f as keyof FormErrors]));
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        type="button"
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            'flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
-                                            activeTab === tab.id
-                                                ? 'border-stone-700 text-stone-900 bg-stone-50'
-                                                : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50'
-                                        )}
-                                    >
-                                        {tab.icon}
-                                        {tab.label}
-                                        {tabHasError && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" aria-hidden="true" />
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-8 space-y-8">
-
-                            {message && (
-                                <div className={cn(
-                                    'p-4 rounded-xl text-sm flex items-center',
-                                    message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                                )}>
-                                    {message.text}
+            {/* ── Tab: Loja ── */}
+            {activeTab === 'loja' && (
+                <div className="space-y-4">
+                    <SectionCard title="Identidade" description="Logo e dados públicos da loja.">
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Logo */}
+                            <div className="col-span-full">
+                                <label className="block text-xs font-medium text-stone-600 mb-2">Logotipo</label>
+                                <div className="flex items-center gap-4">
+                                    {formData.logoUrl ? (
+                                        <img src={formData.logoUrl} alt="Logo" className="h-14 w-14 object-contain rounded-lg border border-stone-200 bg-stone-50" />
+                                    ) : (
+                                        <div className="h-14 w-14 rounded-lg border border-dashed border-stone-300 bg-stone-50 flex items-center justify-center">
+                                            <Store size={20} className="text-stone-300" />
+                                        </div>
+                                    )}
+                                    <label className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-stone-700 border border-stone-200 rounded-lg cursor-pointer hover:bg-stone-50 transition-colors">
+                                        <Upload size={13} />
+                                        {isUploadingLogo ? 'Enviando...' : 'Alterar logo'}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+                                    </label>
                                 </div>
-                            )}
-
-                            {/* Aba: Empresa */}
-                            {activeTab === 'empresa' && (
-                            <>
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2">Informações da Empresa</h3>
-
-                                <div className="flex flex-col items-center sm:flex-row gap-6 mb-6">
-                                    <div className="relative group">
-                                        <div className="w-32 h-32 rounded-full border-4 border-stone-100 overflow-hidden flex items-center justify-center bg-stone-50">
-                                            {formData.logoUrl ? (
-                                                <img src={formData.logoUrl} alt="Logo da Loja" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Store size={48} className="text-stone-300" />
-                                            )}
-                                        </div>
-                                        <label className="absolute bottom-0 right-0 bg-stone-800 text-white p-2 rounded-full cursor-pointer hover:bg-stone-700 transition-colors">
-                                            <Upload size={16} />
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleLogoUpload}
-                                            />
-                                        </label>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-stone-900">Logo da Loja</h4>
-                                        <p className="text-sm text-stone-500 mb-2">Recomendado: 500x500px, PNG ou JPG.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Nome da Loja <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <Store className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="storeName"
-                                                value={formData.storeName}
-                                                onChange={handleChange}
-                                                aria-invalid={!!errors.storeName}
-                                                className={cn(
-                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                    errors.storeName
-                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                                )}
-                                            />
-                                        </div>
-                                        {errors.storeName && <p className="text-xs text-red-500">{errors.storeName}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Razão Social</label>
-                                        <div className="relative">
-                                            <FileText className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="razaoSocial"
-                                                value={formData.razaoSocial}
-                                                onChange={handleChange}
-                                                placeholder="Ex: Aquimaq Comércio de Máquinas Ltda."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-stone-400">Exibida no rodapé (exigência CDC).</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            CNPJ <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <FileText className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="cnpj"
-                                                value={formData.cnpj}
-                                                onChange={handleChange}
-                                                maxLength={18}
-                                                aria-invalid={!!errors.cnpj}
-                                                className={cn(
-                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                    errors.cnpj
-                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                                )}
-                                            />
-                                        </div>
-                                        {errors.cnpj && <p className="text-xs text-red-500">{errors.cnpj}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Telefone de Contato <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="phone"
-                                                value={formData.phone}
-                                                onChange={handleChange}
-                                                maxLength={15}
-                                                aria-invalid={!!errors.phone}
-                                                className={cn(
-                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                    errors.phone
-                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                                )}
-                                            />
-                                        </div>
-                                        {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Número WhatsApp</label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="whatsapp"
-                                                value={formData.whatsapp}
-                                                onChange={(e) => {
-                                                    const v = maskPhone(e.target.value);
-                                                    setFormData((prev) => ({ ...prev, whatsapp: v }));
-                                                }}
-                                                maxLength={15}
-                                                placeholder="Se diferente do telefone acima"
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-stone-400">Usado no link &quot;Central de Vendas&quot; do header. Deixe vazio para usar o telefone de contato.</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            E-mail <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                                aria-invalid={!!errors.email}
-                                                className={cn(
-                                                    'w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                    errors.email
-                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                                )}
-                                            />
-                                        </div>
-                                        {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Horário de Atendimento</label>
-                                        <div className="relative">
-                                            <Clock className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                name="openingHours"
-                                                value={formData.openingHours}
-                                                onChange={handleChange}
-                                                placeholder="Ex: Seg a Sex, 8h às 18h | Sáb, 8h às 12h"
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-stone-400">Exibido no rodapé na seção de atendimento.</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-2 mt-6">
-                                    <label className="text-sm font-semibold text-stone-700">Descrição da loja</label>
-                                    <textarea
-                                        name="description"
-                                        value={formData.description}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                                        rows={4}
-                                        placeholder="Ex: Somos uma loja especializada em ferramentas e insumos para o agronegócio..."
-                                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none text-sm"
-                                    />
-                                    <p className="text-xs text-stone-400">Exibido na página <strong>Sobre</strong> (seção &quot;Nossa História&quot;) e na meta description dessa página. Se deixar vazio, a página Sobre usa o texto padrão.</p>
-                                </div>
-                            </section>
-
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2">Redes Sociais</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Instagram</label>
-                                        <div className="relative">
-                                            <Instagram className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                value={formData.socialMedia.instagram}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, instagram: e.target.value } }))}
-                                                placeholder="https://instagram.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Facebook</label>
-                                        <div className="relative">
-                                            <Facebook className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                value={formData.socialMedia.facebook}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, facebook: e.target.value } }))}
-                                                placeholder="https://facebook.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">YouTube</label>
-                                        <div className="relative">
-                                            <Youtube className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                            <input
-                                                type="text"
-                                                value={formData.socialMedia.youtube}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, youtube: e.target.value } }))}
-                                                placeholder="https://youtube.com/..."
-                                                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                            </>
-                            )}
-
-                            {/* Aba: Endereço */}
-                            {activeTab === 'endereco' && (
-                            <section className="space-y-6">
-                                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                                    <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-                                        <MapPin className="text-stone-600" size={20} />
-                                        Endereço de Origem (Estoque)
-                                    </h3>
-                                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Usado para cálculo de frete</span>
-                                </div>
-
-                                <div className="grid grid-cols-12 gap-x-4 gap-y-6">
-                                    {/* CEP */}
-                                    <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            CEP <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={formData.address.zip}
-                                                onChange={(e) => handleAddressChange('zip', e.target.value)}
-                                                maxLength={9}
-                                                aria-invalid={!!errors['address.zip']}
-                                                className={cn(
-                                                    'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                    errors['address.zip']
-                                                        ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                        : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                                )}
-                                            />
-                                            {isLoadingAddress && (
-                                                <div className="absolute right-3 top-2.5">
-                                                    <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin"></div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {errors['address.zip'] && <p className="text-xs text-red-500">{errors['address.zip']}</p>}
-                                    </div>
-
-                                    {/* Rua */}
-                                    <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Logradouro <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.address.street}
-                                            onChange={(e) => handleAddressChange('street', e.target.value)}
-                                            aria-invalid={!!errors['address.street']}
-                                            className={cn(
-                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                errors['address.street']
-                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                            )}
-                                        />
-                                        {errors['address.street'] && <p className="text-xs text-red-500">{errors['address.street']}</p>}
-                                    </div>
-
-                                    {/* Número */}
-                                    <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Número <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.address.number}
-                                            onChange={(e) => handleAddressChange('number', e.target.value)}
-                                            aria-invalid={!!errors['address.number']}
-                                            className={cn(
-                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                errors['address.number']
-                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                            )}
-                                        />
-                                        {errors['address.number'] && <p className="text-xs text-red-500">{errors['address.number']}</p>}
-                                    </div>
-
-                                    {/* Complemento */}
-                                    <div className="col-span-12 md:col-span-5 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Complemento</label>
-                                        <input
-                                            type="text"
-                                            value={formData.address.complement}
-                                            onChange={(e) => handleAddressChange('complement', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                        />
-                                    </div>
-
-                                    {/* Bairro */}
-                                    <div className="col-span-12 md:col-span-4 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Bairro <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.address.district}
-                                            onChange={(e) => handleAddressChange('district', e.target.value)}
-                                            aria-invalid={!!errors['address.district']}
-                                            className={cn(
-                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                errors['address.district']
-                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                            )}
-                                        />
-                                        {errors['address.district'] && <p className="text-xs text-red-500">{errors['address.district']}</p>}
-                                    </div>
-
-                                    {/* Cidade */}
-                                    <div className="col-span-12 md:col-span-9 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            Cidade <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.address.city}
-                                            onChange={(e) => handleAddressChange('city', e.target.value)}
-                                            aria-invalid={!!errors['address.city']}
-                                            className={cn(
-                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                errors['address.city']
-                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                            )}
-                                        />
-                                        {errors['address.city'] && <p className="text-xs text-red-500">{errors['address.city']}</p>}
-                                    </div>
-
-                                    {/* UF */}
-                                    <div className="col-span-12 md:col-span-3 space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">
-                                            UF <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            maxLength={2}
-                                            value={formData.address.state}
-                                            onChange={(e) => handleAddressChange('state', e.target.value.toUpperCase())}
-                                            aria-invalid={!!errors['address.state']}
-                                            className={cn(
-                                                'w-full px-4 py-2.5 rounded-xl outline-none transition-colors',
-                                                errors['address.state']
-                                                    ? 'bg-red-50 border border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                                                    : 'bg-stone-50 border border-stone-200 focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400'
-                                            )}
-                                        />
-                                        {errors['address.state'] && <p className="text-xs text-red-500">{errors['address.state']}</p>}
-                                    </div>
-                                </div>
-                            </section>
-                            )}
-
-                            {/* Aba: Pagamento */}
-                            {activeTab === 'pagamento' && (
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
-                                    <CreditCard className="text-stone-600" size={20} />
-                                    Configurações de Pagamento
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Max installments */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Máximo de Parcelas</label>
-                                        <select
-                                            value={formData.maxInstallments}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, maxInstallments: Number(e.target.value) }))}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                        >
-                                            {[1, 2, 3, 4, 6, 9, 12].map(n => (
-                                                <option key={n} value={n}>{n === 1 ? 'Somente à vista' : `Até ${n}x`}</option>
-                                            ))}
-                                        </select>
-                                        <p className="text-xs text-stone-400">Número máximo de parcelas exibidas no Mercado Pago.</p>
-                                    </div>
-
-                                    {/* Accepted payment types */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700">Formas de Pagamento Aceitas</label>
-                                        <div className="space-y-2 pt-1">
-                                            {ALL_PAYMENT_TYPES.map(type => (
-                                                <label key={type} className="flex items-center gap-2 cursor-pointer select-none">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={formData.acceptedPaymentTypes.includes(type)}
-                                                        onChange={(e) => {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                acceptedPaymentTypes: e.target.checked
-                                                                    ? [...prev.acceptedPaymentTypes, type]
-                                                                    : prev.acceptedPaymentTypes.filter(t => t !== type),
-                                                            }));
-                                                        }}
-                                                        className="w-4 h-4 rounded border-stone-300 text-stone-700 focus:ring-stone-500"
-                                                    />
-                                                    <span className="text-sm text-stone-700">{PAYMENT_TYPE_LABELS[type]}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                            )}
-
-                            {/* Aba: Marketing */}
-                            {activeTab === 'vendas' && (
-                            <>
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
-                                    <TrendingUp className="text-stone-600" size={20} />
-                                    Conversão e Vendas
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Free shipping threshold */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700 flex items-center gap-2">
-                                            <Truck size={15} className="text-stone-500" />
-                                            Frete Grátis a partir de (R$)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={formData.freeShippingThreshold}
-                                            onChange={(e) => {
-                                                const v = e.target.value.replace(/\D/g, '');
-                                                setFormData(prev => ({ ...prev, freeShippingThreshold: v === '' ? 0 : Number(v) }));
-                                            }}
-                                            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                        />
-                                        <p className="text-xs text-stone-400">Exibido como barra de progresso no carrinho. Coloque 0 para desativar.</p>
-                                    </div>
-
-                                    {/* Cross-sell enabled */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-stone-700 flex items-center gap-2">
-                                            <TrendingUp size={15} className="text-stone-500" />
-                                            Cross-sell após pagamento
-                                        </label>
-                                        <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.crossSellEnabled}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, crossSellEnabled: e.target.checked }))}
-                                                className="w-4 h-4 rounded border-stone-300 text-stone-700 focus:ring-stone-500"
-                                            />
-                                            <span className="text-sm text-stone-700">Mostrar "Outros clientes também compraram" na página de sucesso</span>
-                                        </label>
-                                        <div className="space-y-1 pt-1">
-                                            <label className="text-xs font-semibold text-stone-600">Categoria (deixe vazio = mais vendidos)</label>
-                                            <select
-                                                value={formData.crossSellCategory}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, crossSellCategory: e.target.value }))}
-                                                disabled={!formData.crossSellEnabled}
-                                                className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none disabled:opacity-50"
-                                            >
-                                                <option value="">Mais vendidos (padrão)</option>
-                                                <option value="Ferramentas Manuais">Ferramentas Manuais</option>
-                                                <option value="Peças de Reposição">Peças de Reposição</option>
-                                                <option value="Acessórios">Acessórios</option>
-                                                <option value="Sementes Fracionadas">Sementes Fracionadas</option>
-                                                <option value="Insumos Agrícolas">Insumos Agrícolas</option>
-                                                <option value="Máquinas e Equipamentos">Máquinas e Equipamentos</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-6">
-                                <h3 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-2 flex items-center gap-2">
-                                    <Star className="text-stone-600" size={20} />
-                                    Rodapé &amp; Confiança
-                                </h3>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-stone-700">URL do Reclame Aqui</label>
-                                    <div className="relative">
-                                        <Star className="absolute left-3.5 top-3 text-stone-400" size={18} />
-                                        <input
-                                            type="url"
-                                            name="reclameAquiUrl"
-                                            value={formData.reclameAquiUrl}
-                                            onChange={handleChange}
-                                            placeholder="https://www.reclameaqui.com.br/empresa/aquimaq/"
-                                            className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-stone-300 focus:border-stone-400 outline-none"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-stone-400">Se preenchido, exibe o badge do Reclame Aqui no rodapé. Deixe em branco para ocultar.</p>
-                                </div>
-                            </section>
-                            </>
-                            )}
-
-                            {Object.keys(errors).length > 0 && (
-                                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                                    Corrija os campos obrigatórios antes de salvar.
-                                </p>
-                            )}
-
-                            <div className="pt-6 border-t border-stone-100 flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="px-6 py-2.5 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700 transition-colors flex items-center gap-2"
-                                >
-                                    {isLoading ? 'Salvando...' : <><Save size={20} className="mr-2" /> Salvar Configurações</>}
-                                </button>
                             </div>
 
-                        </form>
-                    </div>
-                </>
+                            <Field label="Nome da loja" required error={errors.storeName} span="full">
+                                <input name="storeName" value={formData.storeName} onChange={handleChange}
+                                    className={inputCls(errors.storeName)} placeholder="Ex: AquiMaq" />
+                            </Field>
+
+                            <Field label="Razão social" span="full">
+                                <input name="razaoSocial" value={formData.razaoSocial} onChange={handleChange}
+                                    className={inputCls()} placeholder="Razão social da empresa" />
+                            </Field>
+
+                            <Field label="Descrição" hint="Exibida em mecanismos de busca." span="full">
+                                <textarea name="description" value={formData.description}
+                                    onChange={handleChange} rows={3}
+                                    className={cn(inputCls(), 'resize-none')}
+                                    placeholder="Breve descrição da loja..." />
+                            </Field>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Contato" description="Informações de contacto visíveis aos clientes.">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="CNPJ" required error={errors.cnpj}>
+                                <div className="relative">
+                                    <input name="cnpj" value={formData.cnpj} onChange={handleChange}
+                                        className={inputCls(errors.cnpj)} placeholder="00.000.000/0000-00" maxLength={18} />
+                                </div>
+                            </Field>
+                            <Field label="Telefone" required error={errors.phone}>
+                                <div className="relative">
+                                    <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                    <input name="phone" value={formData.phone} onChange={handleChange}
+                                        className={cn(inputCls(errors.phone), 'pl-8')} placeholder="(00) 00000-0000" />
+                                </div>
+                            </Field>
+                            <Field label="WhatsApp" hint="Deixe em branco para usar o mesmo que o telefone.">
+                                <div className="relative">
+                                    <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                    <input name="whatsapp" value={formData.whatsapp} onChange={handleChange}
+                                        className={cn(inputCls(), 'pl-8')} placeholder="(00) 00000-0000" />
+                                </div>
+                            </Field>
+                            <Field label="E-mail" required error={errors.email}>
+                                <div className="relative">
+                                    <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                    <input name="email" value={formData.email} onChange={handleChange}
+                                        className={cn(inputCls(errors.email), 'pl-8')} placeholder="contato@loja.com.br" />
+                                </div>
+                            </Field>
+                            <Field label="Horário de atendimento" span="full">
+                                <div className="relative">
+                                    <Clock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                    <input name="openingHours" value={formData.openingHours} onChange={handleChange}
+                                        className={cn(inputCls(), 'pl-8')} placeholder="Seg–Sex das 8h às 18h" />
+                                </div>
+                            </Field>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Redes Sociais" description="Links para o perfil da loja nas redes sociais.">
+                        <div className="space-y-3">
+                            <div className="relative">
+                                <Instagram size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                <input value={formData.socialMedia.instagram}
+                                    onChange={e => setFormData(p => ({ ...p, socialMedia: { ...p.socialMedia, instagram: e.target.value } }))}
+                                    className={cn(inputCls(), 'pl-8')} placeholder="https://instagram.com/suaLoja" />
+                            </div>
+                            <div className="relative">
+                                <Facebook size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                <input value={formData.socialMedia.facebook}
+                                    onChange={e => setFormData(p => ({ ...p, socialMedia: { ...p.socialMedia, facebook: e.target.value } }))}
+                                    className={cn(inputCls(), 'pl-8')} placeholder="https://facebook.com/suaLoja" />
+                            </div>
+                            <div className="relative">
+                                <Youtube size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                <input value={formData.socialMedia.youtube}
+                                    onChange={e => setFormData(p => ({ ...p, socialMedia: { ...p.socialMedia, youtube: e.target.value } }))}
+                                    className={cn(inputCls(), 'pl-8')} placeholder="https://youtube.com/@suaLoja" />
+                            </div>
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Reputação" description="Integração com plataformas de avaliação.">
+                        <Field label="URL do badge ReclameAqui" hint="Cole o link do seu perfil no ReclameAqui para exibir o badge na loja.">
+                            <div className="relative">
+                                <Star size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                <input name="reclameAquiUrl" value={formData.reclameAquiUrl} onChange={handleChange}
+                                    className={cn(inputCls(), 'pl-8')} placeholder="https://www.reclameaqui.com.br/empresa/..." />
+                            </div>
+                        </Field>
+                    </SectionCard>
+                </div>
             )}
-        </div>
+
+            {/* ── Tab: Endereço ── */}
+            {activeTab === 'endereco' && (
+                <div className="space-y-4">
+                    <SectionCard
+                        title="Endereço de Origem"
+                        description="Usado para cálculo de frete. Deve ser o endereço de onde os pedidos são despachados."
+                    >
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="CEP" required error={errors['address.zip']}>
+                                <input value={formData.address.zip}
+                                    onChange={e => handleAddressChange('zip', e.target.value)}
+                                    className={inputCls(errors['address.zip'])}
+                                    placeholder="00000-000" maxLength={9} />
+                                {isLoadingAddress && <p className="mt-1 text-xs text-stone-400">Buscando endereço...</p>}
+                            </Field>
+
+                            <Field label="Logradouro" required error={errors['address.street']} span="full">
+                                <input value={formData.address.street}
+                                    onChange={e => handleAddressChange('street', e.target.value)}
+                                    className={inputCls(errors['address.street'])} placeholder="Rua, Avenida..." />
+                            </Field>
+
+                            <Field label="Número" required error={errors['address.number']}>
+                                <input value={formData.address.number}
+                                    onChange={e => handleAddressChange('number', e.target.value)}
+                                    className={inputCls(errors['address.number'])} placeholder="123" />
+                            </Field>
+
+                            <Field label="Complemento">
+                                <input value={formData.address.complement}
+                                    onChange={e => handleAddressChange('complement', e.target.value)}
+                                    className={inputCls()} placeholder="Sala, Bloco..." />
+                            </Field>
+
+                            <Field label="Bairro" required error={errors['address.district']}>
+                                <input value={formData.address.district}
+                                    onChange={e => handleAddressChange('district', e.target.value)}
+                                    className={inputCls(errors['address.district'])} placeholder="Bairro" />
+                            </Field>
+
+                            <Field label="Cidade" required error={errors['address.city']}>
+                                <input value={formData.address.city}
+                                    onChange={e => handleAddressChange('city', e.target.value)}
+                                    className={inputCls(errors['address.city'])} placeholder="Cidade" />
+                            </Field>
+
+                            <Field label="UF" required error={errors['address.state']}>
+                                <input value={formData.address.state}
+                                    onChange={e => handleAddressChange('state', e.target.value.toUpperCase())}
+                                    className={inputCls(errors['address.state'])} placeholder="SP" maxLength={2} />
+                            </Field>
+                        </div>
+                    </SectionCard>
+                </div>
+            )}
+
+            {/* ── Tab: Pagamento ── */}
+            {activeTab === 'pagamento' && (
+                <div className="space-y-4">
+                    {!isAdmin && (
+                        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                            <Lock size={14} />
+                            Configurações de pagamento são gerenciadas pelo administrador.
+                        </div>
+                    )}
+
+                    <SectionCard title="Métodos aceitos" description="Formas de pagamento disponíveis no checkout." locked={!isAdmin}>
+                        <div className="space-y-2">
+                            {ALL_PAYMENT_TYPES.map(type => (
+                                <label key={type} className={cn('flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer',
+                                    formData.acceptedPaymentTypes.includes(type)
+                                        ? 'border-stone-300 bg-stone-50'
+                                        : 'border-stone-200 hover:bg-stone-50',
+                                    !isAdmin && 'cursor-not-allowed opacity-60'
+                                )}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.acceptedPaymentTypes.includes(type)}
+                                        onChange={() => isAdmin && togglePaymentType(type)}
+                                        disabled={!isAdmin}
+                                        className="accent-stone-700"
+                                    />
+                                    <span className="text-sm font-medium text-stone-700">{PAYMENT_TYPE_LABELS[type]}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Parcelamento" description="Máximo de parcelas disponíveis no cartão de crédito." locked={!isAdmin}>
+                        <Field label="Máximo de parcelas">
+                            <select
+                                value={formData.maxInstallments}
+                                onChange={e => isAdmin && setFormData(p => ({ ...p, maxInstallments: Number(e.target.value) }))}
+                                disabled={!isAdmin}
+                                className={cn(inputCls(undefined, !isAdmin), 'max-w-xs')}
+                            >
+                                {[1, 2, 3, 4, 6, 9, 12].map(n => (
+                                    <option key={n} value={n}>{n === 1 ? 'À vista' : `Até ${n}x`}</option>
+                                ))}
+                            </select>
+                        </Field>
+                    </SectionCard>
+                </div>
+            )}
+
+            {/* ── Tab: Frete ── */}
+            {activeTab === 'frete' && (
+                <div className="space-y-4">
+                    <SectionCard title="Frete Grátis" description="Defina o valor mínimo de pedido para frete grátis.">
+                        <Field label="Valor mínimo para frete grátis" hint="Pedidos acima deste valor qualificam para frete grátis.">
+                            <div className="flex items-center gap-2 max-w-xs">
+                                <span className="text-sm text-stone-500 font-medium">R$</span>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={10}
+                                    value={formData.freeShippingThreshold}
+                                    onChange={e => setFormData(p => ({ ...p, freeShippingThreshold: Number(e.target.value) }))}
+                                    className={inputCls()}
+                                />
+                            </div>
+                        </Field>
+                    </SectionCard>
+
+                    <SectionCard title="Produtos Relacionados" description="Exiba sugestões de produtos complementares nas páginas de produto.">
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <div
+                                    onClick={() => setFormData(p => ({ ...p, crossSellEnabled: !p.crossSellEnabled }))}
+                                    className={cn(
+                                        'relative w-10 h-6 rounded-full transition-colors cursor-pointer',
+                                        formData.crossSellEnabled ? 'bg-stone-800' : 'bg-stone-200'
+                                    )}
+                                >
+                                    <div className={cn(
+                                        'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
+                                        formData.crossSellEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                                    )} />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-stone-700">Ativar cross-sell</span>
+                                    <p className="text-xs text-stone-500">Mostra produtos relacionados na página do produto</p>
+                                </div>
+                            </label>
+
+                            {formData.crossSellEnabled && (
+                                <Field label="Categoria de sugestão">
+                                    <select
+                                        value={formData.crossSellCategory}
+                                        onChange={e => setFormData(p => ({ ...p, crossSellCategory: e.target.value }))}
+                                        className={cn(inputCls(), 'max-w-xs')}
+                                    >
+                                        <option value="">Selecionar categoria...</option>
+                                        {CROSS_SELL_CATEGORIES.map(c => (
+                                            <option key={c.value} value={c.value}>{c.label}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            )}
+                        </div>
+                    </SectionCard>
+                </div>
+            )}
+
+            {/* ── Tab: IA (admin only) ── */}
+            {activeTab === 'ia' && isAdmin && (
+                <div className="space-y-4">
+                    <SectionCard title="Modelo de linguagem" description="Modelo da OpenAI utilizado pelo assistente virtual no chat.">
+                        <div className="space-y-2">
+                            {AI_MODELS.map(m => (
+                                <label key={m.value} className={cn(
+                                    'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
+                                    aiConfig.model === m.value ? 'border-stone-300 bg-stone-50' : 'border-stone-200 hover:bg-stone-50'
+                                )}>
+                                    <input
+                                        type="radio"
+                                        name="ai_model"
+                                        value={m.value}
+                                        checked={aiConfig.model === m.value}
+                                        onChange={() => setAiConfig(p => ({ ...p, model: m.value }))}
+                                        className="accent-stone-700 mt-0.5"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-medium text-stone-700">{m.label}</span>
+                                        <p className="text-xs text-stone-500">{m.description}</p>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+                    </SectionCard>
+
+                    <SectionCard title="Comportamento do assistente" description="Define como o assistente virtual se apresenta e responde aos clientes.">
+                        <Field label="Prompt do sistema">
+                            <textarea
+                                value={aiConfig.system_prompt}
+                                onChange={e => setAiConfig(p => ({ ...p, system_prompt: e.target.value }))}
+                                rows={6}
+                                className={cn(inputCls(), 'resize-none')}
+                                placeholder="Descreva como o assistente deve se comportar..."
+                            />
+                        </Field>
+                        <button
+                            type="button"
+                            onClick={() => setAiConfig(p => ({ ...p, system_prompt: DEFAULT_SYSTEM_PROMPT }))}
+                            className="mt-2 text-xs text-stone-400 hover:text-stone-600 underline"
+                        >
+                            Restaurar padrão
+                        </button>
+                    </SectionCard>
+
+                    <SectionCard title="Chave de API" description="A chave da OpenAI é gerenciada nas variáveis de ambiente do servidor.">
+                        <div className="flex items-center gap-2 text-xs text-stone-500 py-1">
+                            <ShoppingBag size={13} />
+                            Configure a variável <code className="font-mono bg-stone-100 px-1.5 py-0.5 rounded">OPENAI_API_KEY</code> nas Edge Functions do Supabase.
+                        </div>
+                    </SectionCard>
+                </div>
+            )}
+
+        </form>
     );
 };
 
 export default StoreSettings;
-
