@@ -153,7 +153,85 @@ Assim, a tabela existe, as funções estão publicadas com os secrets corretos, 
 
 ---
 
-## 7. Agent Bot no Chatwoot (para conversas não irem para agente humano)
+## 7. Workflow n8n #3 — Agente IA (Chat Bot V2)
+
+**Workflow:** `Aquimaq Chat Bot V2 (AI Agent)` — ID `QKfXG7uuynvQCbcH`
+**Status:** Ativo
+**Webhook URL:** `https://n8n.aquimaq.com.br/webhook/aquimaq-chat-v2?secret=<WEBHOOK_SECRET>`
+
+### O que faz
+
+Recebe mensagens do Chatwoot (WhatsApp + widget do site), responde com IA usando o catálogo de produtos em tempo real e transfere para atendente humano quando necessário.
+
+### Fluxo completo
+
+```
+Webhook Chatwoot
+  → Verificar Token        (valida ?secret= com $env.WEBHOOK_SECRET)
+  → Filtra Mensagem        (só mensagens incoming de clientes; descarta bot/agente)
+  → Buscar Config IA       (GET store_settings → ai_config: model, system_prompt, max_catalog_products)
+  → Buscar Histórico       (GET Chatwoot API → últimas mensagens da conversa)
+  → Montar Contexto        (Code: monta userMsg, systemPrompt com histórico e limite de catálogo)
+  → AI Agent               (Tools Agent typeVersion 1.7 — OpenAI Functions)
+      ├─ OpenAI Chat Model (credencial n8n)
+      ├─ Window Buffer Memory (sessionKey = conversationId)
+      └─ buscar_produtos   (GET Supabase products — anon key na URL)
+  → Processar Resposta     (Code: extrai output, detecta TRANSFERIR_HUMANO)
+  → Precisa de Humano?     (IF)
+      ├─ true  → Avisar Transferência → Transferir p/ Pendente
+      └─ false → Responder Cliente
+```
+
+### Configuração crítica do AI Agent
+
+| Campo | Valor |
+|---|---|
+| `typeVersion` | `1.7` — NÃO alterar para 3.x (quebra sub-nós) |
+| `promptType` | `define` |
+| `text` | `={{ $('Montar Contexto').first().json.userMsg }}` |
+| `options.systemMessage` | texto estático (system prompt completo) |
+| `options.maxIterations` | `10` |
+
+> **Importante:** O campo `options.systemMessage` aceita apenas texto estático em `typeVersion: 1.7`. Expressões `={{ }}` não são avaliadas nesse campo nessa versão. Quando o admin alterar o system prompt em **Admin → Config. IA**, é necessário rodar o script `/tmp/fix_static_system.py` no VPS para sincronizar com o n8n. O Supabase (`store_settings.ai_config.system_prompt`) continua sendo a fonte de verdade — serve tanto para o V1 (workflow legado com Code nodes) quanto para documentação; o V2 usa o valor copiado estaticamente no nó.
+
+### Ferramenta `buscar_produtos`
+
+- Tipo: `@n8n/n8n-nodes-langchain.toolHttpRequest`
+- URL: `https://bzicdqrbqykypzesxayw.supabase.co/rest/v1/products?apikey=<ANON_KEY>&is_active=eq.true&select=name,price,stock,category,brand&order=stock.desc,name.asc&limit=30`
+- Autenticação: **anon key embutida na URL** (não usa headers — expressões não funcionam em headers do `toolHttpRequest`)
+- Sem headers adicionais
+
+### Deduplicação
+
+Tabela `n8n_webhook_logs` com coluna `message_id TEXT UNIQUE`:
+- Antes de processar: `GET ?message_id=eq.{id}` — se existe, para
+- Após processar: `POST` inserindo `message_id`, `event_type=chat_message`, `status=processed`
+
+### Env vars necessárias no n8n (Settings → Environment Variables)
+
+| Variável | Uso |
+|---|---|
+| `WEBHOOK_SECRET` | Valida chamadas do Chatwoot em "Verificar Token" |
+| `CHATWOOT_ACCESS_TOKEN` | Token do Agent Bot — usado em "Responder Cliente" e "Transferir p/ Pendente" |
+| `SUPABASE_SERVICE_KEY` | Acesso ao Supabase em "Buscar Config IA", "Buscar Histórico", "Checar Duplicata", "Registrar Mensagem" |
+| `OPENAI_API_KEY` | Credencial OpenAI (configurada nas Credentials do n8n, não como env var) |
+
+### Configurar webhook no Chatwoot
+
+1. Chatwoot → Settings → Integrations → Webhooks → Add new webhook
+2. URL: `https://n8n.aquimaq.com.br/webhook/aquimaq-chat-v2?secret=<valor_de_WEBHOOK_SECRET>`
+3. Evento: `Message Created`
+4. Salvar
+
+### Proteção contra loops
+
+- **Timeout de execução:** `EXECUTIONS_TIMEOUT=120` (env var do container Docker n8n) — mata execuções que ultrapassem 120s
+- **Deduplicação:** impede que a mesma mensagem seja processada duas vezes (webhook duplicado do Chatwoot)
+- **maxIterations: 10** — o AI Agent para após 10 tentativas de tool use
+
+---
+
+## 8. Agent Bot no Chatwoot (para conversas não irem para agente humano)
 
 O **pré-atendimento (IA) é feito no n8n** (workflow com agente de IA). No Chatwoot precisas de um Agent Bot apenas para que as conversas criadas por `whatsapp-send` **não** fiquem atribuídas a um agente humano — assim o n8n (via webhook do Chatwoot) pode tratar com o agente de IA e só escalar para humano quando for o caso.
 
