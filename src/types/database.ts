@@ -239,15 +239,20 @@ export type Database = {
       orders: {
         Row: {
           cliente_id: string | null
+          coupon_id: string | null
           created_at: string
+          discount_amount: number
           id: string
           me_order_id: string | null
           notes: string | null
           payment_details: Json | null
           payment_method: string | null
+          scheduled_delivery_date: string | null
+          scheduled_delivery_notes: string | null
           shipping_address: Json | null
           shipping_cost: number
           shipping_method: string | null
+          shipping_method_label: string | null
           shipping_status: string | null
           status: Database["public"]["Enums"]["order_status"]
           stock_decremented: boolean
@@ -261,15 +266,20 @@ export type Database = {
         }
         Insert: {
           cliente_id?: string | null
+          coupon_id?: string | null
           created_at?: string
+          discount_amount?: number
           id?: string
           me_order_id?: string | null
           notes?: string | null
           payment_details?: Json | null
           payment_method?: string | null
+          scheduled_delivery_date?: string | null
+          scheduled_delivery_notes?: string | null
           shipping_address?: Json | null
           shipping_cost?: number
           shipping_method?: string | null
+          shipping_method_label?: string | null
           shipping_status?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_decremented?: boolean
@@ -283,15 +293,20 @@ export type Database = {
         }
         Update: {
           cliente_id?: string | null
+          coupon_id?: string | null
           created_at?: string
+          discount_amount?: number
           id?: string
           me_order_id?: string | null
           notes?: string | null
           payment_details?: Json | null
           payment_method?: string | null
+          scheduled_delivery_date?: string | null
+          scheduled_delivery_notes?: string | null
           shipping_address?: Json | null
           shipping_cost?: number
           shipping_method?: string | null
+          shipping_method_label?: string | null
           shipping_status?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_decremented?: boolean
@@ -309,6 +324,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
             referencedColumns: ["id"]
           },
           {

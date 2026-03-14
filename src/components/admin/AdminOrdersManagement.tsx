@@ -460,7 +460,7 @@ const AdminOrdersManagement: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Envio</p>
-                                    <p className="text-stone-700">{selectedOrder.shippingMethod || 'N/A'}</p>
+                                    <p className="text-stone-700">{selectedOrder.shippingMethodLabel ?? selectedOrder.shippingMethod ?? 'N/A'}</p>
                                 </div>
                             </div>
 

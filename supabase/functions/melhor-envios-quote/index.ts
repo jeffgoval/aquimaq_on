@@ -50,15 +50,7 @@ Deno.serve(async (req) => {
 
     const { destination_cep, items } = payload;
 
-    // Check environment variables
     const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN");
-    const CEP_ORIGEM = Deno.env.get("CEP_ORIGEM") || "01001000"; // Fallback origin if missing
-    // We use Sandbox API for default, or Production if env specified
-    const IS_PRODUCTION = Deno.env.get("PRODUCTION_MELHOR_ENVIO") === "true";
-    const API_URL = IS_PRODUCTION
-      ? "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate"
-      : "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate";
-
     if (!MELHOR_ENVIO_TOKEN) {
       console.error("MELHOR_ENVIO_TOKEN não configurado no Supabase.");
       return new Response(JSON.stringify({ error: "Serviço de frete indisponível (Token não configurado)" }), {
@@ -66,6 +58,31 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // CEP de origem: store_settings (igual ao createMeShipment) > CEP_ORIGEM env > fallback
+    let CEP_ORIGEM = "01001000";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && serviceRoleKey) {
+      const supabase = createClient(supabaseUrl, serviceRoleKey);
+      const { data: store } = await supabase
+        .from("store_settings")
+        .select("origin_cep")
+        .limit(1)
+        .maybeSingle();
+      const originCep = (store as { origin_cep?: string } | null)?.origin_cep?.replace(/\D/g, "");
+      if (originCep && originCep.length === 8) CEP_ORIGEM = originCep;
+    }
+    if (CEP_ORIGEM === "01001000") {
+      const envCep = Deno.env.get("CEP_ORIGEM")?.replace(/\D/g, "");
+      if (envCep && envCep.length === 8) CEP_ORIGEM = envCep;
+    }
+
+    // We use Sandbox API for default, or Production if env specified
+    const IS_PRODUCTION = Deno.env.get("PRODUCTION_MELHOR_ENVIO") === "true";
+    const API_URL = IS_PRODUCTION
+      ? "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate"
+      : "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate";
 
     // Map payload items to format expected by Melhor Envio API
     // Official spec: products[].id is required

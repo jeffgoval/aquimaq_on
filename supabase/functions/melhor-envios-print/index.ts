@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const meToken = Deno.env.get("MELHOR_ENVIO_TOKEN");
 
     if (!meToken) {
-        return new Response(JSON.stringify({ error: "MELHOR_ENVIOS_TOKEN not configured" }), {
+        return new Response(JSON.stringify({ error: "MELHOR_ENVIO_TOKEN not configured" }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

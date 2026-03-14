@@ -144,6 +144,7 @@ export interface OrderAdminRow {
   subtotal: number;
   shippingCost: number;
   shippingMethod: string | null;
+  shippingMethodLabel: string | null;
   total: number;
   status: string;
   createdAt: string;
@@ -201,6 +202,7 @@ export const getOrdersAdmin = async (vendedorId?: string): Promise<OrderAdminRow
       subtotal: order.subtotal,
       shippingCost: order.shipping_cost,
       shippingMethod: order.shipping_method ?? null,
+      shippingMethodLabel: order.shipping_method_label ?? null,
       total: order.total,
       status: order.status,
       createdAt: order.created_at,

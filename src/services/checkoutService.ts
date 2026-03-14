@@ -58,11 +58,15 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
   const last_name = nameParts.slice(1).join(' ') || '';
 
   const isPickup = selectedShipping.id === 'pickup_store';
+  // Enviar ID do serviço (me_1, me_2, pickup_store) para createMeShipment no webhook MP
+  const shippingMethodValue = isPickup ? 'pickup_store' : selectedShipping.id;
+  const shippingMethodLabel = isPickup ? 'Retirada no Balcão' : `${selectedShipping.carrier} - ${selectedShipping.service}`;
 
   const payload = {
     order: {
       shipping_cost: shippingCost,
-      shipping_method: `${selectedShipping.carrier} - ${selectedShipping.service}`,
+      shipping_method: shippingMethodValue,
+      shipping_method_label: shippingMethodLabel,
       coupon_code: couponCode ?? null,
       shipping_address: isPickup ? null : {
         street: profile.street ?? null,

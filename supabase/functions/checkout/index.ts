@@ -12,6 +12,7 @@ function getAllowedOrigin(req: Request): string {
 interface OrderPayload {
     shipping_cost: number;
     shipping_method?: string | null;
+    shipping_method_label?: string | null;
     coupon_code?: string | null;
     scheduled_delivery_date?: string | null;
     scheduled_delivery_notes?: string | null;
@@ -270,6 +271,7 @@ Deno.serve(async (req) => {
             total: serverTotal,
             coupon_id: couponRow ? (couponRow.id as string) : null,
             shipping_method: payload.order.shipping_method ?? null,
+            shipping_method_label: payload.order.shipping_method_label ?? null,
             shipping_address: payload.order.shipping_address ?? null,
             scheduled_delivery_date: payload.order.scheduled_delivery_date ?? null,
             scheduled_delivery_notes: payload.order.scheduled_delivery_notes ?? null,
