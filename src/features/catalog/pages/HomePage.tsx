@@ -11,8 +11,8 @@ import { parseCategoryFromUrl } from '../utils/urlSearch';
 import { useProducts } from '../hooks/useCatalogProducts';
 import { useCatalogFilters } from '../hooks/useCatalogFilters';
 import { useCropCalendar } from '../hooks/useCropCalendar';
-import ProductCard from '@/components/ProductCard';
-import { ChevronLeft, ChevronRight, PawPrint } from 'lucide-react';
+import { PetSection } from '../components/PetSection';
+import { CatalogPagination } from '@/components/catalog/CatalogPagination';
 
 const PAGE_SIZE = 12;
 
@@ -139,75 +139,22 @@ const HomePage: React.FC = () => {
                 />
             </ErrorBoundary>
 
-            {/* Seção Linha Pet */}
-            {(isPetLoading || petProducts.length > 0) && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 animate-fade-in">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-6">
-                        <PawPrint size={26} className="text-agro-700" />
-                        Cuidado com seus Pets
-                    </h2>
-                    {isPetLoading ? (
-                        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:pb-0 hide-scrollbar">
-                            {[1, 2, 3, 4].map((n) => (
-                                <div key={n} className="w-[75vw] sm:w-auto flex-shrink-0 snap-start bg-gray-100 rounded-xl h-64 animate-pulse" />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:pb-0 hide-scrollbar">
-                            {petProducts.map((product) => (
-                                <div key={product.id} className="w-[75vw] sm:w-auto flex-shrink-0 snap-start flex">
-                                    <div className="w-full">
-                                        <ProductCard
-                                            product={product}
-                                            onViewDetails={(p) => navigate(ROUTES.PRODUCT(p.id))}
-                                            onAddToCart={addToCart}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+            <PetSection
+                products={petProducts}
+                isLoading={isPetLoading}
+                onProductClick={(p) => navigate(ROUTES.PRODUCT(p.id))}
+                onAddToCart={addToCart}
+            />
 
             {!isLoading && products.length > 0 && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-2">
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-100 pt-6">
-                        <span className="text-sm text-gray-400 order-2 sm:order-1">
-                            Mostrando{' '}
-                            <span className="font-semibold text-gray-600">
-                                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}
-                            </span>
-                            {' '}de{' '}
-                            <span className="font-semibold text-gray-600">{totalCount}</span>
-                            {' '}produtos
-                        </span>
-
-                        <div className="flex items-center gap-2 order-1 sm:order-2">
-                            <button
-                                onClick={handlePrevPage}
-                                disabled={page === 1}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-                            >
-                                <ChevronLeft size={15} />
-                                Anterior
-                            </button>
-
-                            <span className="text-sm text-gray-500 px-2 font-medium">
-                                {page} / {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))}
-                            </span>
-
-                            <button
-                                onClick={handleNextPage}
-                                disabled={!hasMore}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-                            >
-                                Próxima
-                                <ChevronRight size={15} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <CatalogPagination
+                    currentPage={page}
+                    totalCount={totalCount}
+                    pageSize={PAGE_SIZE}
+                    onPrev={handlePrevPage}
+                    onNext={handleNextPage}
+                    hasMore={hasMore}
+                />
             )}
         </>
     );

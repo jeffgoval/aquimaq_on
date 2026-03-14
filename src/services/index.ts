@@ -11,5 +11,6 @@ export * from './reviewService';
 export * from './adminService';
 export * from './paymentService';
 export * from './ragService';
+export * from './stockNotificationService';
 
 export { supabase, isSupabaseConfigured } from './supabase';

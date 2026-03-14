@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Save, Store, MapPin, CreditCard, Truck, Bot, Upload,
+    Save, Store, MapPin, CreditCard, Truck, Upload,
     Instagram, Facebook, Youtube, Lock, CheckCircle, AlertCircle,
-    Phone, Mail, Clock, Star, ShoppingBag
+    Phone, Mail, Clock, Star,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
@@ -48,11 +48,6 @@ interface StoreConfig {
     crossSellCategory: string;
 }
 
-interface AIConfig {
-    model: string;
-    system_prompt: string;
-}
-
 interface FormErrors {
     storeName?: string;
     cnpj?: string;
@@ -75,14 +70,6 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 const ALL_PAYMENT_TYPES = ['credit_card', 'debit_card', 'bank_transfer', 'ticket'];
 
-const AI_MODELS = [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Rápido e econômico — ideal para atendimento' },
-    { value: 'gpt-4o', label: 'GPT-4o', description: 'Mais capaz — recomendado para respostas complexas' },
-    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Legado' },
-];
-
-const DEFAULT_SYSTEM_PROMPT = `Você é um assistente virtual da loja. Responda dúvidas sobre produtos, pedidos e políticas da loja de forma clara e objetiva. Se não souber a resposta, informe que um atendente irá ajudar em breve.`;
-
 const CROSS_SELL_CATEGORIES = [
     { value: 'mais-vendidos', label: 'Mais Vendidos' },
     { value: 'ferramentas-manuais', label: 'Ferramentas Manuais' },
@@ -90,7 +77,7 @@ const CROSS_SELL_CATEGORIES = [
     { value: 'acessorios', label: 'Acessórios' },
 ];
 
-type SettingsTab = 'loja' | 'endereco' | 'pagamento' | 'frete' | 'ia';
+type SettingsTab = 'loja' | 'endereco' | 'pagamento' | 'frete';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -170,11 +157,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         crossSellCategory: '',
     });
 
-    const [aiConfig, setAiConfig] = useState<AIConfig>({
-        model: 'gpt-4o-mini',
-        system_prompt: DEFAULT_SYSTEM_PROMPT,
-    });
-
     useEffect(() => {
         if (settings) {
             setFormData({
@@ -211,24 +193,11 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
         }
     }, [settings]);
 
-    useEffect(() => {
-        if (!isAdmin) return;
-        supabase
-            .from('store_settings' as never)
-            .select('ai_config')
-            .limit(1)
-            .single()
-            .then(({ data }: { data: { ai_config?: AIConfig } | null }) => {
-                if (data?.ai_config) setAiConfig(prev => ({ ...prev, ...data.ai_config }));
-            });
-    }, [isAdmin]);
-
     const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
         { id: 'loja', label: 'Loja', icon: Store },
         { id: 'endereco', label: 'Endereço', icon: MapPin },
         { id: 'pagamento', label: 'Pagamento', icon: CreditCard },
         { id: 'frete', label: 'Frete', icon: Truck },
-        ...(isAdmin ? [{ id: 'ia' as SettingsTab, label: 'IA', icon: Bot }] : []),
     ];
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('loja');
@@ -355,20 +324,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             crossSellCategory: formData.crossSellCategory || null,
         });
 
-        // Save AI config (admin only)
-        if (isAdmin && result.success) {
-            const sb = supabase as never as {
-                from: (t: string) => {
-                    select: (c: string) => { limit: (n: number) => { single: () => Promise<{ data: { id: string } | null }> } };
-                    update: (d: object) => { eq: (k: string, v: string) => Promise<{ error: unknown }> };
-                };
-            };
-            const { data: row } = await sb.from('store_settings').select('id').limit(1).single();
-            if (row) {
-                await sb.from('store_settings').update({ ai_config: aiConfig }).eq('id', row.id);
-            }
-        }
-
         setIsSaving(false);
 
         if (result.success) {
@@ -399,7 +354,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 <div>
                     <h1 className="text-lg font-semibold text-stone-800">Configurações</h1>
                     <p className="text-xs text-stone-500 mt-0.5">
-                        {isAdmin ? 'Acesso completo' : 'Gerente — pagamento e IA são somente leitura'}
+                        {isAdmin ? 'Acesso completo' : 'Gerente — pagamento é somente leitura'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -731,61 +686,6 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     </select>
                                 </Field>
                             )}
-                        </div>
-                    </SectionCard>
-                </div>
-            )}
-
-            {/* ── Tab: IA (admin only) ── */}
-            {activeTab === 'ia' && isAdmin && (
-                <div className="space-y-4">
-                    <SectionCard title="Modelo de linguagem" description="Modelo da OpenAI utilizado pelo assistente virtual no chat.">
-                        <div className="space-y-2">
-                            {AI_MODELS.map(m => (
-                                <label key={m.value} className={cn(
-                                    'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                                    aiConfig.model === m.value ? 'border-stone-300 bg-stone-50' : 'border-stone-200 hover:bg-stone-50'
-                                )}>
-                                    <input
-                                        type="radio"
-                                        name="ai_model"
-                                        value={m.value}
-                                        checked={aiConfig.model === m.value}
-                                        onChange={() => setAiConfig(p => ({ ...p, model: m.value }))}
-                                        className="accent-stone-700 mt-0.5"
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium text-stone-700">{m.label}</span>
-                                        <p className="text-xs text-stone-500">{m.description}</p>
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    </SectionCard>
-
-                    <SectionCard title="Comportamento do assistente" description="Define como o assistente virtual se apresenta e responde aos clientes.">
-                        <Field label="Prompt do sistema">
-                            <textarea
-                                value={aiConfig.system_prompt}
-                                onChange={e => setAiConfig(p => ({ ...p, system_prompt: e.target.value }))}
-                                rows={6}
-                                className={cn(inputCls(), 'resize-none')}
-                                placeholder="Descreva como o assistente deve se comportar..."
-                            />
-                        </Field>
-                        <button
-                            type="button"
-                            onClick={() => setAiConfig(p => ({ ...p, system_prompt: DEFAULT_SYSTEM_PROMPT }))}
-                            className="mt-2 text-xs text-stone-400 hover:text-stone-600 underline"
-                        >
-                            Restaurar padrão
-                        </button>
-                    </SectionCard>
-
-                    <SectionCard title="Chave de API" description="A chave da OpenAI é gerenciada nas variáveis de ambiente do servidor.">
-                        <div className="flex items-center gap-2 text-xs text-stone-500 py-1">
-                            <ShoppingBag size={13} />
-                            Configure a variável <code className="font-mono bg-stone-100 px-1.5 py-0.5 rounded">OPENAI_API_KEY</code> nas Edge Functions do Supabase.
                         </div>
                     </SectionCard>
                 </div>

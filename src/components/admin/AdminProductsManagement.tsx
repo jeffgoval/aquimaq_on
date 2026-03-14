@@ -19,6 +19,8 @@ import AdminProductEditor from './AdminProductEditor';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/utils/cn';
+import { formatCurrency } from '@/utils/format';
+import { ADMIN_CATEGORY_OPTIONS } from '@/constants/categories';
 
 const PAGE_SIZE = 20;
 
@@ -28,17 +30,7 @@ interface ProductWithFlags extends Product {
     is_active?: boolean;
 }
 
-const categoryOptions = [
-    { value: 'all', label: 'Todas as categorias' },
-    { value: 'Ferramentas Manuais', label: 'Ferramentas Manuais' },
-    { value: 'Peças de Reposição', label: 'Peças de Reposição' },
-    { value: 'Acessórios', label: 'Acessórios' },
-    { value: 'Sementes Fracionadas', label: 'Sementes Fracionadas' },
-    { value: 'Itens de Prateleira', label: 'Itens de Prateleira' },
-];
-
-const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+const categoryOptions = ADMIN_CATEGORY_OPTIONS;
 
 const getStockBadge = (stock: number) => {
     if (stock === 0) return { label: 'Esgotado', cls: 'text-red-600 bg-red-50 border-red-200' };
@@ -122,7 +114,10 @@ const AdminProductsManagement: React.FC = () => {
 
     const doToggleActive = async (id: string, currentStatus: boolean) => {
         try {
-            const { error } = await (supabase.from('products') as any).update({ is_active: !currentStatus }).eq('id', id);
+            const { error } = await supabase
+                .from('products')
+                .update({ is_active: !currentStatus })
+                .eq('id', id);
             if (error) throw error;
             setProducts(prev => prev.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
             showMessage('success', `Produto ${currentStatus ? 'desativado' : 'ativado'}.`);
