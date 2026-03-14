@@ -169,9 +169,11 @@ Recebe mensagens do Chatwoot (WhatsApp + widget do site), responde com IA usando
 Webhook Chatwoot
   → Verificar Token        (valida ?secret= com $env.WEBHOOK_SECRET)
   → Filtra Mensagem        (só mensagens incoming de clientes; descarta bot/agente)
-  → Buscar Config IA       (GET store_settings → ai_config: model, system_prompt, max_catalog_products)
+  → Checar Duplicata       (GET n8n_webhook_logs?message_id=eq.{id} — para se já existe)
+  → Buscar Config IA       (GET store_settings → ai_config + opening_hours + contatos
+                             + pix_discount + free_shipping_threshold + origin_* address)
   → Buscar Histórico       (GET Chatwoot API → últimas mensagens da conversa)
-  → Montar Contexto        (Code: monta userMsg, systemPrompt com histórico e limite de catálogo)
+  → Montar Contexto        (Code: monta fullPrompt = systemPrompt dinâmico + userMsg)
   → AI Agent               (Tools Agent typeVersion 1.7 — OpenAI Functions)
       ├─ OpenAI Chat Model (credencial n8n)
       ├─ Window Buffer Memory (sessionKey = conversationId)
@@ -180,6 +182,7 @@ Webhook Chatwoot
   → Precisa de Humano?     (IF)
       ├─ true  → Avisar Transferência → Transferir p/ Pendente
       └─ false → Responder Cliente
+  → Registrar Mensagem     (POST n8n_webhook_logs com message_id — deduplicação)
 ```
 
 ### Configuração crítica do AI Agent
@@ -188,11 +191,37 @@ Webhook Chatwoot
 |---|---|
 | `typeVersion` | `1.7` — NÃO alterar para 3.x (quebra sub-nós) |
 | `promptType` | `define` |
-| `text` | `={{ $('Montar Contexto').first().json.userMsg }}` |
-| `options.systemMessage` | texto estático (system prompt completo) |
+| `text` | `={{ $('Montar Contexto').first().json.fullPrompt }}` |
+| `options.systemMessage` | vazio (não usado — fullPrompt já contém tudo) |
 | `options.maxIterations` | `10` |
 
-> **Importante:** O campo `options.systemMessage` aceita apenas texto estático em `typeVersion: 1.7`. Expressões `={{ }}` não são avaliadas nesse campo nessa versão. Quando o admin alterar o system prompt em **Admin → Config. IA**, é necessário rodar o script `/tmp/fix_static_system.py` no VPS para sincronizar com o n8n. O Supabase (`store_settings.ai_config.system_prompt`) continua sendo a fonte de verdade — serve tanto para o V1 (workflow legado com Code nodes) quanto para documentação; o V2 usa o valor copiado estaticamente no nó.
+> **Fonte única de verdade:** O nó `Montar Contexto` constrói `fullPrompt` = system prompt do Supabase + dados dinâmicos da loja + mensagem do cliente. O AI Agent recebe tudo via campo `text`. **Não** é necessário editar o n8n quando o admin altera o system prompt em **Admin → Config. IA** — as mudanças refletem imediatamente na próxima execução.
+>
+> O campo `options.systemMessage` foi deixado vazio intencionalmente. Em `typeVersion: 1.7` ele aceita apenas texto estático; o `text` (Prompt) avalia expressões normalmente.
+
+### Nó "Buscar Config IA"
+
+Faz GET em `store_settings` com o seguinte `select`:
+
+```
+ai_config,opening_hours,phone,whatsapp,pix_discount,free_shipping_threshold,
+origin_street,origin_number,origin_district,origin_city,origin_state,origin_cep
+```
+
+### Nó "Montar Contexto"
+
+Code node que constrói `systemPrompt` dinamicamente a partir dos campos acima:
+
+- `aiConfig.system_prompt` — base do prompt (editável em Admin → Config. IA)
+- `DATA E HORA ATUAL` — data/hora em tempo real no fuso de Brasília (`new Date()`)
+- `HORÁRIO DE FUNCIONAMENTO` — campo `opening_hours` da `store_settings`
+- `ENDEREÇO DA LOJA` — campos `origin_*` concatenados
+- `CONTATO` — `whatsapp` ou `phone`
+- `DESCONTO PIX` — `pix_discount * 100` (ex: 0.05 → 5%)
+- `FRETE GRÁTIS` — `free_shipping_threshold` (se > 0)
+- Histórico das últimas 10 mensagens da conversa
+
+`fullPrompt = systemPrompt + '---\nMensagem do cliente: ' + userMsg`
 
 ### Ferramenta `buscar_produtos`
 
