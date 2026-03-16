@@ -81,7 +81,7 @@ const Catalog: React.FC<CatalogProps> = ({
                 />
             )}
 
-            <div className="flex flex-col gap-6">
+            <div id="catalogo" className="flex flex-col gap-6">
                 <CatalogFilterBar
                     sortBy={filters.sortBy}
                     onSortChange={filters.onSortChange}

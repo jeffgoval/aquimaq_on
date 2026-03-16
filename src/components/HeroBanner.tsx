@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getActiveBanners } from '@/services/bannerService';
 import { useStore } from '@/contexts/StoreContext';
@@ -11,6 +11,7 @@ const HeroBannerSkeleton: React.FC = () => (
 );
 
 const HeroBanner: React.FC = () => {
+    const navigate = useNavigate();
     const { settings } = useStore();
     const [banners, setBanners] = useState<Awaited<ReturnType<typeof getActiveBanners>>>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -122,13 +123,28 @@ const HeroBanner: React.FC = () => {
                                         index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                                     }`}>
                                         {slide.cta_link ? (
-                                            <Link
-                                                to={slide.cta_link}
-                                                className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all"
-                                            >
-                                                {slide.cta_text}
-                                                <ArrowRight className="ml-2 h-5 w-5" />
-                                            </Link>
+                                            slide.cta_link.startsWith('#') ? (
+                                                // Scroll anchor — rola suavemente para o elemento
+                                                <button
+                                                    onClick={() => {
+                                                        const el = document.getElementById(slide.cta_link!.slice(1));
+                                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                        else navigate('/');
+                                                    }}
+                                                    className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all"
+                                                >
+                                                    {slide.cta_text}
+                                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                                </button>
+                                            ) : (
+                                                <Link
+                                                    to={slide.cta_link}
+                                                    className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all"
+                                                >
+                                                    {slide.cta_text}
+                                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                                </Link>
+                                            )
                                         ) : (
                                             <button className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all">
                                                 {slide.cta_text}
@@ -145,25 +161,6 @@ const HeroBanner: React.FC = () => {
                 {/* Bottom fade into page background */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-earth-50 to-transparent z-20 pointer-events-none" />
 
-                {/* Nav arrows */}
-                {banners.length > 1 && (
-                    <>
-                        <button
-                            onClick={goToPrev}
-                            aria-label="Slide anterior"
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all z-30 flex items-center justify-center border border-white/10 hover:border-white/30"
-                        >
-                            <ChevronLeft size={28} />
-                        </button>
-                        <button
-                            onClick={goToNext}
-                            aria-label="Próximo slide"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all z-30 flex items-center justify-center border border-white/10 hover:border-white/30"
-                        >
-                            <ChevronRight size={28} />
-                        </button>
-                    </>
-                )}
 
                 {/* Dot indicators */}
                 {banners.length > 1 && (
