@@ -97,13 +97,56 @@ Located in `supabase/migrations/`. Apply via Supabase CLI (`supabase db push`) o
 
 Workflow **"Aquimaq Chat Bot V2 (AI Agent)"** — ID `QKfXG7uuynvQCbcH` — at `https://n8n.aquimaq.com.br`.
 
-**Critical rules:**
-- AI Agent `typeVersion` must be `1.7` — version 3.x breaks sub-nodes (`toolHttpRequest`, `Window Buffer Memory`)
-- `options.systemMessage` does NOT evaluate expressions in `typeVersion: 1.7` — use the `text` field with `fullPrompt`
-- `fullPrompt` is built in the "Montar Contexto" Code node: system prompt from Supabase + current date/time + opening hours + store address + PIX discount + free shipping threshold + conversation history + userMsg
-- `buscar_produtos` tool: anon key embedded in URL (expressions don't work in `toolHttpRequest` headers)
-- **Single source of truth:** `store_settings.ai_config.system_prompt` in Supabase — changes reflect immediately without editing n8n
-- Deduplication via `n8n_webhook_logs.message_id TEXT UNIQUE`
+**Fluxo completo:**
+```
+Webhook Chatwoot → Verificar Token → Filtra Mensagem → Setar Pendente → Buscar Config IA
+→ Buscar Histórico → Montar Contexto → AI Agent → Processar Resposta → Precisa de Humano?
+  ├─ sim → Avisar Transferência → Transferir p/ Pendente  (status "open", sem atribuição)
+  └─ não → Responder Cliente
+```
+
+**Lógica de handoff:**
+- Quando o agente inclui `TRANSFERIR_HUMANO` na resposta, `Processar Resposta` detecta e roteia para o branch de handoff
+- `Avisar Transferência`: envia mensagem ao cliente ("Vou chamar um atendente...")
+- `Transferir p/ Pendente`: `POST /toggle_status` com `{"status": "open"}` — **POST, não PATCH**
+- Sem atribuição automática — qualquer vendedor pode pegar a conversa em `/admin/chat`
+- `Filtra Mensagem` só passa se `conversation.meta.assignee === null` — após handoff, mensagens novas não chegam mais ao bot
+
+**Configuração dos nodes críticos (AI Agent):**
+- `typeVersion`: `1.7` — versão 3.x quebra sub-nodes
+- `promptType`: `"define"` — obrigatório para usar o campo `text` com expressão; sem isso o agente procura `chatInput` e falha
+- `text`: `={{ $('Montar Contexto').first().json.fullPrompt }}`
+
+**Window Buffer Memory (typeVersion 1.3):**
+- `sessionIdType`: `"customKey"` — obrigatório para usar expressão no `sessionKey`; sem isso busca campo `sessionId` no input e falha com "No session ID found"
+- `sessionKey`: `={{ $('Montar Contexto').first().json.conversationId }}`
+
+**buscar_produtos tool (toolHttpRequest typeVersion 1.1):**
+- URL com `{keyword}` hardcoded diretamente na string (anon key também hardcoded — expressions não funcionam em toolHttpRequest)
+- Requer `placeholderDefinitions.values` com `name: "keyword"`, `description` e `type: "string"` — sem isso o agente inventa schema e falha com "Received tool input did not match expected schema"
+- Filtro: `name=ilike.*{keyword}*` na URL
+
+**Montar Contexto (Code node):**
+- Lê `system_prompt` do Supabase (`Buscar Config IA`) + data/hora atual + histórico da conversa (`Buscar Histórico`) + mensagem do cliente
+- Saída: `{ conversationId, fullPrompt, maxProducts }`
+
+**Regras críticas:**
+- `options.systemMessage` NÃO avalia expressões em `typeVersion: 1.7` — usar `text` com `fullPrompt`
+- **Single source of truth:** `store_settings.ai_config.system_prompt` no Supabase — mudanças refletem imediatamente
+- Chatwoot webhook: `POST https://n8n.aquimaq.com.br/webhook/aquimaq-chat-v2?secret=<WEBHOOK_SECRET>`
+- Variáveis de ambiente n8n: `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `CHATWOOT_ACCESS_TOKEN`, `WEBHOOK_SECRET`, `OPENAI_API_KEY`
+
+**Infraestrutura VPS:**
+- n8n roda em Docker Swarm: `docker service update --force aquimaq_n8n` para reiniciar (nunca `docker restart` — quebra roteamento do Traefik/Easypanel)
+- SQLite: `/var/lib/docker/volumes/aquimaq_n8n_data/_data/database.sqlite`
+- Após editar SQLite direto: sempre `PRAGMA wal_checkpoint(TRUNCATE)` antes de reiniciar
+- `workflow_entity.activeVersionId` é o que o n8n executa — editar só `versionId` não tem efeito; manter `versionId = activeVersionId` após patches
+
+**Chatwoot:**
+- URL: `https://chatwoot.aquimaq.com.br` — account ID `2`
+- Containers: `aquimaq_chatwoot`, `aquimaq_chatwoot-sidekiq`, `aquimaq_chatwoot-db`, `aquimaq_chatwoot-redis`
+- API: `/api/v1/accounts/2/conversations/{id}/toggle_status` — método `POST` (não PATCH)
+- Statuses relevantes: `pending` (AI respondendo), `open` (aguardando humano na fila)
 
 **To patch workflow JSON:** write Python script to `C:/tmp/`, SCP to VPS (`root@72.61.60.210`), then run. Avoid inline Python via SSH — shell quotes break strings.
 
