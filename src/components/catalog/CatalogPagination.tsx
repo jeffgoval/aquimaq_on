@@ -24,14 +24,12 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-2">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-100 pt-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-earth-200 pt-6">
         <span className="text-sm text-gray-400 order-2 sm:order-1">
           Mostrando{' '}
-          <span className="font-semibold text-gray-600">
-            {start}–{end}
-          </span>
+          <span className="font-semibold text-gray-700">{start}–{end}</span>
           {' '}de{' '}
-          <span className="font-semibold text-gray-600">{totalCount}</span>
+          <span className="font-semibold text-gray-700">{totalCount}</span>
           {' '}produtos
         </span>
 
@@ -40,13 +38,13 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
             type="button"
             onClick={onPrev}
             disabled={currentPage === 1}
-            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-agro-700 hover:text-white hover:border-agro-700 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed transition-all shadow-sm"
           >
             <ChevronLeft size={15} />
             Anterior
           </button>
 
-          <span className="text-sm text-gray-500 px-2 font-medium">
+          <span className="text-sm font-semibold text-agro-700 bg-agro-50 border border-agro-200 px-3 py-2 rounded-lg min-w-[80px] text-center">
             {currentPage} / {totalPages}
           </span>
 
@@ -54,7 +52,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
             type="button"
             onClick={onNext}
             disabled={!hasMore}
-            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-agro-50 hover:text-agro-700 hover:border-agro-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-agro-700 hover:text-white hover:border-agro-700 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed transition-all shadow-sm"
           >
             Próxima
             <ChevronRight size={15} />

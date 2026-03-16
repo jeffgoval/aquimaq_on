@@ -31,7 +31,6 @@ const EloSVG: React.FC = () => (
     </svg>
 );
 
-
 const PixSVG: React.FC = () => (
     <svg viewBox="0 0 48 48" className="h-5 w-5" aria-label="Pix" fill="none">
         <path d="M24 4L4 24l20 20 20-20L24 4z" fill="#32BCAD" />
@@ -84,6 +83,15 @@ const PaymentBadge: React.FC<{ children: React.ReactNode; label?: string }> = ({
     </div>
 );
 
+// ─── Section heading ───────────────────────────────────────────────────────────
+
+const FooterHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="mb-5">
+        <h3 className="font-display text-white text-base leading-tight">{children}</h3>
+        <div className="mt-1.5 w-8 h-0.5 bg-agro-600 rounded-full" />
+    </div>
+);
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const Footer: React.FC = () => {
@@ -132,7 +140,10 @@ const Footer: React.FC = () => {
     const maxInstallments = settings?.maxInstallments ?? 12;
 
     return (
-        <footer role="contentinfo" className="bg-gray-900 text-gray-300 pt-12 pb-20 md:pb-8 border-t border-gray-800 font-sans">
+        <footer role="contentinfo" className="bg-forest-900 grain-overlay text-agro-200 pt-12 pb-20 md:pb-8 font-sans">
+            {/* Accent stripe */}
+            <div className="h-0.5 bg-gradient-to-r from-transparent via-agro-600 to-transparent mb-12 -mt-12 opacity-60" />
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Main grid */}
@@ -140,7 +151,7 @@ const Footer: React.FC = () => {
 
                     {/* Coluna 1 — Institucional */}
                     <div>
-                        <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Institucional</h3>
+                        <FooterHeading>Institucional</FooterHeading>
                         <ul className="space-y-2.5 text-sm">
                             <li><Link to={ROUTES.ABOUT} className="hover:text-white transition-colors">Sobre Nós</Link></li>
                             <li><Link to={ROUTES.POLICY_DELIVERY} className="hover:text-white transition-colors">Política de Entrega</Link></li>
@@ -151,54 +162,60 @@ const Footer: React.FC = () => {
 
                     {/* Coluna 2 — Ajuda */}
                     <div>
-                        <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Ajuda</h3>
+                        <FooterHeading>Ajuda</FooterHeading>
                         <ul className="space-y-2.5 text-sm">
-                            <li><Link to={ROUTES.FAQ} className="hover:text-white transition-colors flex items-center gap-1.5">
-                                <HelpCircle size={13} className="text-agro-500 shrink-0" />
-                                Perguntas Frequentes
-                            </Link></li>
-                            <li><Link to={ROUTES.ORDERS} className="hover:text-white transition-colors flex items-center gap-1.5">
-                                <Package size={13} className="text-agro-500 shrink-0" />
-                                Rastrear Pedido
-                            </Link></li>
+                            <li>
+                                <Link to={ROUTES.FAQ} className="hover:text-white transition-colors flex items-center gap-1.5">
+                                    <HelpCircle size={13} className="text-agro-400 shrink-0" />
+                                    Perguntas Frequentes
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to={ROUTES.ORDERS} className="hover:text-white transition-colors flex items-center gap-1.5">
+                                    <Package size={13} className="text-agro-400 shrink-0" />
+                                    Rastrear Pedido
+                                </Link>
+                            </li>
                             <li><Link to={ROUTES.CONTACT} className="hover:text-white transition-colors">Fale Conosco</Link></li>
                         </ul>
                     </div>
 
                     {/* Coluna 3 — Atendimento */}
                     <div>
-                        <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Atendimento</h3>
+                        <FooterHeading>Atendimento</FooterHeading>
                         <ul className="space-y-3 text-sm">
                             {phone && phoneRaw && (
                                 <li>
-                                    <a href={`https://wa.me/55${phoneRaw}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-                                        <WhatsAppIcon size={15} className="text-agro-500 shrink-0" />
+                                    <a href={`https://wa.me/55${phoneRaw}`} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-2 hover:text-white transition-colors">
+                                        <WhatsAppIcon size={15} className="text-agro-400 shrink-0" />
                                         {phone}
                                     </a>
                                 </li>
                             )}
                             {email && (
                                 <li>
-                                    <a href={`mailto:${email}`} className="flex items-center gap-2 hover:text-white transition-colors break-all">
-                                        <Mail size={15} className="text-agro-500 shrink-0" />
+                                    <a href={`mailto:${email}`}
+                                        className="flex items-center gap-2 hover:text-white transition-colors break-all">
+                                        <Mail size={15} className="text-agro-400 shrink-0" />
                                         {email}
                                     </a>
                                 </li>
                             )}
                             {openingHours && (
                                 <li className="flex items-start gap-2">
-                                    <Clock size={15} className="text-agro-500 mt-0.5 shrink-0" />
+                                    <Clock size={15} className="text-agro-400 mt-0.5 shrink-0" />
                                     <span className="leading-snug">{openingHours}</span>
                                 </li>
                             )}
                             {addrLine2 && (
                                 <li className="flex items-start gap-2">
-                                    <MapPin size={15} className="text-agro-500 mt-0.5 shrink-0" />
+                                    <MapPin size={15} className="text-agro-400 mt-0.5 shrink-0" />
                                     <span className="leading-snug">
                                         {addrLine1 && <>{addrLine1}<br /></>}
                                         {addrLine2}
                                         {addrCEP && <><br />CEP {addrCEP}</>}
-                                        <br /><span className="text-gray-500 text-xs">Enviamos para todo o Brasil</span>
+                                        <br /><span className="text-agro-300/60 text-xs">Enviamos para todo o Brasil</span>
                                     </span>
                                 </li>
                             )}
@@ -206,23 +223,23 @@ const Footer: React.FC = () => {
 
                         {/* Redes sociais */}
                         {(facebookUrl || instagramUrl || youtubeUrl) && (
-                            <div className="flex gap-3 mt-5">
+                            <div className="flex gap-2 mt-5">
                                 {facebookUrl && (
                                     <a href={facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-                                        className="text-gray-400 hover:text-white transition-colors">
-                                        <Facebook size={22} />
+                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-forest-800 hover:bg-agro-700 text-agro-300 hover:text-white transition-all">
+                                        <Facebook size={18} />
                                     </a>
                                 )}
                                 {instagramUrl && (
                                     <a href={instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
-                                        className="text-gray-400 hover:text-white transition-colors">
-                                        <Instagram size={22} />
+                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-forest-800 hover:bg-agro-700 text-agro-300 hover:text-white transition-all">
+                                        <Instagram size={18} />
                                     </a>
                                 )}
                                 {youtubeUrl && (
                                     <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="YouTube"
-                                        className="text-gray-400 hover:text-white transition-colors">
-                                        <Youtube size={22} />
+                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-forest-800 hover:bg-agro-700 text-agro-300 hover:text-white transition-all">
+                                        <Youtube size={18} />
                                     </a>
                                 )}
                             </div>
@@ -231,7 +248,7 @@ const Footer: React.FC = () => {
 
                     {/* Coluna 4 — Pagamento & Segurança */}
                     <div>
-                        <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Pagamento</h3>
+                        <FooterHeading>Pagamento</FooterHeading>
 
                         <div className="flex flex-wrap gap-2 mb-2">
                             {acceptedPaymentTypes.includes('credit_card') && <>
@@ -259,21 +276,21 @@ const Footer: React.FC = () => {
                         </div>
 
                         {maxInstallments > 1 && (
-                            <p className="text-xs text-gray-400 mb-4">
+                            <p className="text-xs text-agro-300/80 mb-4">
                                 Parcele em até <span className="text-white font-semibold">{maxInstallments}x</span> no cartão de crédito
                             </p>
                         )}
 
                         {/* Confiança */}
                         <div className="space-y-2 mt-4">
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                <svg className="w-4 h-4 text-green-500 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <div className="flex items-center gap-2 text-xs text-agro-200/80">
+                                <svg className="w-4 h-4 text-agro-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                 </svg>
                                 Pagamento 100% seguro (SSL)
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                <svg className="w-4 h-4 text-green-500 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <div className="flex items-center gap-2 text-xs text-agro-200/80">
+                                <svg className="w-4 h-4 text-agro-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
                                 Compra protegida pelo Mercado Pago
@@ -288,9 +305,9 @@ const Footer: React.FC = () => {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="border-t border-gray-800 pt-6 text-center text-xs text-gray-500 space-y-1">
+                <div className="border-t border-forest-800 pt-6 text-center text-xs text-agro-300/50 space-y-1">
                     {razaoSocial && (
-                        <p className="text-gray-400 font-medium">{razaoSocial}</p>
+                        <p className="text-agro-300/70 font-medium">{razaoSocial}</p>
                     )}
                     <p>
                         &copy; {new Date().getFullYear()} {storeName}. Todos os direitos reservados.

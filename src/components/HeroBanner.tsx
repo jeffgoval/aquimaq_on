@@ -7,7 +7,7 @@ import { useStore } from '@/contexts/StoreContext';
 const DEFAULT_SLIDE_INTERVAL_MS = 5000;
 
 const HeroBannerSkeleton: React.FC = () => (
-    <div className="relative bg-gray-200 animate-pulse h-[400px] md:h-[480px]" aria-hidden />
+    <div className="relative bg-agro-900/20 animate-pulse h-[420px] md:h-[500px] rounded-b-none" aria-hidden />
 );
 
 const HeroBanner: React.FC = () => {
@@ -30,7 +30,6 @@ const HeroBanner: React.FC = () => {
             .finally(() => setLoading(false));
     }, [seasonalContext]);
 
-    // Auto-advance slides - pauses when isPausedRef is true.
     useEffect(() => {
         if (banners.length <= 1) return;
         const interval = setInterval(() => {
@@ -69,97 +68,114 @@ const HeroBanner: React.FC = () => {
 
     return (
         <div
-            className="relative bg-gray-100 group"
-            onMouseEnter={() => {
-                isPausedRef.current = true;
-            }}
-            onMouseLeave={() => {
-                isPausedRef.current = false;
-            }}
+            className="relative bg-agro-900 group mb-10"
+            onMouseEnter={() => { isPausedRef.current = true; }}
+            onMouseLeave={() => { isPausedRef.current = false; }}
         >
             <div
-                className="max-w-[1920px] mx-auto relative overflow-hidden h-[400px] md:h-[480px]"
+                className="max-w-[1920px] mx-auto relative overflow-hidden h-[420px] md:h-[500px]"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
             >
                 {banners.map((slide, index) => (
                     <div
                         key={slide.id}
-                        className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                        className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${
+                            index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                        }`}
                         aria-hidden={index !== currentSlide}
                     >
-                        <div className="absolute inset-0">
+                        {/* Background image with zoom effect on active */}
+                        <div className="absolute inset-0 overflow-hidden">
                             <img
                                 src={slide.image_url}
                                 alt={slide.title}
                                 loading={index === 0 ? 'eager' : 'lazy'}
                                 fetchPriority={index === 0 ? 'high' : 'low'}
-                                className="w-full h-full object-cover object-center"
+                                className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
+                                    index === currentSlide ? 'scale-105' : 'scale-100'
+                                }`}
                             />
-                            <div className={`absolute inset-0 bg-gradient-to-r ${slide.color_gradient || 'from-agro-900 to-agro-800'} opacity-90 md:opacity-80 mix-blend-multiply`} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                            {/* Color gradient overlay */}
+                            <div className={`absolute inset-0 bg-gradient-to-r ${slide.color_gradient || 'from-agro-900 to-agro-800'} opacity-85 mix-blend-multiply`} />
+                            {/* Depth gradient — darker at bottom */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         </div>
 
+                        {/* Content */}
                         <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
                             <div className="max-w-xl text-white py-12">
-                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 shadow-sm">
+                                <h2 className={`font-display text-4xl md:text-5xl lg:text-6xl leading-tight mb-5 transition-all duration-700 ${
+                                    index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                                }`}>
                                     {slide.title}
                                 </h2>
                                 {slide.subtitle && (
-                                    <p className="text-lg md:text-xl text-gray-100 mb-8 font-medium leading-relaxed max-w-lg">
+                                    <p className={`text-lg md:text-xl text-gray-200 mb-8 leading-relaxed max-w-lg transition-all duration-700 delay-100 ${
+                                        index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                                    }`}>
                                         {slide.subtitle}
                                     </p>
                                 )}
-                                <div className="flex flex-wrap gap-4">
-                                    {slide.cta_text && (
-                                        slide.cta_link ? (
+                                {slide.cta_text && (
+                                    <div className={`transition-all duration-700 delay-200 ${
+                                        index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                                    }`}>
+                                        {slide.cta_link ? (
                                             <Link
                                                 to={slide.cta_link}
-                                                className="px-8 py-3.5 bg-agro-700 hover:bg-agro-800 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-700/30 transition-all transform hover:-translate-y-1 inline-flex items-center"
+                                                className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all"
                                             >
                                                 {slide.cta_text}
                                                 <ArrowRight className="ml-2 h-5 w-5" />
                                             </Link>
                                         ) : (
-                                            <button className="px-8 py-3.5 bg-agro-700 hover:bg-agro-800 text-white font-bold text-lg rounded-lg shadow-lg shadow-agro-700/30 transition-all transform hover:-translate-y-1 flex items-center">
+                                            <button className="inline-flex items-center px-8 py-3.5 bg-earth-500 hover:bg-earth-600 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-earth-700/30 transition-all">
                                                 {slide.cta_text}
                                                 <ArrowRight className="ml-2 h-5 w-5" />
                                             </button>
-                                        )
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 ))}
 
+                {/* Bottom fade into page background */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-earth-50 to-transparent z-20 pointer-events-none" />
+
+                {/* Nav arrows */}
                 {banners.length > 1 && (
                     <>
                         <button
                             onClick={goToPrev}
                             aria-label="Slide anterior"
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-colors flex items-center justify-center"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all z-30 flex items-center justify-center border border-white/10 hover:border-white/30"
                         >
-                            <ChevronLeft size={32} />
+                            <ChevronLeft size={28} />
                         </button>
                         <button
                             onClick={goToNext}
                             aria-label="Próximo slide"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-colors flex items-center justify-center"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all z-30 flex items-center justify-center border border-white/10 hover:border-white/30"
                         >
-                            <ChevronRight size={32} />
+                            <ChevronRight size={28} />
                         </button>
                     </>
                 )}
 
+                {/* Dot indicators */}
                 {banners.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-2 z-30">
                         {banners.map((_, index) => (
                             <button
                                 key={index}
                                 onClick={() => goToSlide(index)}
                                 aria-label={`Ir para slide ${index + 1}`}
-                                className={`h-2 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white'}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${
+                                    index === currentSlide ? 'w-8 bg-earth-400' : 'w-2 bg-white/40 hover:bg-white/70'
+                                }`}
                             />
                         ))}
                     </div>

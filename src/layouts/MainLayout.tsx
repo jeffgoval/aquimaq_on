@@ -38,7 +38,7 @@ const MainLayout: React.FC = () => {
     }, [setSearchParams]);
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20" style={{ minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '5rem' }}>
+        <div className="min-h-screen bg-earth-50 pb-20">
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-agro-600 focus:text-white focus:rounded">
                 Pular para conteúdo principal
             </a>
@@ -52,7 +52,7 @@ const MainLayout: React.FC = () => {
                 onCategoryChange={onCategoryChange}
             />
 
-            <main id="main-content" role="main" className="min-h-[60vh] bg-gray-50">
+            <main id="main-content" role="main" className="min-h-[60vh]">
                 <Outlet />
             </main>
 

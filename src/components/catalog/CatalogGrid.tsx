@@ -39,18 +39,23 @@ const EmptyState: React.FC<{
     searchOrCategory: boolean;
     onClearFilters?: () => void;
 }> = ({ searchOrCategory, onClearFilters }) => (
-    <div className="mt-8 flex flex-col items-center justify-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-        <Search className="w-10 h-10 text-gray-400 mb-2" />
-        <p className="text-gray-600 text-sm">
+    <div className="mt-8 flex flex-col items-center justify-center py-12 bg-earth-50 rounded-2xl border border-earth-200">
+        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 border border-earth-200">
+            <Search className="w-6 h-6 text-earth-400" />
+        </div>
+        <p className="text-gray-700 font-medium text-base mb-1">
+            {searchOrCategory ? 'Nenhum produto encontrado' : 'Catálogo vazio'}
+        </p>
+        <p className="text-gray-500 text-sm">
             {searchOrCategory
-                ? 'Tente ajustar filtros ou busca.'
-                : 'Catálogo vazio. Em breve teremos novidades.'}
+                ? 'Tente ajustar os filtros ou termos de busca.'
+                : 'Em breve teremos novidades.'}
         </p>
         {onClearFilters && (
             <button
                 type="button"
                 onClick={onClearFilters}
-                className="mt-4 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50"
+                className="mt-5 px-5 py-2 bg-agro-700 text-white text-sm font-semibold rounded-lg hover:bg-agro-800 active:scale-95 transition-all"
             >
                 Limpar filtros
             </button>
@@ -73,15 +78,20 @@ export const CatalogGrid: React.FC<CatalogGridProps> = ({
     return (
         <div className="w-full">
             {products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {products.map((product, index) => (
-                        <ProductCard
+                        <div
                             key={product.id}
-                            product={product}
-                            onViewDetails={onProductClick}
-                            onAddToCart={onAddToCart}
-                            imageLoading={index < 4 ? 'eager' : 'lazy'}
-                        />
+                            className="stagger-card"
+                            style={{ animationDelay: `${Math.min(index * 45, 360)}ms` }}
+                        >
+                            <ProductCard
+                                product={product}
+                                onViewDetails={onProductClick}
+                                onAddToCart={onAddToCart}
+                                imageLoading={index < 4 ? 'eager' : 'lazy'}
+                            />
+                        </div>
                     ))}
                 </div>
             ) : showSkeletons ? (

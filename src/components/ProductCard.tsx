@@ -50,10 +50,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const handleWishlistClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const wasAdded = !isFavorite;
         toggleWishlist(product.id);
-        
+
         if (wasAdded) {
             setShowSavedFeedback(true);
             setTimeout(() => setShowSavedFeedback(false), 2000);
@@ -62,7 +62,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
         <article
-            className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group relative"
+            className="bg-white rounded-xl border border-gray-200 hover:border-agro-300 overflow-hidden flex flex-col h-full hover:-translate-y-1 hover:shadow-xl hover:shadow-agro-900/8 transition-all duration-200 group relative"
             aria-label={`Produto: ${product.name}`}
         >
             {/* ── Image area ── */}
@@ -85,13 +85,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     src={product.imageUrl}
                     alt={product.name}
                     loading={imageLoading}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain group-hover:scale-[1.07] transition-transform duration-500"
                 />
 
                 {/* Top-left: promo badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
                     {product.discount && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        <span className="bg-earth-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                             -{product.discount}% OFF
                         </span>
                     )}
@@ -122,7 +122,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     )}
                 </div>
 
-                {/* Bottom-left: low stock (não colide com ♥) */}
+                {/* Bottom-left: low stock */}
                 {isLowStock && (
                     <span className="absolute bottom-2 left-2 z-10 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full pointer-events-none">
                         Restam {product.stock}
@@ -130,7 +130,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 )}
             </Link>
 
-            {/* ♥ Wishlist — fora do Link, sem colisão com badges */}
+            {/* ♥ Wishlist */}
             <div className="absolute top-2 right-2 z-20 flex flex-col items-end">
                 <button
                     className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors shadow-sm relative group"
@@ -142,7 +142,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                         className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400 group-hover:text-red-400'} transition-all duration-300 ${showSavedFeedback ? 'scale-125' : 'scale-100'}`}
                     />
                 </button>
-                {/* Inline Saved Feedback */}
                 <div
                     className={`mt-1 px-2 py-0.5 bg-black/75 text-white text-[10px] font-bold rounded-md transition-all duration-300 pointer-events-none origin-top ${
                         showSavedFeedback ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-1'
@@ -178,7 +177,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Price block — sticky to bottom of info area */}
+                {/* Price block */}
                 <div className="mt-auto pt-3 border-t border-gray-100">
                     {product.oldPrice && (
                         <span className="text-xs text-gray-400 line-through block leading-none mb-0.5">
@@ -195,12 +194,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
             </div>
 
-            {/* ── Add to cart — full-width ── */}
+            {/* ── Add to cart ── */}
             <div className="px-4 py-3 space-y-2">
                 <button
                     onClick={() => onAddToCart(product)}
                     disabled={isOutOfStock}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-agro-600 hover:bg-agro-700 active:bg-agro-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-agro-600 hover:bg-agro-700 active:bg-agro-800 active:scale-[0.98] text-white text-sm font-semibold rounded-lg transition-all duration-150 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                     aria-label={isOutOfStock ? 'Produto indisponível' : `Adicionar ${product.name} ao carrinho`}
                 >
                     <ShoppingCart size={15} />

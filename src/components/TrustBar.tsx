@@ -6,23 +6,22 @@ const TrustBar: React.FC = () => {
 
     const benefits = [
         {
-            icon: <Truck size={20} className="text-agro-700" />,
+            icon: <Truck size={22} className="text-agro-400" />,
             title: "Enviamos para todo o Brasil",
-            subtitle: "Consulte prazos e taxas"
+            subtitle: "Consulte prazos e taxas",
         },
         {
-            icon: <CreditCard size={20} className="text-agro-700" />,
+            icon: <CreditCard size={22} className="text-agro-400" />,
             title: "5% OFF no Pix",
-            subtitle: "Pagamento instantâneo"
+            subtitle: "Pagamento instantâneo",
         },
         {
-            icon: <ShieldCheck size={20} className="text-agro-700" />,
+            icon: <ShieldCheck size={22} className="text-agro-400" />,
             title: "Compra 100% Segura",
-            subtitle: "Seus dados protegidos"
+            subtitle: "Seus dados protegidos",
         },
     ];
 
-    // Auto-rotate carousel in mobile
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % benefits.length);
@@ -31,49 +30,57 @@ const TrustBar: React.FC = () => {
     }, [benefits.length]);
 
     return (
-        <div className="bg-white border-b border-gray-100">
-            <div className="max-w-7xl mx-auto px-4 py-4">
-                {/* Desktop: Grid */}
+        <div className="bg-agro-900 grain-overlay">
+            <div className="max-w-7xl mx-auto px-4 py-3.5">
+                {/* Desktop */}
                 <div className="hidden md:flex justify-between items-center">
                     {benefits.map((benefit, index) => (
-                        <div key={index} className="flex items-center gap-3 group hover:opacity-80 transition-opacity cursor-default">
-                            <div className="p-2 bg-agro-50 rounded-full group-hover:bg-agro-100 transition-colors">
-                                {benefit.icon}
+                        <React.Fragment key={index}>
+                            <div className="flex items-center gap-3 group cursor-default">
+                                <div className="p-2 bg-agro-800 rounded-lg group-hover:bg-agro-700 transition-colors shrink-0">
+                                    {benefit.icon}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-white leading-tight">
+                                        {benefit.title}
+                                    </span>
+                                    <span className="text-xs text-agro-300 mt-0.5">
+                                        {benefit.subtitle}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-800 leading-tight">{benefit.title}</span>
-                                <span className="text-xs text-gray-500">{benefit.subtitle}</span>
-                            </div>
-                        </div>
+                            {index < benefits.length - 1 && (
+                                <div className="w-px h-8 bg-agro-700" />
+                            )}
+                        </React.Fragment>
                     ))}
                 </div>
 
-                {/* Mobile: Carousel */}
+                {/* Mobile */}
                 <div className="md:hidden">
-                    <div className="flex items-center justify-center gap-3 min-h-[60px]">
-                        <div className="p-2 bg-agro-50 rounded-full">
+                    <div className="flex items-center justify-center gap-3 min-h-[52px]">
+                        <div className="p-2 bg-agro-800 rounded-lg shrink-0">
                             {benefits[currentIndex].icon}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800 leading-tight">
+                            <span className="text-sm font-semibold text-white leading-tight">
                                 {benefits[currentIndex].title}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-agro-300 mt-0.5">
                                 {benefits[currentIndex].subtitle}
                             </span>
                         </div>
                     </div>
-
-                    {/* Pagination Dots */}
                     <div className="flex justify-center gap-1.5 mt-2">
                         {benefits.map((_, index) => (
                             <button
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
-                                className={`h-1.5 rounded-full transition-all ${index === currentIndex
-                                    ? 'w-6 bg-agro-600'
-                                    : 'w-1.5 bg-gray-300'
-                                    }`}
+                                className={`h-1 rounded-full transition-all ${
+                                    index === currentIndex
+                                        ? 'w-6 bg-agro-400'
+                                        : 'w-1.5 bg-agro-700 hover:bg-agro-600'
+                                }`}
                                 aria-label={`Ir para benefício ${index + 1}`}
                             />
                         ))}
