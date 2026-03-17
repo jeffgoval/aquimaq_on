@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "test:watch": "tsx --watch --test \"src/**/*.test.ts\"",
-    "optimize-images": "tsx scripts/optimize-existing-images.ts"
+    "optimize-images": "tsx scripts/optimize-existing-images.ts",
+    "deploy:functions": "supabase functions deploy --project-ref bzicdqrbqykypzesxayw",
+    "deploy:checkout": "supabase functions deploy checkout --no-verify-jwt --project-ref bzicdqrbqykypzesxayw"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

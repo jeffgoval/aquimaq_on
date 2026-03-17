@@ -17,7 +17,16 @@ npm run test:watch   # Re-run on file changes
 
 # Run a single test file
 npx tsx --test src/utils/__tests__/cart-calculations.test.ts
+
+# Deploy Edge Functions
+npm run deploy:functions  # Deploy todas as funções (respeita supabase/config.toml)
+npm run deploy:checkout   # Deploy só o checkout com --no-verify-jwt
 ```
+
+> **ATENÇÃO:** NUNCA fazer deploy de Edge Functions sem usar os scripts acima ou sem
+> passar `--no-verify-jwt` para `checkout`. O padrão do Supabase é `verify_jwt=true`,
+> o que causa erro 401 no checkout de produção. O `supabase/config.toml` define isso
+> de forma declarativa — não remover.
 
 ## Environment
 
