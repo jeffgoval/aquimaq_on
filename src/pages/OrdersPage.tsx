@@ -249,7 +249,7 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         </div>
                         {order.shippingCost !== undefined && (
                             <div className="flex justify-between text-slate-500">
-                                <span>Frete{order.shippingMethod ? ` · ${order.shippingMethod}` : ''}</span>
+                                <span>Frete{order.shippingMethodLabel || order.shippingMethod ? ` · ${order.shippingMethodLabel || order.shippingMethod}` : ''}</span>
                                 <span>{order.shippingCost === 0 ? 'Grátis' : formatCurrency(order.shippingCost)}</span>
                             </div>
                         )}

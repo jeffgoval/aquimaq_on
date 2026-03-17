@@ -9,6 +9,7 @@ interface OrderRow {
     shipping_cost: number;
     total: number;
     shipping_method: string | null;
+    shipping_method_label: string | null;
     payment_method: string | null;
     tracking_code: string | null;
     shipping_status: string | null;
@@ -36,6 +37,7 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
       shipping_cost,
       total,
       shipping_method,
+      shipping_method_label,
       payment_method,
       tracking_code,
       shipping_status,
@@ -71,6 +73,7 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
         status: row.status as OrderStatus,
         createdAt: row.created_at,
         shippingMethod: row.shipping_method ?? undefined,
+        shippingMethodLabel: row.shipping_method_label ?? undefined,
         paymentMethod: row.payment_method ?? undefined,
         trackingCode: row.tracking_code ?? undefined,
         shippingStatus: row.shipping_status ?? undefined,

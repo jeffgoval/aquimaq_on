@@ -95,6 +95,7 @@ export interface Order {
   subtotal: number;
   shippingCost: number;
   shippingMethod?: string;
+  shippingMethodLabel?: string;
   total: number;
   status: OrderStatus;
   createdAt: string;
