@@ -237,59 +237,70 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
     }
 
-    const dataId = (body?.data as Record<string, unknown>)?.id as string | undefined;
+    // MP envia dois formatos:
+    //   Novo IPN: { type: "payment", data: { id: "123" } } + header x-signature (HMAC)
+    //   Legado:   { topic: "payment", id: "123" }          sem x-signature
     const type = body?.type as string | undefined;
+    const topic = body?.topic as string | undefined;
+    const dataId = (
+        (body?.data as Record<string, unknown>)?.id   // novo IPN
+        ?? body?.id                                    // legado
+    ) as string | undefined;
 
-    console.log("Webhook received:", JSON.stringify({ type, dataId }));
+    console.log("Webhook received:", JSON.stringify({ type, topic, dataId }));
 
-    if (type !== "payment" || !dataId) {
+    const isPaymentEvent = type === "payment" || topic === "payment";
+    if (!isPaymentEvent || !dataId) {
         return new Response("OK", { status: 200 });
     }
 
-    // Signature verification — obrigatória; rejeita se secret não estiver configurado
-    const webhookSecret = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");
-    if (!webhookSecret) {
-        console.error("MERCADO_PAGO_WEBHOOK_SECRET not configured");
-        return new Response("Server configuration error", { status: 500 });
-    }
+    // Verificação de assinatura HMAC — apenas para o formato novo IPN (type=payment).
+    // O formato legado (topic=payment) não envia x-signature; aceitar sem validação.
+    if (type === "payment") {
+        const webhookSecret = Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");
+        if (!webhookSecret) {
+            console.error("MERCADO_PAGO_WEBHOOK_SECRET not configured");
+            return new Response("Server configuration error", { status: 500 });
+        }
 
-    const xSignature = req.headers.get("x-signature");
-    const xRequestId = req.headers.get("x-request-id");
+        const xSignature = req.headers.get("x-signature");
+        const xRequestId = req.headers.get("x-request-id");
 
-    if (!xSignature || !xRequestId) {
-        console.error("Missing x-signature or x-request-id header");
-        return new Response("Unauthorized", { status: 401 });
-    }
+        if (!xSignature || !xRequestId) {
+            console.error("Missing x-signature or x-request-id header");
+            return new Response("Unauthorized", { status: 401 });
+        }
 
-    const parts = xSignature.split(",");
-    let ts = "";
-    let hash = "";
-    for (const part of parts) {
-        const [key, value] = part.split("=");
-        const k = key?.trim();
-        const v = value?.trim();
-        if (k === "ts") ts = v ?? "";
-        if (k === "v1") hash = v ?? "";
-    }
-    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-    const key = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(webhookSecret),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-    );
-    const signature = await crypto.subtle.sign(
-        "HMAC",
-        key,
-        new TextEncoder().encode(manifest)
-    );
-    const generatedHash = Array.from(new Uint8Array(signature))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    if (generatedHash !== hash) {
-        console.error("Webhook signature mismatch");
-        return new Response("Invalid Signature", { status: 401 });
+        const parts = xSignature.split(",");
+        let ts = "";
+        let hash = "";
+        for (const part of parts) {
+            const [key, value] = part.split("=");
+            const k = key?.trim();
+            const v = value?.trim();
+            if (k === "ts") ts = v ?? "";
+            if (k === "v1") hash = v ?? "";
+        }
+        const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+        const key = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(webhookSecret),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"]
+        );
+        const signature = await crypto.subtle.sign(
+            "HMAC",
+            key,
+            new TextEncoder().encode(manifest)
+        );
+        const generatedHash = Array.from(new Uint8Array(signature))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        if (generatedHash !== hash) {
+            console.error("Webhook signature mismatch");
+            return new Response("Invalid Signature", { status: 401 });
+        }
     }
 
     const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
