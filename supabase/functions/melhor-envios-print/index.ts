@@ -14,6 +14,87 @@ const ME_API_BASE = IS_PRODUCTION
     ? "https://www.melhorenvio.com.br/api/v2"
     : "https://sandbox.melhorenvio.com.br/api/v2";
 
+function meHeaders(token: string): HeadersInit {
+    return {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "AquimaqApp (suporte@aquimaq.com.br)",
+    };
+}
+
+/**
+ * Executa o fluxo completo de geração de etiqueta no Melhor Envios:
+ * 1. Checkout (pagar do saldo ME)
+ * 2. Generate (gerar a etiqueta)
+ * 3. Print (obter URL do PDF)
+ *
+ * As etapas 1 e 2 são idempotentes no ME — se já executadas anteriormente não causam erro.
+ * Falhas em checkout/generate são logadas mas não bloqueiam o print (reimpressão é permitida).
+ */
+async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<string> {
+    // 1. Checkout: pagar a etiqueta do saldo ME
+    try {
+        const checkoutRes = await fetch(`${ME_API_BASE}/me/shipment/checkout`, {
+            method: "POST",
+            headers: meHeaders(token),
+            body: JSON.stringify({ orders: [meOrderId], payment_method: "wallet" }),
+        });
+        if (!checkoutRes.ok) {
+            const errText = await checkoutRes.text().catch(() => "");
+            console.warn(`ME checkout warning (${checkoutRes.status}): ${errText}`);
+        } else {
+            console.log(`ME checkout ok for order ${meOrderId}`);
+        }
+    } catch (e) {
+        console.warn("ME checkout exception:", e);
+    }
+
+    // 2. Generate: gerar a etiqueta
+    try {
+        const generateRes = await fetch(`${ME_API_BASE}/me/shipment/generate`, {
+            method: "POST",
+            headers: meHeaders(token),
+            body: JSON.stringify({ orders: [meOrderId] }),
+        });
+        if (!generateRes.ok) {
+            const errText = await generateRes.text().catch(() => "");
+            console.warn(`ME generate warning (${generateRes.status}): ${errText}`);
+        } else {
+            console.log(`ME generate ok for order ${meOrderId}`);
+        }
+    } catch (e) {
+        console.warn("ME generate exception:", e);
+    }
+
+    // 3. Print: obter URL do PDF
+    const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId], mode: "public/pdf" }),
+    });
+
+    if (!printRes.ok) {
+        const errText = await printRes.text().catch(() => "");
+        throw new Error(`ME print failed (${printRes.status}): ${errText}`);
+    }
+
+    const contentType = printRes.headers.get("content-type") ?? "";
+    let pdfUrl: string;
+    if (contentType.includes("application/json")) {
+        const json = await printRes.json();
+        pdfUrl = json.url ?? json.link ?? json;
+    } else {
+        pdfUrl = (await printRes.text()).trim().replace(/^"|"$/g, "");
+    }
+
+    if (!pdfUrl || typeof pdfUrl !== "string" || !pdfUrl.startsWith("http")) {
+        throw new Error(`URL do PDF inválida retornada pelo Melhor Envios: ${pdfUrl}`);
+    }
+
+    return pdfUrl;
+}
+
 Deno.serve(async (req) => {
     const corsHeaders = {
         "Access-Control-Allow-Origin": getAllowedOrigin(req),
@@ -45,7 +126,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Verificar que o usuário é admin/gerente
+    // Verificar que o usuário é admin/gerente/vendedor
     const userSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: authHeader } },
     });
@@ -72,7 +153,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Parse body: espera { orderId: string } — ID interno do pedido no Supabase
+    // Parse body: espera { orderId: string }
     let body: { orderId?: string };
     try {
         body = await req.json();
@@ -112,50 +193,18 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Chamar API do Melhor Envios: POST /api/v2/me/shipment/print
-    const printResponse = await fetch(`${ME_API_BASE}/me/shipment/print`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${meToken}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": "AquimaqApp (suporte@aquimaq.com.br)",
-        },
-        body: JSON.stringify({
-            orders: [meOrderId],
-            mode: "public/pdf",
-        }),
-    });
-
-    if (!printResponse.ok) {
-        const errText = await printResponse.text().catch(() => "");
-        console.error("ME print API error:", printResponse.status, errText);
-        return new Response(JSON.stringify({ error: "Falha ao gerar etiqueta no Melhor Envios", detail: errText }), {
+    try {
+        const pdfUrl = await runMeFullPrintFlow(meOrderId, meToken);
+        return new Response(JSON.stringify({ url: pdfUrl }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("ME print flow error:", message);
+        return new Response(JSON.stringify({ error: "Falha ao gerar etiqueta no Melhor Envios", detail: message }), {
             status: 502,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
-
-    // ME retorna a URL do PDF diretamente como string ou JSON com campo "url"
-    const contentType = printResponse.headers.get("content-type") ?? "";
-    let pdfUrl: string;
-
-    if (contentType.includes("application/json")) {
-        const json = await printResponse.json();
-        pdfUrl = json.url ?? json.link ?? json;
-    } else {
-        pdfUrl = (await printResponse.text()).trim().replace(/^"|"$/g, "");
-    }
-
-    if (!pdfUrl || typeof pdfUrl !== "string" || !pdfUrl.startsWith("http")) {
-        return new Response(JSON.stringify({ error: "URL do PDF inválida retornada pelo Melhor Envios" }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
-    return new Response(JSON.stringify({ url: pdfUrl }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
 });

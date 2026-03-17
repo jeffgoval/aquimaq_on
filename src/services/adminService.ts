@@ -246,6 +246,35 @@ export const updateOrderTracking = async (
   if (error) throw error;
 };
 
+export interface ShippingOrderRow {
+  id: string;
+  createdAt: string;
+  meOrderId: string;
+  shippingMethodLabel: string | null;
+  shippingStatus: string | null;
+  trackingCode: string | null;
+  clienteName: string;
+}
+
+/** Lista pedidos enviados via Melhor Envios (me_order_id preenchido). */
+export const getShippingOrders = async (): Promise<ShippingOrderRow[]> => {
+  const { data, error } = await (supabase
+    .from('orders') as any)
+    .select('id, created_at, me_order_id, shipping_method_label, shipping_status, tracking_code, profiles(name)')
+    .not('me_order_id', 'is', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((o: any) => ({
+    id: o.id,
+    createdAt: o.created_at,
+    meOrderId: o.me_order_id,
+    shippingMethodLabel: o.shipping_method_label ?? null,
+    shippingStatus: o.shipping_status ?? null,
+    trackingCode: o.tracking_code ?? null,
+    clienteName: o.profiles?.name ?? '—',
+  }));
+};
+
 export interface SalesSummary {
   total_revenue: number;
   total_orders: number;

@@ -162,6 +162,7 @@ async function createMeShipment(
             number: (store?.origin_number as string) ?? "S/N",
             district: (store?.origin_district as string) ?? "",
             city: (store?.origin_city as string) ?? "",
+            state_abbr: (store?.origin_state as string) ?? "",
             country_id: "BR",
             postal_code: originZip,
         },
