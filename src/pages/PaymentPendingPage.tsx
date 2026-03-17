@@ -20,10 +20,10 @@ const PaymentPendingPage: React.FC = () => {
           O seu pagamento (boleto ou PIX) está a ser processado. Assim que for confirmado, você receberá uma notificação e poderá acompanhar em Meus Pedidos.
         </p>
         <Link
-          to={ROUTES.HOME}
+          to={ROUTES.ORDERS}
           className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-agro-600 hover:bg-agro-700"
         >
-          Voltar ao início
+          Ver meus pedidos
         </Link>
         <p className="mt-4">
           <Link to={ROUTES.HOME} className="text-agro-700 hover:text-agro-700 text-sm">

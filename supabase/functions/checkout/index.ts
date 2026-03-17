@@ -389,7 +389,7 @@ Deno.serve(async (req) => {
                     ...(excludedPaymentTypes.length > 0 && { excluded_payment_types: excludedPaymentTypes }),
                 },
                 ...(Object.keys(payer ?? {}).length > 0 && { payer }),
-                // auto_return omitted — requires public HTTPS URLs
+                auto_return: "approved",
             },
         });
     } catch (err: any) {
