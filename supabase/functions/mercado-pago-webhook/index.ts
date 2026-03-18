@@ -230,21 +230,24 @@ async function createMeShipment(
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+    // MP envia dois formatos:
+    //   Novo IPN: POST body JSON { type: "payment", data: { id: "123" } } + header x-signature (HMAC)
+    //   Legado:   URL query params ?id=123&topic=payment  com body vazio (sem JSON)
+    const url = new URL(req.url);
     let body: Record<string, unknown> = {};
     try {
         body = await req.json();
     } catch {
-        return new Response("OK", { status: 200 });
+        // corpo não é JSON — comum no formato legado (body vazio)
     }
 
-    // MP envia dois formatos:
-    //   Novo IPN: { type: "payment", data: { id: "123" } } + header x-signature (HMAC)
-    //   Legado:   { topic: "payment", id: "123" }          sem x-signature
-    const type = body?.type as string | undefined;
-    const topic = body?.topic as string | undefined;
+    const type = (body?.type ?? url.searchParams.get("type")) as string | undefined;
+    const topic = (body?.topic ?? url.searchParams.get("topic")) as string | undefined;
     const dataId = (
-        (body?.data as Record<string, unknown>)?.id   // novo IPN
-        ?? body?.id                                    // legado
+        (body?.data as Record<string, unknown>)?.id   // novo IPN (body)
+        ?? body?.id                                    // legado (body)
+        ?? url.searchParams.get("data.id")             // novo IPN (query param)
+        ?? url.searchParams.get("id")                  // legado (query param)
     ) as string | undefined;
 
     console.log("Webhook received:", JSON.stringify({ type, topic, dataId }));
