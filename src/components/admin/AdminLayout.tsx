@@ -120,10 +120,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: 'SETTINGS', label: 'Configurações', icon: <Settings size={18} />, title: 'Dados da empresa, pagamento e marketing' },
     ] as NavItem[]).filter(item => {
         // Ver matriz de roles em App.tsx (AdminRoutes). Manter alinhado com ProtectedRoute por rota.
-        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS'].includes(item.id)) return false; // vendedor: sem Cupons
+        if (isVendedor && !['DASHBOARD', 'ORDERS', 'PRODUCTS', 'BANNERS', 'SHIPPING'].includes(item.id)) return false;
         if (!isAdmin && !isVendedor && item.id === 'AI') return false; // Gerente: sem Config. IA
         if (isVendedor && item.id === 'WHATSAPP') return false; // WhatsApp: apenas admin/gerente
-        if (isVendedor && ['SHIPPING_GUARD', 'SHIPPING', 'SEASONAL', 'REVIEWS'].includes(item.id)) return false; // Logística, Sazonalidade, Avaliações: admin/gerente
+        if (isVendedor && ['SHIPPING_GUARD', 'SEASONAL', 'REVIEWS', 'COUPONS'].includes(item.id)) return false; // Logística, Sazonalidade, Avaliações, Cupons: admin/gerente
         return true;
     });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Star, Eye, EyeOff, Trash2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   getReviewsForAdmin,
   setReviewVisibility,
@@ -29,6 +30,8 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
 );
 
 const AdminReviewsManagement: React.FC = () => {
+  const { isAdmin, isGerente } = useAuth();
+  const canEdit = isAdmin || isGerente;
   const [reviews, setReviews] = useState<ReviewForAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -196,24 +199,26 @@ const AdminReviewsManagement: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleVisible(r.id, r.is_visible !== false)}
-                            title={r.is_visible !== false ? 'Ocultar' : 'Exibir'}
-                            className="p-1.5 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
-                          >
-                            {r.is_visible !== false ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteId(r.id)}
-                            title="Eliminar"
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        {canEdit && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisible(r.id, r.is_visible !== false)}
+                              title={r.is_visible !== false ? 'Ocultar' : 'Exibir'}
+                              className="p-1.5 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                            >
+                              {r.is_visible !== false ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(r.id)}
+                              title="Eliminar"
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

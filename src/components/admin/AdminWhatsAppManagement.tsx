@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, RefreshCw, FileText, CheckCircle, AlertCircle,
-  Pencil, X, Save, Clock, User, Hash
+  Pencil, X, Save, Clock, User, Hash, Lock
 } from 'lucide-react';
 import {
   getWhatsappTemplates,
@@ -15,6 +15,7 @@ import type {
   OrderFollowUpPayload,
 } from '@/types/whatsapp';
 import { cn } from '@/utils/cn';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ type TabId = 'modelos' | 'historico';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const AdminWhatsAppManagement: React.FC = () => {
+  const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('modelos');
 
   // Templates state
@@ -225,6 +227,13 @@ const AdminWhatsAppManagement: React.FC = () => {
             </p>
           </div>
 
+          {!isAdmin && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+              <Lock size={14} />
+              Modelos de mensagem são gerenciados pelo administrador.
+            </div>
+          )}
+
           {loadingTemplates ? (
             <div className="py-12 flex justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-stone-200 border-t-stone-500" />
@@ -250,14 +259,16 @@ const AdminWhatsAppManagement: React.FC = () => {
                         />
                       </div>
                       {!isEditing ? (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(t)}
-                          className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors shrink-0"
-                        >
-                          <Pencil size={12} />
-                          Editar
-                        </button>
+                        isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(t)}
+                            className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors shrink-0"
+                          >
+                            <Pencil size={12} />
+                            Editar
+                          </button>
+                        )
                       ) : (
                         <div className="flex items-center gap-2 shrink-0">
                           <button

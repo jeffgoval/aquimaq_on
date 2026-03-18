@@ -123,7 +123,7 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_ORDERS} element={<AdminOrdersManagement />} />
                 <Route path={ROUTE_PATHS.ADMIN_PRODUCTS} element={<AdminProductsManagement />} />
                 <Route path={ROUTE_PATHS.ADMIN_BANNERS} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
                         <AdminBannerManagement />
                     </ProtectedRoute>
                 } />
@@ -170,7 +170,7 @@ function AdminRoutes() {
                     </ProtectedRoute>
                 } />
                 <Route path={ROUTE_PATHS.ADMIN_SHIPPING} element={
-                    <ProtectedRoute allowedRoles={['admin', 'gerente']}>
+                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
                         <AdminShippingPage />
                     </ProtectedRoute>
                 } />

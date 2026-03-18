@@ -136,7 +136,8 @@ const inputCls = (error?: string, disabled?: boolean) =>
 const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
     const { settings, isLoading: isLoadingSettings, saveSettings } = useStoreSettings();
     const { refreshSettings } = useStore();
-    const { isAdmin } = useAuth();
+    const { isAdmin, isGerente } = useAuth();
+    const canEditPayment = isAdmin || isGerente;
 
     const [formData, setFormData] = useState<StoreConfig>({
         storeName: '',
@@ -358,7 +359,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                 <div>
                     <h1 className="text-lg font-semibold text-stone-800">Configurações</h1>
                     <p className="text-xs text-stone-500 mt-0.5">
-                        {isAdmin ? 'Acesso completo' : 'Gerente — pagamento é somente leitura'}
+                        {'Acesso completo'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -590,27 +591,20 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
             {/* ── Tab: Pagamento ── */}
             {activeTab === 'pagamento' && (
                 <div className="space-y-4">
-                    {!isAdmin && (
-                        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-                            <Lock size={14} />
-                            Configurações de pagamento são gerenciadas pelo administrador.
-                        </div>
-                    )}
-
-                    <SectionCard title="Métodos aceitos" description="Formas de pagamento disponíveis no checkout." locked={!isAdmin}>
+                    <SectionCard title="Métodos aceitos" description="Formas de pagamento disponíveis no checkout." locked={!canEditPayment}>
                         <div className="space-y-2">
                             {ALL_PAYMENT_TYPES.map(type => (
                                 <label key={type} className={cn('flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer',
                                     formData.acceptedPaymentTypes.includes(type)
                                         ? 'border-stone-300 bg-stone-50'
                                         : 'border-stone-200 hover:bg-stone-50',
-                                    !isAdmin && 'cursor-not-allowed opacity-60'
+                                    !canEditPayment && 'cursor-not-allowed opacity-60'
                                 )}>
                                     <input
                                         type="checkbox"
                                         checked={formData.acceptedPaymentTypes.includes(type)}
-                                        onChange={() => isAdmin && togglePaymentType(type)}
-                                        disabled={!isAdmin}
+                                        onChange={() => canEditPayment && togglePaymentType(type)}
+                                        disabled={!canEditPayment}
                                         className="accent-stone-700"
                                     />
                                     <span className="text-sm font-medium text-stone-700">{PAYMENT_TYPE_LABELS[type]}</span>
@@ -619,13 +613,13 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                         </div>
                     </SectionCard>
 
-                    <SectionCard title="Parcelamento" description="Máximo de parcelas disponíveis no cartão de crédito." locked={!isAdmin}>
+                    <SectionCard title="Parcelamento" description="Máximo de parcelas disponíveis no cartão de crédito." locked={!canEditPayment}>
                         <Field label="Máximo de parcelas">
                             <select
                                 value={formData.maxInstallments}
-                                onChange={e => isAdmin && setFormData(p => ({ ...p, maxInstallments: Number(e.target.value) }))}
-                                disabled={!isAdmin}
-                                className={cn(inputCls(undefined, !isAdmin), 'max-w-xs')}
+                                onChange={e => canEditPayment && setFormData(p => ({ ...p, maxInstallments: Number(e.target.value) }))}
+                                disabled={!canEditPayment}
+                                className={cn(inputCls(undefined, !canEditPayment), 'max-w-xs')}
                             >
                                 {[1, 2, 3, 4, 6, 9, 12].map(n => (
                                     <option key={n} value={n}>{n === 1 ? 'À vista' : `Até ${n}x`}</option>
@@ -634,7 +628,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                         </Field>
                     </SectionCard>
 
-                    <SectionCard title="Desconto PIX" description="Percentual de desconto aplicado para pagamento via PIX." locked={!isAdmin}>
+                    <SectionCard title="Desconto PIX" description="Percentual de desconto aplicado para pagamento via PIX." locked={!canEditPayment}>
                         <Field label="Desconto PIX (%)" hint="Ex: 5 para 5% de desconto. Aplicado automaticamente nos preços exibidos na loja.">
                             <div className="flex items-center gap-2 max-w-xs">
                                 <input
@@ -642,10 +636,10 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                     min={0}
                                     max={20}
                                     step={0.5}
-                                    disabled={!isAdmin}
+                                    disabled={!canEditPayment}
                                     value={+(formData.pixDiscount * 100).toFixed(2)}
-                                    onChange={e => isAdmin && setFormData(p => ({ ...p, pixDiscount: Number(e.target.value) / 100 }))}
-                                    className={cn(inputCls(undefined, !isAdmin))}
+                                    onChange={e => canEditPayment && setFormData(p => ({ ...p, pixDiscount: Number(e.target.value) / 100 }))}
+                                    className={cn(inputCls(undefined, !canEditPayment))}
                                 />
                                 <span className="text-sm text-stone-500 font-medium shrink-0">%</span>
                             </div>

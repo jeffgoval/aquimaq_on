@@ -108,10 +108,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     <h1 className="text-xl font-bold text-stone-800">
                         {isVendedor ? 'Minhas Vendas' : 'Painel da Loja'}
                     </h1>
-                    <p className="text-stone-400 text-sm mt-0.5 capitalize">{mesAtual}</p>
-                    <p className="text-stone-500 text-sm mt-1">
-                        Aqui vê o resumo das vendas e o que precisa de atenção.
-                    </p>
                 </div>
                 {error && (
                     <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg">
