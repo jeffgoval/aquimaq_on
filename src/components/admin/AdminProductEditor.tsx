@@ -34,6 +34,7 @@ interface AdminProductEditorProps {
 }
 
 interface ProductFormData {
+    sku: string;
     name: string;
     description: string;
     technicalSpecs: string;
@@ -92,6 +93,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({ productId, vend
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const [formData, setFormData] = useState<ProductFormData>({
+        sku: '',
         name: '',
         description: '',
         technicalSpecs: '',
@@ -126,6 +128,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({ productId, vend
         const data = await getProductRowById(productId);
         if (data) {
             setFormData({
+                sku: data.sku || '',
                 name: data.name || '',
                 description: data.description || '',
                 technicalSpecs: data.technical_specs || '',
@@ -197,6 +200,7 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({ productId, vend
         }
         setSaving(true);
         const productData = {
+            sku: formData.sku || null,
             name: formData.name,
             description: formData.description,
             technical_specs: formData.technicalSpecs,
@@ -292,17 +296,31 @@ const AdminProductEditor: React.FC<AdminProductEditorProps> = ({ productId, vend
 
                 {/* Basic Info */}
                 <SectionCard title="Informações básicas" icon={<FileText size={15} />}>
-                    <div>
-                        <label className={labelCls}>Nome do produto <span className="text-red-400">*</span></label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className={inputCls}
-                            placeholder="Ex: Enxada Forjada 2,5kg"
-                            required
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="sm:col-span-2">
+                            <label className={labelCls}>Nome do produto <span className="text-red-400">*</span></label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                className={inputCls}
+                                placeholder="Ex: Enxada Forjada 2,5kg"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Código SKU</label>
+                            <input
+                                type="text"
+                                name="sku"
+                                value={formData.sku}
+                                onChange={handleChange}
+                                className={inputCls}
+                                placeholder="Ex: 04328"
+                            />
+                            <p className="text-xs text-stone-400 mt-1">Código da loja física</p>
+                        </div>
                     </div>
                     <div>
                         <label className={labelCls}>Descrição</label>

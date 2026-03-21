@@ -7,6 +7,7 @@ import { ProductRow } from '@/types/database';
 export const mapProductRowToProduct = (row: ProductRow): Product => {
     return {
         id: row.id,
+        sku: row.sku || undefined,
         name: row.name,
         description: row.description || '',
         technicalSpecs: row.technical_specs || '',

@@ -175,6 +175,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onAddToCart }) =
             <span className="text-xs font-bold text-agro-700 uppercase tracking-widest">
               {product.category}
             </span>
+            {product.sku && (
+              <span className="text-sm text-gray-500">
+                Cód.: <span className="font-semibold text-gray-700">{product.sku}</span>
+              </span>
+            )}
             {product.brand && (
               <span className="text-sm text-gray-500">
                 Marca: <span className="font-semibold text-gray-700">{product.brand}</span>

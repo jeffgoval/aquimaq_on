@@ -492,6 +492,7 @@ export type Database = {
           review_count: number | null
           seo_description: string | null
           seo_title: string | null
+          sku: string | null
           slug: string | null
           stock: number | null
           supplier: string | null
@@ -529,6 +530,7 @@ export type Database = {
           review_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
+          sku?: string | null
           slug?: string | null
           stock?: number | null
           supplier?: string | null
@@ -566,6 +568,7 @@ export type Database = {
           review_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
+          sku?: string | null
           slug?: string | null
           stock?: number | null
           supplier?: string | null

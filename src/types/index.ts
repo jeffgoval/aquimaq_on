@@ -31,6 +31,7 @@ export enum ProductCategory {
 // Entidades
 export interface Product {
   id: string;
+  sku?: string;
   name: string;
   description: string;
   technicalSpecs: string; // Base de conhecimento para IA

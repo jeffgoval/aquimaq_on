@@ -62,7 +62,7 @@ export const getProducts = async (
   if (searchQuery) {
     const q = `%${searchQuery}%`;
     query = query.or(
-      `name.ilike.${q},description.ilike.${q},brand.ilike.${q}`
+      `name.ilike.${q},description.ilike.${q},brand.ilike.${q},sku.ilike.${q}`
     );
   }
   if (selectedBrands?.length > 0) {
