@@ -105,7 +105,8 @@ export async function createCheckout(params: CheckoutParams): Promise<CheckoutRe
 
   if (!response.ok) {
     if (import.meta.env?.DEV) console.error('Checkout error:', response.status, data);
-    throw new Error(data?.error || `Erro ao processar pagamento (${response.status}).`);
+    const detailsMsg = data?.details ? ` - ${JSON.stringify(data.details)}` : '';
+    throw new Error((data?.error ? data.error + detailsMsg : null) || `Erro ao processar pagamento (${response.status}).`);
   }
 
   if (!data?.checkout_url) {

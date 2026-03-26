@@ -332,8 +332,19 @@ Deno.serve(async (req) => {
     const preference = new Preference(client);
 
     // Montar itens para o MP com preços server-side
-    const itemsWithCurrency = [
-        ...serverItems.map((item) => ({
+    const itemsWithCurrency = [];
+    if (discountAmount > 0 && couponRow) {
+        itemsWithCurrency.push({
+            id: "order_items",
+            title: `Pedido ${orderRow.id} (Desconto: ${couponRow.code})`,
+            description: `Produtos do pedido ${orderRow.id} com desconto aplicado`,
+            category_id: "others",
+            quantity: 1,
+            unit_price: round2(serverSubtotal - discountAmount),
+            currency_id: "BRL",
+        });
+    } else {
+        itemsWithCurrency.push(...serverItems.map((item) => ({
             id: item.product_id,
             title: item.title,
             description: (item.description ?? item.title)?.slice(0, 256),
@@ -341,29 +352,20 @@ Deno.serve(async (req) => {
             quantity: item.quantity,
             unit_price: item.unit_price,
             currency_id: "BRL",
-        })),
-        ...(shippingCost > 0 && shippingItem
-            ? [{
-                id: "shipping",
-                title: shippingItem.title,
-                description: shippingItem.description?.slice(0, 256),
-                category_id: "others",
-                quantity: 1,
-                unit_price: shippingCost,
-                currency_id: "BRL",
-            }]
-            : []),
-        ...(discountAmount > 0 && couponRow
-            ? [{
-                id: "coupon",
-                title: `Desconto: ${couponRow.code as string}`,
-                category_id: "others",
-                quantity: 1,
-                unit_price: -discountAmount,
-                currency_id: "BRL",
-            }]
-            : []),
-    ];
+        })));
+    }
+
+    if (shippingCost > 0 && shippingItem) {
+        itemsWithCurrency.push({
+            id: "shipping",
+            title: shippingItem.title,
+            description: shippingItem.description?.slice(0, 256),
+            category_id: "others",
+            quantity: 1,
+            unit_price: shippingCost,
+            currency_id: "BRL",
+        });
+    }
 
     const payer =
         payload.payer?.email?.trim() || payload.payer?.first_name?.trim()

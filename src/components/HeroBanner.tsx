@@ -92,7 +92,7 @@ const HeroBanner: React.FC = () => {
                                 src={slide.image_url}
                                 alt={slide.title}
                                 loading={index === 0 ? 'eager' : 'lazy'}
-                                fetchPriority={index === 0 ? 'high' : 'low'}
+                                fetchpriority={index === 0 ? 'high' : 'low'}
                                 className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
                                     index === currentSlide ? 'scale-105' : 'scale-100'
                                 }`}
