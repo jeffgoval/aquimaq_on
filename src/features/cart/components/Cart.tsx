@@ -91,7 +91,7 @@ const Cart: React.FC<CartProps> = ({
     const isPickup = selectedShipping?.id === 'pickup_store';
 
     const isAddressComplete = (p: ProfileRow | null) =>
-        !!(p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
+        !!(p?.document_number && p?.phone && p?.street && p?.number && p?.neighborhood && p?.city && p?.state && p?.zip_code);
 
     const handleImageError = useCallback((itemId: string) => {
         setImageErrors(prev => new Set(prev).add(itemId));
@@ -323,7 +323,7 @@ const Cart: React.FC<CartProps> = ({
                                             onClick={() => setShowAddressModal(true)}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
                                         >
-                                            <MapPin size={15} /> Adicionar endereço
+                                            <MapPin size={15} /> Completar cadastro de entrega
                                         </button>
                                     </div>
                                 ) : (
@@ -333,7 +333,12 @@ const Cart: React.FC<CartProps> = ({
                                             {profile.complement ? `, ${profile.complement}` : ''}
                                         </p>
                                         <p>{profile.neighborhood} — {profile.city} / {profile.state}</p>
-                                        <p className="text-gray-400 text-xs font-mono">{profile.zip_code}</p>
+                                        <p className="text-gray-400 text-xs font-mono mb-1">{profile.zip_code}</p>
+                                        {(profile.document_number || profile.phone) && (
+                                            <p className="text-gray-500 text-xs pt-2 border-t border-gray-100">
+                                                CPF/CNPJ: {profile.document_number} • Tel: {profile.phone}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -488,7 +493,7 @@ const Cart: React.FC<CartProps> = ({
                                         onClick={() => setShowAddressModal(true)}
                                         className="w-full flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors"
                                     >
-                                        <MapPin size={18} /> Informar endereço
+                                        <MapPin size={18} /> Informar dados de envio
                                     </button>
                                 ) : !selectedShipping ? (
                                     <div>
@@ -546,6 +551,8 @@ const Cart: React.FC<CartProps> = ({
                 <AddressEditModal
                     user={{
                         ...profile,
+                        document_number: profile.document_number || '',
+                        phone: profile.phone || '',
                         address: {
                             street: profile.street || '',
                             number: profile.number || '',
@@ -562,6 +569,8 @@ const Cart: React.FC<CartProps> = ({
                         const { error } = await supabase
                             .from('profiles')
                             .update({
+                                document_number: updatedData.document_number,
+                                phone: updatedData.phone,
                                 street: addr.street,
                                 number: addr.number,
                                 complement: addr.complement,

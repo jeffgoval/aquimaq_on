@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
-import { maskCEP } from '@/utils/masks';
+import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 
 interface AddressUser {
@@ -13,6 +13,8 @@ interface AddressUser {
     city: string;
     state: string;
   };
+  document_number?: string | null;
+  phone?: string | null;
   [key: string]: unknown;
 }
 
@@ -34,6 +36,8 @@ const emptyAddress = {
 
 const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClose }) => {
   const [address, setAddress] = useState(user.address ? { ...emptyAddress, ...user.address } : emptyAddress);
+  const [docNumber, setDocNumber] = useState(user.document_number ? maskDocument(user.document_number) : '');
+  const [phone, setPhone] = useState(user.phone ? maskPhone(user.phone) : '');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +86,8 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 
   useEffect(() => {
     setAddress(user.address ? { ...emptyAddress, ...user.address } : emptyAddress);
+    setDocNumber(user.document_number ? maskDocument(user.document_number) : '');
+    setPhone(user.phone ? maskPhone(user.phone) : '');
   }, [user]);
 
   const handleChange = (field: keyof typeof address, value: string) => {
@@ -118,6 +124,14 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!docNumber?.trim() || docNumber.replace(/\D/g, '').length < 11) {
+      setError('Um CPF ou CNPJ válido é obrigatório para entrega.');
+      return;
+    }
+    if (!phone?.trim() || phone.replace(/\D/g, '').length < 10) {
+      setError('Um telefone de contato válido é obrigatório para entrega.');
+      return;
+    }
     if (!address.street?.trim()) {
       setError('Informe a rua ou logradouro.');
       return;
@@ -131,6 +145,8 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
     try {
       await onSave({
         ...user,
+        document_number: docNumber.replace(/\D/g, ''),
+        phone: phone.replace(/\D/g, ''),
         address: {
           zip: address.zip,
           street: address.street,
@@ -174,11 +190,44 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CPF / CNPJ</label>
+              <input
+                autoFocus
+                type="text"
+                value={docNumber}
+                onChange={(e) => {
+                  setDocNumber(maskDocument(e.target.value));
+                  setError(null);
+                }}
+                maxLength={18}
+                placeholder="000.000.000-00"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(maskPhone(e.target.value));
+                  setError(null);
+                }}
+                maxLength={15}
+                placeholder="(00) 00000-0000"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <hr className="border-gray-100 my-2" />
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
             <div className="relative">
               <input
-                autoFocus
                 type="text"
                 value={address.zip}
                 onChange={(e) => handleChange('zip', e.target.value)}
