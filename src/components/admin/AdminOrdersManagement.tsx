@@ -20,6 +20,7 @@ import {
     updateOrderTracking,
     getAdminMePrintUrl,
     printMelhorEnviosLabel,
+    tryOpenMelhorEnviosLabelTab,
     syncOrderTrackingFromMelhorEnvios,
     type OrderAdminRow
 } from '@/services/adminService';
@@ -170,53 +171,54 @@ const AdminOrdersManagement: React.FC = () => {
     const handlePrintLabel = async (order: PedidoComCliente) => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Gerando etiqueta...' });
+        const prevStatus = order.status;
+        const shouldAutoAdvance =
+            prevStatus !== OrderStatus.PICKING &&
+            prevStatus !== OrderStatus.SHIPPED &&
+            prevStatus !== OrderStatus.DELIVERED &&
+            prevStatus !== OrderStatus.CANCELLED;
+
+        // Pop-up primeiro (síncrono com o clique); depois grava no Supabase com await.
+        const opened = tryOpenMelhorEnviosLabelTab(order.id);
+
         try {
-            const prevStatus = order.status;
-            // Importante: abrir a nova aba SEM await antes, para não cair em popup blocker.
-            await printMelhorEnviosLabel(order.id);
-
-            const shouldAutoAdvance =
-                prevStatus !== OrderStatus.PICKING &&
-                prevStatus !== OrderStatus.SHIPPED &&
-                prevStatus !== OrderStatus.DELIVERED &&
-                prevStatus !== OrderStatus.CANCELLED;
-
             if (shouldAutoAdvance) {
-                void updateOrderStatus(order.id, OrderStatus.PICKING);
+                await updateOrderStatus(order.id, OrderStatus.PICKING);
                 setOrders(prev => prev.map(o =>
                     o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
                 ));
                 if (selectedOrder && selectedOrder.id === order.id) {
                     setSelectedOrder({ ...selectedOrder, status: OrderStatus.PICKING });
                 }
-
                 showToast('Status atualizado para “Em Separação”.', 'info', {
                     duration: 10000,
                     actionLabel: 'Desfazer',
                     onAction: () => {
-                        void updateOrderStatus(order.id, prevStatus);
-                        setOrders(prev => prev.map(o =>
-                            o.id === order.id ? { ...o, status: prevStatus } : o
-                        ));
-                        setSelectedOrder(prev => prev && prev.id === order.id ? { ...prev, status: prevStatus } : prev);
+                        void updateOrderStatus(order.id, prevStatus).then(() => {
+                            setOrders(prev => prev.map(o =>
+                                o.id === order.id ? { ...o, status: prevStatus } : o
+                            ));
+                            setSelectedOrder(prev2 => prev2 && prev2.id === order.id ? { ...prev2, status: prevStatus } : prev2);
+                        }).catch(() => {
+                            setMessage({ type: 'error', text: 'Não foi possível desfazer o status.' });
+                        });
                     },
                 });
             }
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
-            if (msg === 'POPUP_BLOCKED') {
-                showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
-                    duration: 10000,
-                    actionLabel: 'Abrir etiqueta',
-                    onAction: () => { void printMelhorEnviosLabel(order.id); },
-                });
-                setMessage(null);
-            } else {
-                setMessage({ type: 'error', text: msg || 'Erro ao gerar etiqueta.' });
-            }
+            setMessage({ type: 'error', text: msg || 'Erro ao atualizar status no Supabase.' });
         } finally {
             setPrintingLabel(false);
+        }
+
+        if (!opened) {
+            showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
+                duration: 10000,
+                actionLabel: 'Abrir etiqueta',
+                onAction: () => { void printMelhorEnviosLabel(order.id); },
+            });
         }
     };
 

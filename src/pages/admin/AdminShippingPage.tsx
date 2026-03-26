@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, printMelhorEnviosLabel, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
+import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, printMelhorEnviosLabel, tryOpenMelhorEnviosLabelTab, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 import { useToast } from '@/contexts/ToastContext';
 import { OrderStatus } from '@/types';
@@ -78,42 +78,50 @@ const AdminShippingPage: React.FC = () => {
 
   const handlePrint = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
-    try {
-      await printMelhorEnviosLabel(order.id);
+    const opened = tryOpenMelhorEnviosLabelTab(order.id);
 
-      // Importante: só fazemos awaits depois de abrir a nova aba, para não cair em popup blocker.
+    try {
       const prevStatus = await getOrderStatus(order.id);
       const shouldAutoAdvance =
+        !!prevStatus &&
         prevStatus !== OrderStatus.PICKING &&
         prevStatus !== OrderStatus.SHIPPED &&
         prevStatus !== OrderStatus.DELIVERED &&
         prevStatus !== OrderStatus.CANCELLED;
 
-      if (shouldAutoAdvance) {
+      if (shouldAutoAdvance && prevStatus) {
         await updateOrderStatus(order.id, OrderStatus.PICKING);
         showToast('Status atualizado para “Em Separação”.', 'info', {
           duration: 10000,
           actionLabel: 'Desfazer',
-          onAction: () => { void updateOrderStatus(order.id, prevStatus); },
+          onAction: () => {
+            void updateOrderStatus(order.id, prevStatus).catch(() => {
+              setAlertState({
+                open: true,
+                title: 'Erro ao desfazer',
+                description: 'Não foi possível restaurar o status anterior.',
+              });
+            });
+          },
         });
       }
     } catch (e: any) {
       const msg = String(e?.message ?? e ?? 'Erro desconhecido');
-      if (msg === 'POPUP_BLOCKED') {
-        showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
-          duration: 10000,
-          actionLabel: 'Abrir etiqueta',
-          onAction: () => { void printMelhorEnviosLabel(order.id); },
-        });
-      } else {
       setAlertState({
         open: true,
-        title: 'Erro ao imprimir etiqueta',
+        title: 'Erro ao atualizar status',
         description: msg,
       });
-      }
     } finally {
       setPrintingId(null);
+    }
+
+    if (!opened) {
+      showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
+        duration: 10000,
+        actionLabel: 'Abrir etiqueta',
+        onAction: () => { void printMelhorEnviosLabel(order.id); },
+      });
     }
   };
 

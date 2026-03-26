@@ -237,17 +237,22 @@ export const getOrderStatus = async (orderId: string): Promise<string | null> =>
 
 
 /**
- * Abre a etiqueta em nova aba. O PDF é obtido via proxy na Edge Function (streamPdf)
- * para evitar falha do visualizador do Chrome com URLs presignadas S3 (CORS / range).
+ * Abre a aba de impressão da etiqueta no mesmo “turno” do clique (evita bloqueio de pop-up).
+ * O caller deve chamar isto ANTES de qualquer `await` (ex.: antes de `updateOrderStatus`).
  */
-export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => {
-  // Volta ao comportamento anterior: abrir etiqueta 10×15 em nova aba.
-  // (Docs permanece navegando na mesma aba.)
+export const tryOpenMelhorEnviosLabelTab = (orderId: string): boolean => {
   const url = `${window.location.origin}${getAdminMePrintUrl(orderId, 'label')}`;
   const win = window.open(url, '_blank', 'noopener,noreferrer');
-  // Se o browser bloquear o pop-up, não faz fallback na mesma aba (prejudica UX).
-  // O caller pode oferecer um CTA "Abrir" (clique do usuário não é bloqueado).
-  if (!win) throw new Error('POPUP_BLOCKED');
+  return !!win;
+};
+
+/**
+ * Abre a etiqueta em nova aba (para CTAs secundários onde já há gesto do utilizador).
+ */
+export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => {
+  if (!tryOpenMelhorEnviosLabelTab(orderId)) {
+    throw new Error('POPUP_BLOCKED');
+  }
 };
 
 /** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */
