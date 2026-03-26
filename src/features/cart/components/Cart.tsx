@@ -308,7 +308,7 @@ const Cart: React.FC<CartProps> = ({
                                     <div className="text-center py-1">
                                         <p className="text-sm text-gray-500 mb-3">Faça login para informar o endereço</p>
                                         <button
-                                            onClick={() => navigate(ROUTES.LOGIN)}
+                                            onClick={() => navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(ROUTES.CART)}`)}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-agro-600 hover:bg-agro-700 text-white text-sm font-semibold rounded-lg transition-colors"
                                         >
                                             <LogIn size={15} /> Entrar
@@ -478,7 +478,7 @@ const Cart: React.FC<CartProps> = ({
                                 )}
                                 {!profile ? (
                                     <button
-                                        onClick={() => navigate(ROUTES.LOGIN)}
+                                        onClick={() => navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(ROUTES.CART)}`)}
                                         className="w-full flex items-center justify-center gap-2 py-3.5 bg-agro-600 hover:bg-agro-700 text-white font-bold rounded-xl transition-colors"
                                     >
                                         <LogIn size={18} /> Entrar para finalizar
