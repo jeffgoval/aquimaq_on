@@ -123,9 +123,10 @@ async function createMeShipment(
     const originZip = ((store?.origin_cep ?? Deno.env.get("CEP_ORIGEM") ?? "")).replace(/\D/g, "");
 
     // Lista de produtos para o ME
-    const products = (items ?? []).map((item: Record<string, unknown>) => {
+    const products = (items ?? []).map((item: Record<string, unknown>, idx: number) => {
         const prod = item.products as Record<string, unknown> | null;
         return {
+            id: String(idx + 1), // Obrigatório pela ref do Melhor Envios
             name: (item.product_name as string) ?? "Produto",
             quantity: item.quantity as number,
             unitary_value: Number(item.unit_price),
@@ -213,6 +214,13 @@ async function createMeShipment(
     if (!cartRes.ok) {
         const errText = await cartRes.text().catch(() => "");
         console.error("createMeShipment: ME cart API error:", cartRes.status, errText);
+        
+        // Gravar erro na nota do pedido para debug
+        await supabase
+            .from("orders")
+            .update({ notes: `ERRO MELHOR ENVIOS (${cartRes.status}): ${errText}` })
+            .eq("id", orderId);
+        
         return;
     }
 
