@@ -1,3 +1,4 @@
+import { ENV } from '@/config/env';
 import { supabase } from './supabase';
 
 export interface StockAlertRow {
@@ -225,39 +226,49 @@ export const updateOrderStatus = async (
 };
 
 
-/** Solicita impressão de etiqueta térmica via Melhor Envios. Retorna URL do PDF. */
-export const printMelhorEnviosLabel = async (orderId: string): Promise<string> => {
-  const { data, error } = await supabase.functions.invoke('melhor-envios-print', {
-    body: { orderId },
-  });
-  if (error) {
-    const e = error as any;
-    let rawBody: string | undefined =
-      typeof e?.context?.body === 'string' ? e.context.body : undefined;
-    if (!rawBody && e?.context && typeof e.context.clone === 'function') {
-      try {
-        rawBody = await e.context.clone().text();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (rawBody?.trim()) {
-      try {
-        const parsed = JSON.parse(rawBody) as { error?: string; detail?: string };
-        const msg = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
-        if (msg) throw new Error(msg);
-      } catch (parseErr) {
-        if (parseErr instanceof SyntaxError) {
-          /* body não-JSON */
-        } else {
-          throw parseErr;
-        }
-      }
-    }
-    throw error;
+/**
+ * Abre a etiqueta em nova aba. O PDF é obtido via proxy na Edge Function (streamPdf)
+ * para evitar falha do visualizador do Chrome com URLs presignadas S3 (CORS / range).
+ */
+export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Sessão expirada. Entre novamente.');
   }
-  if (!data?.url) throw new Error('URL do PDF não retornada');
-  return data.url as string;
+
+  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: ENV.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ orderId, streamPdf: true }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let msg = text?.trim() || `Erro ao gerar etiqueta (${res.status}).`;
+    try {
+      const parsed = JSON.parse(text) as { error?: string; detail?: string };
+      const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
+      if (combined) msg = combined;
+    } catch {
+      /* corpo não-JSON */
+    }
+    throw new Error(msg);
+  }
+
+  const blob = await res.blob();
+  if (!blob.size) throw new Error('PDF da etiqueta veio vazio.');
+
+  const blobUrl = URL.createObjectURL(blob);
+  const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    URL.revokeObjectURL(blobUrl);
+    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
+  }
+  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120_000);
 };
 
 /** Atualiza código de rastreio de um pedido. */

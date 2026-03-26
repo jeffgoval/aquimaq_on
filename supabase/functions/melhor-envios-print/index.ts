@@ -347,7 +347,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    let body: { orderId?: string };
+    let body: { orderId?: string; streamPdf?: boolean };
     try {
         body = await req.json();
     } catch {
@@ -386,8 +386,33 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const url = await runMeFullPrintFlow(meOrderId, meToken);
-        return new Response(JSON.stringify({ url }), {
+        const pdfUrl = await runMeFullPrintFlow(meOrderId, meToken);
+
+        /**
+         * PDF em S3 (presigned) pode falhar no visualizador do Chrome (CORS / range requests).
+         * Com streamPdf, o Deno faz GET ao S3 sem CORS e devolve o binário ao browser (mesma sessão autenticada).
+         */
+        if (body.streamPdf === true) {
+            const pdfRes = await fetch(pdfUrl);
+            const pdfBytes = await pdfRes.arrayBuffer().catch(() => new ArrayBuffer(0));
+            if (!pdfRes.ok || pdfBytes.byteLength === 0) {
+                const snippet = new TextDecoder().decode(pdfBytes.slice(0, 300));
+                throw new MelhorEnvioFlowError(
+                    `Falha ao baixar PDF da etiqueta (${pdfRes.status}): ${snippet || "(vazio)"}`,
+                    502,
+                );
+            }
+            return new Response(pdfBytes, {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/pdf",
+                    "Content-Disposition": 'inline; filename="etiqueta.pdf"',
+                },
+            });
+        }
+
+        return new Response(JSON.stringify({ url: pdfUrl }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

@@ -139,8 +139,7 @@ const AdminOrdersManagement: React.FC = () => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Gerando etiqueta...' });
         try {
-            const url = await printMelhorEnviosLabel(order.id);
-            window.open(url, '_blank');
+            await printMelhorEnviosLabel(order.id);
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';

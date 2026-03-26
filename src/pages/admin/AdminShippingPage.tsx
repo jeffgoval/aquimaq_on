@@ -74,8 +74,7 @@ const AdminShippingPage: React.FC = () => {
   const handlePrint = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
     try {
-      const url = await printMelhorEnviosLabel(order.id);
-      window.open(url, '_blank');
+      await printMelhorEnviosLabel(order.id);
     } catch (e: any) {
       setAlertState({
         open: true,
