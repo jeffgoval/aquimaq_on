@@ -71,11 +71,22 @@ All written in Deno/TypeScript. Key functions:
 | `mercado-pago-webhook` | Validates HMAC signature; updates order + payment records |
 | `mercado-pago-create-preference` | Standalone MP preference creation |
 | `melhor-envios-quote` | Returns shipping quotes |
-| `melhor-envios-webhook` | Handles shipping events |
+| `melhor-envios-webhook` | Handles shipping events (tracking/status) via ME webhooks |
 | `melhor-envios-print` | Generates shipping labels |
 | `whatsapp-send` | Sends WhatsApp messages |
 | `process-product-document` | PDF → chunks → embeddings (OpenAI) |
 | `detect-abandoned-carts` | Scheduled: detects and flags abandoned carts |
+
+#### Melhor Envios: webhook de rastreio (automático)
+Para o vendedor **não** precisar copiar/colar o código de rastreio do painel do Melhor Envios:
+
+- Configure no Supabase Secrets a variável **`MELHOR_ENVIOS_WEBHOOK_SECRET`**
+- Cadastre o webhook no painel do Melhor Envios apontando para a Edge Function `melhor-envios-webhook`
+- **Importante**: eventos reais devem vir assinados com header **`X-ME-Signature`** (HMAC do corpo).
+  - A Edge Function **ignora** requisições sem assinatura (retorna 200 apenas para não quebrar a validação/teste de cadastro do ME).
+  - Só atualiza `orders.tracking_code`, `orders.tracking_url` e `orders.shipping_status` quando a assinatura for válida.
+
+Ver guia completo em `docs/melhor-envios-webhook.md`.
 
 ### Key Services (`src/services/`)
 - `checkoutService.ts` — raw fetch to Edge Function (not `supabase.functions.invoke`)

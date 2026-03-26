@@ -64,9 +64,11 @@ Deno.serve(async (req) => {
 
     const meSignature = req.headers.get("X-ME-Signature") ?? req.headers.get("x-me-signature");
     if (!meSignature) {
-        console.error("Missing X-ME-Signature header");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
+        // O Melhor Envios pode enviar uma "requisição de teste" no cadastro do webhook sem assinatura.
+        // Para não bloquear o cadastro, SEMPRE respondemos 200 quando não há assinatura.
+        // Segurança: sem assinatura, não processamos eventos (apenas ignoramos).
+        return new Response(JSON.stringify({ ok: true, ignored: true, reason: "missing-signature" }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
