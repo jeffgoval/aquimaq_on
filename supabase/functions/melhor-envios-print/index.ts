@@ -33,18 +33,47 @@ function meHeaders(token: string): HeadersInit {
     };
 }
 
-/** Extrai URL http(s) da resposta JSON da ME (imprimir/pdf pode vir como string, {url}, ou objeto dinâmico). */
+/** Normaliza string que pode vir com aspas ou barras escapadas (`https:\/\/...`). */
+function normalizeMeUrlString(s: string): string {
+    return s.trim().replace(/^"|"$/g, "").replace(/\\\//g, "/");
+}
+
+/**
+ * Extrai URL http(s) da resposta JSON da ME (imprimir/pdf):
+ * string direta, array `["https://..."], objeto { url }, ou JSON aninhado em string.
+ */
 function extractHttpUrlFromMeBody(raw: unknown): string {
     if (typeof raw === "string") {
-        const t = raw.trim().replace(/^"|"$/g, "");
+        const t = normalizeMeUrlString(raw);
         if (t.startsWith("http")) return t;
+        if (t.startsWith("[") || t.startsWith("{")) {
+            try {
+                return extractHttpUrlFromMeBody(JSON.parse(t));
+            } catch {
+                return "";
+            }
+        }
+        return "";
+    }
+    if (Array.isArray(raw)) {
+        for (const item of raw) {
+            const u = extractHttpUrlFromMeBody(item);
+            if (u) return u;
+        }
+        return "";
     }
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
         const o = raw as Record<string, unknown>;
         const direct = o.url ?? o.link;
-        if (typeof direct === "string" && direct.startsWith("http")) return direct;
+        if (typeof direct === "string") {
+            const u = normalizeMeUrlString(direct);
+            if (u.startsWith("http")) return u;
+        }
         for (const v of Object.values(o)) {
-            if (typeof v === "string" && v.startsWith("http")) return v;
+            if (typeof v === "string") {
+                const u = normalizeMeUrlString(v);
+                if (u.startsWith("http")) return u;
+            }
         }
     }
     return "";
