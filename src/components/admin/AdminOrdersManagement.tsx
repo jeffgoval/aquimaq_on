@@ -184,6 +184,7 @@ const AdminOrdersManagement: React.FC = () => {
 
         // Pop-up primeiro (síncrono com o clique); depois grava no Supabase com await.
         tryOpenMelhorEnviosLabelTab(order.id);
+        setSelectedOrder(null);
 
         try {
             if (shouldAutoAdvance) {
@@ -191,9 +192,6 @@ const AdminOrdersManagement: React.FC = () => {
                 setOrders(prev => prev.map(o =>
                     o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
                 ));
-                if (selectedOrder && selectedOrder.id === order.id) {
-                    setSelectedOrder({ ...selectedOrder, status: OrderStatus.PICKING });
-                }
                 showToast('Status atualizado para “Em Separação”.', 'info', {
                     duration: 10000,
                     actionLabel: 'Desfazer',
