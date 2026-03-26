@@ -285,7 +285,7 @@ export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> 
       Authorization: `Bearer ${session.access_token}`,
       apikey: ENV.VITE_SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ orderId }),
+    body: JSON.stringify({ orderId, printPage: true }),
   });
 
   const text = await res.text().catch(() => '');

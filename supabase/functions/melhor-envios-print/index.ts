@@ -291,6 +291,79 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
     );
 }
 
+/**
+ * Fluxo para "Docs": garante checkout + generate e retorna a URL da página de impressão (shipment/print).
+ * A ME pode renderizar documentos adicionais nessa página (comprovantes/formulários).
+ *
+ * @see https://docs.melhorenvio.com.br/reference/impressao-de-etiquetas
+ */
+async function runMePrintPageFlow(meOrderId: string, token: string): Promise<string> {
+    // Reaproveita as duas primeiras etapas do fluxo completo (checkout + generate)
+    const checkoutRes = await fetch(`${ME_API_BASE}/me/shipment/checkout`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId], payment_method: "wallet" }),
+    });
+    const checkoutBody = await checkoutRes.text().catch(() => "");
+    if (!checkoutRes.ok) {
+        if (isMeCheckoutAlreadyPaidOrInvalidOrders(checkoutRes.status, checkoutBody)) {
+            console.log(`ME checkout skipped (envio já pago ou equivalente): ${meOrderId}`);
+        } else {
+            throw new MelhorEnvioFlowError(
+                `ME checkout failed (${checkoutRes.status}): ${checkoutBody}`,
+                422,
+            );
+        }
+    }
+
+    const generateRes = await fetch(`${ME_API_BASE}/me/shipment/generate`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId] }),
+    });
+    const generateBodyText = await generateRes.text().catch(() => "");
+    let genPayload: Record<string, { status?: boolean; message?: string }> | null = null;
+    if (generateBodyText) {
+        try {
+            genPayload = JSON.parse(generateBodyText) as Record<string, { status?: boolean; message?: string }>;
+        } catch {
+            genPayload = null;
+        }
+    }
+    const genEntry = genPayload?.[meOrderId];
+    const generateAlreadyDone = isMeGenerateShipmentAlreadyGenerated(
+        generateRes.ok,
+        generateBodyText,
+        meOrderId,
+        genPayload,
+    );
+    if (!generateRes.ok && !generateAlreadyDone) {
+        throw new MelhorEnvioFlowError(
+            `ME generate failed (${generateRes.status}): ${generateBodyText}`,
+            422,
+        );
+    }
+    if (generateRes.ok && !genPayload) {
+        throw new MelhorEnvioFlowError(
+            `ME generate: JSON inválido: ${generateBodyText.slice(0, 500)}`,
+            422,
+        );
+    }
+    if (!generateAlreadyDone && (!genEntry || genEntry.status !== true)) {
+        const msg = genEntry?.message ?? JSON.stringify(genEntry ?? {});
+        throw new MelhorEnvioFlowError(
+            `ME generate: etiqueta não gerada para ${meOrderId}: ${msg}`,
+            422,
+        );
+    }
+    if (generateAlreadyDone && (!genEntry || genEntry.status !== true)) {
+        console.log(`ME generate skipped (envio ou etiqueta já gerado): ${meOrderId}`);
+    }
+
+    // Retorna o link de impressão (página) — não o PDF em S3
+    return await meShipmentPrintPublic(meOrderId, token);
+}
+
 Deno.serve(async (req) => {
     const corsHeaders = {
         "Access-Control-Allow-Origin": getAllowedOrigin(req),
@@ -347,7 +420,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    let body: { orderId?: string; streamPdf?: boolean };
+    let body: { orderId?: string; streamPdf?: boolean; printPage?: boolean };
     try {
         body = await req.json();
     } catch {
@@ -386,7 +459,9 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const pdfUrl = await runMeFullPrintFlow(meOrderId, meToken);
+        const pdfUrl = body.printPage === true
+            ? await runMePrintPageFlow(meOrderId, meToken)
+            : await runMeFullPrintFlow(meOrderId, meToken);
 
         /**
          * PDF em S3 (presigned) pode falhar no visualizador do Chrome (CORS / range requests).
