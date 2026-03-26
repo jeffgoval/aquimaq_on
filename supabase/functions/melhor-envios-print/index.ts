@@ -439,14 +439,6 @@ Deno.serve(async (req) => {
         .eq("id", user.id)
         .maybeSingle();
 
-    const allowedRoles = ["admin", "gerente", "vendedor"];
-    if (!profile || !allowedRoles.includes(profile.role)) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
     let body: { orderId?: string; streamPdf?: boolean; printPage?: boolean; syncTracking?: boolean };
     try {
         body = await req.json();
@@ -466,7 +458,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await adminSupabase
         .from("orders")
-        .select("id, me_order_id, tracking_code, tracking_url, shipping_status")
+        .select("id, cliente_id, me_order_id, tracking_code, tracking_url, shipping_status")
         .eq("id", body.orderId)
         .maybeSingle();
 
@@ -475,6 +467,29 @@ Deno.serve(async (req) => {
             status: 404,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+    }
+
+    // Autorização:
+    // - imprimir (streamPdf/printPage) é restrito a staff (admin/gerente/vendedor)
+    // - syncTracking pode ser feito também pelo próprio cliente (dono do pedido)
+    const role = profile?.role ?? null;
+    const isStaff = role === "admin" || role === "gerente" || role === "vendedor";
+    const isOwner = order.cliente_id === user.id;
+
+    if (body.syncTracking === true) {
+        if (!isStaff && !isOwner) {
+            return new Response(JSON.stringify({ error: "Forbidden" }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+    } else {
+        if (!isStaff) {
+            return new Response(JSON.stringify({ error: "Forbidden" }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
     }
 
     const meOrderId = order.me_order_id;

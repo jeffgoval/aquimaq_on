@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase';
 import type { Order, OrderStatus } from '@/types';
+import { ENV } from '@/config/env';
 
 interface OrderRow {
     id: string;
@@ -79,4 +80,43 @@ export async function fetchOrders(clientId: string): Promise<Order[]> {
         shippingStatus: row.shipping_status ?? undefined,
         trackingUrl: row.tracking_url ?? undefined,
     }));
+}
+
+export interface BuyerMeTrackingSyncResult {
+    trackingCode: string | null;
+    trackingUrl: string | null;
+}
+
+export async function syncBuyerOrderTrackingFromMelhorEnvios(orderId: string): Promise<BuyerMeTrackingSyncResult> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
+
+    const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: ENV.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ orderId, syncTracking: true }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        let msg = text?.trim() || `Erro ao atualizar rastreio (${res.status}).`;
+        try {
+            const parsed = JSON.parse(text) as { error?: string; detail?: string };
+            const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
+            if (combined) msg = combined;
+        } catch {
+            /* corpo não-JSON */
+        }
+        throw new Error(msg);
+    }
+
+    const data = (await res.json()) as Partial<BuyerMeTrackingSyncResult>;
+    return {
+        trackingCode: typeof data.trackingCode === 'string' ? data.trackingCode : null,
+        trackingUrl: typeof data.trackingUrl === 'string' ? data.trackingUrl : null,
+    };
 }

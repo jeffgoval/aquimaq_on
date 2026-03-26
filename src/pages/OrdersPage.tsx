@@ -16,6 +16,7 @@ import { useCart } from '@/features/cart';
 import { supabase } from '@/services/supabase';
 import { mapProductRowToProduct } from '@/features/catalog/utils/productAdapter';
 import type { ProductRow } from '@/types/database';
+import { syncBuyerOrderTrackingFromMelhorEnvios } from '@/services/orderService';
 
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 type FilterKey = 'all' | 'pending' | 'active' | 'delivered' | 'cancelled';
@@ -165,9 +166,10 @@ const ShippingTimeline: React.FC<{ shippingStatus: string; trackingCode?: string
 };
 
 // ─── Single order card ────────────────────────────────────────────────────────
-const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
+const OrderCard: React.FC<{ order: Order; onAfterTrackingSync?: () => void }> = ({ order, onAfterTrackingSync }) => {
     const [open, setOpen] = useState(false);
     const [reordering, setReordering] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     const { addToCart } = useCart();
 
     const handleReorder = async () => {
@@ -192,7 +194,19 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     const isWaitingPayment = order.status === OrderStatus.WAITING_PAYMENT;
     const isShipped = order.status === OrderStatus.SHIPPED || order.status === OrderStatus.DELIVERED;
     const isPickup = order.shippingMethod?.toLowerCase().includes('retirada');
-    const hasShippingTimeline = isShipped && !!order.shippingStatus && !isPickup;
+    const isMe = !!order.shippingMethod && order.shippingMethod.startsWith('me_');
+    const hasShippingTimeline = !!order.shippingStatus && !isPickup;
+    const canSyncTracking = isMe && !isPickup;
+
+    const handleSyncTracking = async () => {
+        setSyncing(true);
+        try {
+            await syncBuyerOrderTrackingFromMelhorEnvios(order.id);
+            onAfterTrackingSync?.();
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     return (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -268,6 +282,20 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
                         />
                     )}
 
+                    {/* Atualizar rastreio (puxa do Melhor Envios e salva no pedido) */}
+                    {canSyncTracking && (
+                        <button
+                            type="button"
+                            onClick={handleSyncTracking}
+                            disabled={syncing}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 border border-slate-200"
+                            title="Atualiza o código/status de rastreio (quando disponível)"
+                        >
+                            <Truck size={15} />
+                            {syncing ? 'Atualizando rastreio...' : 'Atualizar rastreio'}
+                        </button>
+                    )}
+
                     {/* Tracking code only (sem shipping_status do ME) */}
                     {isShipped && !hasShippingTimeline && order.trackingCode && (
                         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
@@ -341,7 +369,7 @@ const OrdersPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
     const { settings } = useStore();
-    const { data: orders = [], isLoading, error } = useOrders(user?.id);
+    const { data: orders = [], isLoading, error, refetch } = useOrders(user?.id);
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
     const storeName = settings?.storeName || 'Aquimaq';
@@ -445,7 +473,13 @@ const OrdersPage: React.FC = () => {
             {/* Order list */}
             {!isLoading && filtered.length > 0 && (
                 <div className="space-y-3">
-                    {filtered.map(order => <OrderCard key={order.id} order={order} />)}
+                    {filtered.map(order => (
+                        <OrderCard
+                            key={order.id}
+                            order={order}
+                            onAfterTrackingSync={() => { void refetch(); }}
+                        />
+                    ))}
                 </div>
             )}
 
