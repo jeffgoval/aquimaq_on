@@ -27,8 +27,6 @@ const AdminMePrintPage: React.FC = () => {
   }, [kind]);
 
   useEffect(() => {
-    let revoked: string | null = null;
-
     const run = async () => {
       setLoading(true);
       setPdfUrl('');
@@ -78,8 +76,11 @@ const AdminMePrintPage: React.FC = () => {
         if (!blob.size) throw new Error('PDF da etiqueta veio vazio.');
 
         const url = URL.createObjectURL(blob);
-        revoked = url;
+        // Se o objetivo é não ter “uma página dentro da outra”, redireciona a aba para o PDF.
+        // Mantemos pdfUrl apenas como fallback caso o redirect falhe por algum motivo.
         setPdfUrl(url);
+        window.location.replace(url);
+        return;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         setAlertState({
@@ -95,7 +96,7 @@ const AdminMePrintPage: React.FC = () => {
     run();
 
     return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
+      // Sem revogação aqui: ao redirecionar para blob URL, revogar pode quebrar o PDF.
     };
   }, [orderId, kind]);
 
