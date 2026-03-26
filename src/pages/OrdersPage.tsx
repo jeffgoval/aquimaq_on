@@ -198,6 +198,9 @@ const OrderCard: React.FC<{ order: Order; onAfterTrackingSync?: () => void }> = 
     const hasShippingTimeline = !!order.shippingStatus && !isPickup;
     const canSyncTracking = isMe && !isPickup;
 
+    const rastrearUrl = order.trackingUrl
+        ?? (order.trackingCode ? `https://www.correios.com.br/rastreamento/#/search?objects=${order.trackingCode}` : null);
+
     const handleSyncTracking = async () => {
         setSyncing(true);
         try {
@@ -296,24 +299,29 @@ const OrderCard: React.FC<{ order: Order; onAfterTrackingSync?: () => void }> = 
                         </button>
                     )}
 
-                    {/* Tracking code only (sem shipping_status do ME) */}
-                    {isShipped && !hasShippingTimeline && order.trackingCode && (
+                    {/* Mostrar código de rastreio sempre que existir (independente do status do pedido) */}
+                    {!isPickup && !hasShippingTimeline && order.trackingCode && (
                         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
                             <Truck size={16} className="text-blue-500 mt-0.5 shrink-0" />
                             <div className="text-sm">
                                 <p className="font-medium text-blue-800">Código de rastreio</p>
                                 <p className="text-blue-700 font-mono mt-0.5">{order.trackingCode}</p>
-                                <a
-                                    href={`https://www.correios.com.br/rastreamento/#/search?objects=${order.trackingCode}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium mt-1.5 transition-colors"
-                                >
-                                    Rastrear envio <ExternalLink size={12} />
-                                </a>
+                                {rastrearUrl && (
+                                    <a
+                                        href={rastrearUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium mt-1.5 transition-colors"
+                                    >
+                                        Rastrear envio <ExternalLink size={12} />
+                                    </a>
+                                )}
                             </div>
                         </div>
                     )}
+
+                    {/* Tracking code only (sem shipping_status do ME) */}
+                    {/* (mantido por compat, mas já é coberto pelo bloco acima) */}
 
                     {/* Pickup ready */}
                     {order.status === OrderStatus.READY_PICKUP && (
