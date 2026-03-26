@@ -51,8 +51,8 @@ O Melhor Envios costuma fazer uma **requisição de teste** ao salvar o webhook 
 
 Para não bloquear o cadastro:
 
-- A Edge Function responde **200 OK** quando **não há** `X-ME-Signature`
-- E marca a requisição como **ignorada** (não atualiza nada)
+- A Edge Function responde **200 OK** quando **não há** `X-ME-Signature` (**ignora**)
+- A Edge Function responde **200 OK** quando `X-ME-Signature` vier **inválida** (**ignora**)
 
 Isso garante:
 

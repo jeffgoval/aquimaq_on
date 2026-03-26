@@ -83,7 +83,7 @@ Para o vendedor **não** precisar copiar/colar o código de rastreio do painel d
 - Configure no Supabase Secrets a variável **`MELHOR_ENVIOS_WEBHOOK_SECRET`**
 - Cadastre o webhook no painel do Melhor Envios apontando para a Edge Function `melhor-envios-webhook`
 - **Importante**: eventos reais devem vir assinados com header **`X-ME-Signature`** (HMAC do corpo).
-  - A Edge Function **ignora** requisições sem assinatura (retorna 200 apenas para não quebrar a validação/teste de cadastro do ME).
+  - A Edge Function **ignora** requisições sem assinatura **ou com assinatura inválida** (retorna 200 apenas para não quebrar a validação/teste de cadastro do ME).
   - Só atualiza `orders.tracking_code`, `orders.tracking_url` e `orders.shipping_status` quando a assinatura for válida.
 
 Ver guia completo em `docs/melhor-envios-webhook.md`.
