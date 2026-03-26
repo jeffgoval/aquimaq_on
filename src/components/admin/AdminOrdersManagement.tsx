@@ -175,7 +175,13 @@ const AdminOrdersManagement: React.FC = () => {
             // Importante: abrir a nova aba SEM await antes, para não cair em popup blocker.
             await printMelhorEnviosLabel(order.id);
 
-            if (prevStatus === OrderStatus.PAID) {
+            const shouldAutoAdvance =
+                prevStatus !== OrderStatus.PICKING &&
+                prevStatus !== OrderStatus.SHIPPED &&
+                prevStatus !== OrderStatus.DELIVERED &&
+                prevStatus !== OrderStatus.CANCELLED;
+
+            if (shouldAutoAdvance) {
                 void updateOrderStatus(order.id, OrderStatus.PICKING);
                 setOrders(prev => prev.map(o =>
                     o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o

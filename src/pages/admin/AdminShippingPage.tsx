@@ -83,7 +83,13 @@ const AdminShippingPage: React.FC = () => {
 
       // Importante: só fazemos awaits depois de abrir a nova aba, para não cair em popup blocker.
       const prevStatus = await getOrderStatus(order.id);
-      if (prevStatus === OrderStatus.PAID) {
+      const shouldAutoAdvance =
+        prevStatus !== OrderStatus.PICKING &&
+        prevStatus !== OrderStatus.SHIPPED &&
+        prevStatus !== OrderStatus.DELIVERED &&
+        prevStatus !== OrderStatus.CANCELLED;
+
+      if (shouldAutoAdvance) {
         await updateOrderStatus(order.id, OrderStatus.PICKING);
         showToast('Status atualizado para “Em Separação”.', 'info', {
           duration: 10000,
