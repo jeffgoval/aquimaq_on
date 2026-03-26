@@ -192,7 +192,6 @@ const AdminOrdersManagement: React.FC = () => {
                 setOrders(prev => prev.map(o =>
                     o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
                 ));
-                showToast('Status atualizado para "Em Separação".', 'info');
             }
             setMessage(null);
         } catch (err: unknown) {

@@ -91,7 +91,6 @@ const AdminShippingPage: React.FC = () => {
 
       if (shouldAutoAdvance && prevStatus) {
         await updateOrderStatus(order.id, OrderStatus.PICKING);
-        showToast('Status atualizado para "Em Separação".', 'info');
       }
     } catch (e: any) {
       const msg = String(e?.message ?? e ?? 'Erro desconhecido');
