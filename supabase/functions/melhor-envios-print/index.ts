@@ -14,6 +14,16 @@ const ME_API_BASE = IS_PRODUCTION
     ? "https://www.melhorenvio.com.br/api/v2"
     : "https://sandbox.melhorenvio.com.br/api/v2";
 
+/** Erro do fluxo ME: permite mapear 422 (pré-requisito/validação) vs 502 (falha após pipeline válido). */
+class MelhorEnvioFlowError extends Error {
+    readonly httpStatus: number;
+    constructor(message: string, httpStatus: number) {
+        super(message);
+        this.name = "MelhorEnvioFlowError";
+        this.httpStatus = httpStatus;
+    }
+}
+
 function meHeaders(token: string): HeadersInit {
     return {
         "Authorization": `Bearer ${token}`,
@@ -23,77 +33,148 @@ function meHeaders(token: string): HeadersInit {
     };
 }
 
+/** Extrai URL http(s) da resposta JSON da ME (imprimir/pdf pode vir como string, {url}, ou objeto dinâmico). */
+function extractHttpUrlFromMeBody(raw: unknown): string {
+    if (typeof raw === "string") {
+        const t = raw.trim().replace(/^"|"$/g, "");
+        if (t.startsWith("http")) return t;
+    }
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        const o = raw as Record<string, unknown>;
+        const direct = o.url ?? o.link;
+        if (typeof direct === "string" && direct.startsWith("http")) return direct;
+        for (const v of Object.values(o)) {
+            if (typeof v === "string" && v.startsWith("http")) return v;
+        }
+    }
+    return "";
+}
+
+/** POST /me/shipment/print — mode só public | private (doc oficial). */
+async function meShipmentPrintPublic(meOrderId: string, token: string): Promise<string> {
+    const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId], mode: "public" }),
+    });
+    const printBody = await printRes.text().catch(() => "");
+    if (!printRes.ok) {
+        throw new MelhorEnvioFlowError(
+            `ME shipment/print failed (${printRes.status}): ${printBody}`,
+            502,
+        );
+    }
+    let data: { url?: string };
+    try {
+        data = JSON.parse(printBody) as { url?: string };
+    } catch {
+        throw new MelhorEnvioFlowError(
+            `ME shipment/print: resposta inválida: ${printBody.slice(0, 500)}`,
+            502,
+        );
+    }
+    const url = data?.url;
+    if (!url || typeof url !== "string" || !url.startsWith("http")) {
+        throw new MelhorEnvioFlowError(
+            `ME shipment/print: URL inválida na resposta: ${printBody.slice(0, 500)}`,
+            502,
+        );
+    }
+    return url;
+}
+
 /**
- * Executa o fluxo completo de geração de etiqueta no Melhor Envios:
- * 1. Checkout (pagar do saldo ME)
- * 2. Generate (gerar a etiqueta)
- * 3. Print (obter URL do PDF)
+ * Fluxo alinhado à doc Melhor Envios:
+ * 1. checkout (comprar do saldo)
+ * 2. generate (obrigatório antes da impressão)
+ * 3. GET /me/imprimir/pdf/{id} — sandbox: PDF em arquivo só Jadlog; se 404/422, fallback shipment/print mode public
  *
- * As etapas 1 e 2 são idempotentes no ME — se já executadas anteriormente não causam erro.
- * Falhas em checkout/generate são logadas mas não bloqueiam o print (reimpressão é permitida).
+ * @see https://docs.melhorenvio.com.br/reference/geracao-de-etiquetas
+ * @see https://docs.melhorenvio.com.br/reference/impressao-de-etiquetas-em-arquivo
+ * @see https://docs.melhorenvio.com.br/reference/impressao-de-etiquetas
  */
 async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<string> {
-    // 1. Checkout: pagar a etiqueta do saldo ME
-    try {
-        const checkoutRes = await fetch(`${ME_API_BASE}/me/shipment/checkout`, {
-            method: "POST",
-            headers: meHeaders(token),
-            body: JSON.stringify({ orders: [meOrderId], payment_method: "wallet" }),
-        });
-        if (!checkoutRes.ok) {
-            const errText = await checkoutRes.text().catch(() => "");
-            console.warn(`ME checkout warning (${checkoutRes.status}): ${errText}`);
-        } else {
-            console.log(`ME checkout ok for order ${meOrderId}`);
-        }
-    } catch (e) {
-        console.warn("ME checkout exception:", e);
+    // 1. Checkout
+    const checkoutRes = await fetch(`${ME_API_BASE}/me/shipment/checkout`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId], payment_method: "wallet" }),
+    });
+    const checkoutBody = await checkoutRes.text().catch(() => "");
+    if (!checkoutRes.ok) {
+        throw new MelhorEnvioFlowError(
+            `ME checkout failed (${checkoutRes.status}): ${checkoutBody}`,
+            422,
+        );
     }
 
-    // 2. Generate: gerar a etiqueta
+    // 2. Generate — doc: resposta 200 com { [orderId]: { status, message } }
+    const generateRes = await fetch(`${ME_API_BASE}/me/shipment/generate`, {
+        method: "POST",
+        headers: meHeaders(token),
+        body: JSON.stringify({ orders: [meOrderId] }),
+    });
+    const generateBodyText = await generateRes.text().catch(() => "");
+    if (!generateRes.ok) {
+        throw new MelhorEnvioFlowError(
+            `ME generate failed (${generateRes.status}): ${generateBodyText}`,
+            422,
+        );
+    }
+    let genPayload: Record<string, { status?: boolean; message?: string }>;
     try {
-        const generateRes = await fetch(`${ME_API_BASE}/me/shipment/generate`, {
-            method: "POST",
-            headers: meHeaders(token),
-            body: JSON.stringify({ orders: [meOrderId] }),
-        });
-        if (!generateRes.ok) {
-            const errText = await generateRes.text().catch(() => "");
-            console.warn(`ME generate warning (${generateRes.status}): ${errText}`);
-        } else {
-            console.log(`ME generate ok for order ${meOrderId}`);
-        }
-    } catch (e) {
-        console.warn("ME generate exception:", e);
+        genPayload = JSON.parse(generateBodyText) as Record<string, { status?: boolean; message?: string }>;
+    } catch {
+        throw new MelhorEnvioFlowError(
+            `ME generate: JSON inválido: ${generateBodyText.slice(0, 500)}`,
+            422,
+        );
+    }
+    const genEntry = genPayload[meOrderId];
+    if (!genEntry || genEntry.status !== true) {
+        const msg = genEntry?.message ?? JSON.stringify(genEntry);
+        throw new MelhorEnvioFlowError(
+            `ME generate: etiqueta não gerada para ${meOrderId}: ${msg}`,
+            422,
+        );
     }
 
-    // 3. Print (arquivo): obter URL direta do PDF
-    // Docs: GET /api/v2/me/imprimir/pdf/{id} -> retorna uma URL (string) para S3
+    // 3a. Impressão em arquivo PDF (doc: GET /api/v2/me/imprimir/pdf/{id})
     const printRes = await fetch(`${ME_API_BASE}/me/imprimir/pdf/${meOrderId}`, {
         method: "GET",
         headers: meHeaders(token),
     });
+    const printBodyText = await printRes.text().catch(() => "");
 
-    if (!printRes.ok) {
-        const errText = await printRes.text().catch(() => "");
-        throw new Error(`ME print failed (${printRes.status}): ${errText}`);
+    if (printRes.ok) {
+        const ct = printRes.headers.get("content-type") ?? "";
+        let parsed: unknown;
+        if (ct.includes("application/json")) {
+            try {
+                parsed = JSON.parse(printBodyText);
+            } catch {
+                parsed = printBodyText;
+            }
+        } else {
+            parsed = printBodyText.trim();
+        }
+        const pdfUrl = extractHttpUrlFromMeBody(parsed);
+        if (pdfUrl) return pdfUrl;
+        throw new MelhorEnvioFlowError(
+            `URL do PDF inválida após imprimir/pdf: ${printBodyText.slice(0, 500)}`,
+            502,
+        );
     }
 
-    const contentType = printRes.headers.get("content-type") ?? "";
-    let pdfUrl: string;
-    if (contentType.includes("application/json")) {
-        // pode vir como string JSON (ex: "https://...") ou objeto
-        const json = await printRes.json();
-        pdfUrl = typeof json === "string" ? json : (json.url ?? json.link ?? "");
-    } else {
-        pdfUrl = (await printRes.text()).trim().replace(/^"|"$/g, "");
+    // 3b. Fallback: PDF em arquivo indisponível (ex.: sandbox fora Jadlog) — POST shipment/print mode public
+    if (printRes.status === 404 || printRes.status === 422) {
+        return await meShipmentPrintPublic(meOrderId, token);
     }
 
-    if (!pdfUrl || typeof pdfUrl !== "string" || !pdfUrl.startsWith("http")) {
-        throw new Error(`URL do PDF inválida retornada pelo Melhor Envios: ${pdfUrl}`);
-    }
-
-    return pdfUrl;
+    throw new MelhorEnvioFlowError(
+        `ME imprimir/pdf failed (${printRes.status}): ${printBodyText}`,
+        502,
+    );
 }
 
 Deno.serve(async (req) => {
@@ -107,7 +188,6 @@ Deno.serve(async (req) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
-    // Autenticar usuário via JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -127,7 +207,6 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Verificar que o usuário é admin/gerente/vendedor
     const userSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: authHeader } },
     });
@@ -154,7 +233,6 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Parse body: espera { orderId: string }
     let body: { orderId?: string };
     try {
         body = await req.json();
@@ -172,7 +250,6 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Buscar me_order_id no banco
     const { data: order, error: orderError } = await adminSupabase
         .from("orders")
         .select("id, me_order_id, tracking_code")
@@ -195,17 +272,18 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const pdfUrl = await runMeFullPrintFlow(meOrderId, meToken);
-        return new Response(JSON.stringify({ url: pdfUrl }), {
+        const url = await runMeFullPrintFlow(meOrderId, meToken);
+        return new Response(JSON.stringify({ url }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.error("ME print flow error:", message);
-        return new Response(JSON.stringify({ error: "Falha ao gerar etiqueta no Melhor Envios", detail: message }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const status = err instanceof MelhorEnvioFlowError ? err.httpStatus : 502;
+        return new Response(
+            JSON.stringify({ error: "Falha ao gerar etiqueta no Melhor Envios", detail: message }),
+            { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
     }
 });

@@ -231,16 +231,27 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<string> =
     body: { orderId },
   });
   if (error) {
-    // `supabase.functions.invoke` encapsula a resposta em `error.context`.
-    // Aqui tentamos extrair `detail` retornado pela Edge Function para debug.
-    const rawBody = (error as any)?.context?.body;
-    if (typeof rawBody === 'string' && rawBody.trim()) {
+    const e = error as any;
+    let rawBody: string | undefined =
+      typeof e?.context?.body === 'string' ? e.context.body : undefined;
+    if (!rawBody && e?.context && typeof e.context.clone === 'function') {
+      try {
+        rawBody = await e.context.clone().text();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (rawBody?.trim()) {
       try {
         const parsed = JSON.parse(rawBody) as { error?: string; detail?: string };
         const msg = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
         if (msg) throw new Error(msg);
-      } catch {
-        // se não for JSON válido, cai no erro original
+      } catch (parseErr) {
+        if (parseErr instanceof SyntaxError) {
+          /* body não-JSON */
+        } else {
+          throw parseErr;
+        }
       }
     }
     throw error;
