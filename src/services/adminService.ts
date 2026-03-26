@@ -245,7 +245,8 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => 
   // (Docs permanece navegando na mesma aba.)
   const url = `${window.location.origin}${getAdminMePrintUrl(orderId, 'label')}`;
   const win = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!win) throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
+  // Se o browser bloquear o pop-up, faz fallback para abrir na mesma aba (sem aviso).
+  if (!win) window.location.assign(url);
 };
 
 /** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */
