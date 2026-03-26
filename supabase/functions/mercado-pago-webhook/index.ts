@@ -404,18 +404,41 @@ Deno.serve(async (req) => {
         console.error("Webhook DB payment error:", paymentError.message);
     }
 
-    // 2. Update order status (sempre, independente do status)
+    // 2. Update order status — máquina de estados com guarda atômica no banco.
+    //
+    // O MP reenvia notificações (retentativas, reconexões), por isso este UPDATE
+    // usa .in("status", allowedFrom): só persiste quando o pedido ainda está
+    // num estado "anterior" válido para a transição. Se o vendedor já avançou
+    // para em_separacao/enviado/entregue, a query afeta 0 linhas e não faz
+    // rollback no status. A mesma abordagem do stock_decremented acima.
+    //
+    // Mapa de transições permitidas (origem → destino):
+    //   aguardando_pagamento → pago        (pagamento aprovado)
+    //   aguardando_pagamento → cancelado   (rejeitado antes de pagar)
+    //   pago                 → cancelado   (estorno / chargeback após aprovação)
+    //
+    // Estados avançados pelo vendedor (em_separacao, enviado, pronto_retirada,
+    // entregue) nunca são sobrescritos por notificações de pagamento.
     const newOrderStatus = mapOrderStatus(mappedStatus);
-    const { error: orderError } = await supabase
-        .from("orders")
-        .update({
-            status: newOrderStatus,
-            updated_at: new Date().toISOString(),
-        })
-        .eq("id", orderIdUuid);
+    const allowedFromStatus: Record<string, string[]> = {
+        pago:                   ["aguardando_pagamento"],
+        cancelado:              ["aguardando_pagamento", "pago"],
+        aguardando_pagamento:   ["aguardando_pagamento"],
+    };
+    const allowedFrom = allowedFromStatus[newOrderStatus];
+    if (allowedFrom && allowedFrom.length > 0) {
+        const { error: orderError } = await supabase
+            .from("orders")
+            .update({
+                status: newOrderStatus,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", orderIdUuid)
+            .in("status", allowedFrom);
 
-    if (orderError) {
-        console.error("Webhook DB order update error:", orderError.message);
+        if (orderError) {
+            console.error("Webhook DB order update error:", orderError.message);
+        }
     }
 
     // 3. Decrement stock quando aprovado — bloqueio atômico para evitar race condition.
