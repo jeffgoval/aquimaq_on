@@ -272,33 +272,27 @@ export interface MeTrackingSyncResult {
 }
 
 export const syncOrderTrackingFromMelhorEnvios = async (orderId: string): Promise<MeTrackingSyncResult> => {
-  // Garante token fresco antes de chamar a Edge Function
-  await supabase.auth.refreshSession().catch(() => null);
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error('Sessão expirada. Faça login novamente.');
 
-  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
+  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/me-sync-tracking`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
       apikey: ENV.VITE_SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ orderId, syncTracking: true }),
+    body: JSON.stringify({ orderId }),
   });
 
   if (!res.ok) {
-    if (res.status === 401) throw new Error('Sessão expirada. Recarregue a página e faça login novamente.');
     const text = await res.text().catch(() => '');
     let msg = `Erro ao sincronizar rastreio (${res.status}).`;
     try {
-      const parsed = JSON.parse(text) as { error?: string; detail?: string; message?: string; code?: number };
-      // Supabase JWT error: { code: 401, message: "Invalid JWT" }
-      // Edge Function error: { error: "...", detail: "..." }
-      const combined = [parsed.error, parsed.detail, parsed.message].filter(Boolean).join(' — ');
-      if (combined) msg = combined;
+      const parsed = JSON.parse(text) as { error?: string };
+      if (parsed.error) msg = parsed.error;
     } catch {
-      if (text?.trim()) msg = text.trim();
+      if (text.trim()) msg = text.trim();
     }
     throw new Error(msg);
   }
@@ -309,6 +303,8 @@ export const syncOrderTrackingFromMelhorEnvios = async (orderId: string): Promis
     trackingUrl: typeof data.trackingUrl === 'string' ? data.trackingUrl : null,
   };
 };
+
+
 
 /** Atualiza código de rastreio de um pedido. */
 export const updateOrderTracking = async (

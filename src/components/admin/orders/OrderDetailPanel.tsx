@@ -54,7 +54,7 @@ const TrackingRow: React.FC<TrackingRowProps> = ({
                         className="px-3 py-1.5 bg-white text-stone-600 border border-stone-200 rounded-lg text-[12px] font-medium hover:bg-stone-50 disabled:opacity-40 transition-colors shrink-0"
                         title="Buscar automaticamente no Melhor Envios"
                     >
-                        {isSyncing ? '…' : 'Sync ME'}
+                        {isSyncing ? 'Buscando…' : 'Atualizar Rastreio'}
                     </button>
                 )}
             </div>
