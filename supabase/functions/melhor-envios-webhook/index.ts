@@ -75,9 +75,11 @@ Deno.serve(async (req) => {
 
     const valid = await verifySignature(rawBody, meSignature, meSecret);
     if (!valid) {
+        // O Melhor Envios pode validar o endpoint durante o cadastro.
+        // Para não bloquear o cadastro, nunca retornamos 401: apenas ignoramos quando a assinatura não confere.
         console.error("Invalid X-ME-Signature");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
+        return new Response(JSON.stringify({ ok: true, ignored: true, reason: "invalid-signature" }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
