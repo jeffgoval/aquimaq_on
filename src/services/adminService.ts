@@ -236,6 +236,12 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => 
     throw new Error('Sessão expirada. Entre novamente.');
   }
 
+  // Abrir a aba imediatamente (evita bloqueio de pop-up por await/fetch)
+  const win = window.open('about:blank', '_blank', 'noopener,noreferrer');
+  if (!win) {
+    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
+  }
+
   const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
     method: 'POST',
     headers: {
@@ -256,17 +262,24 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => 
     } catch {
       /* corpo não-JSON */
     }
+    try { win.close(); } catch { /* ignore */ }
     throw new Error(msg);
   }
 
   const blob = await res.blob();
-  if (!blob.size) throw new Error('PDF da etiqueta veio vazio.');
+  if (!blob.size) {
+    try { win.close(); } catch { /* ignore */ }
+    throw new Error('PDF da etiqueta veio vazio.');
+  }
 
   const blobUrl = URL.createObjectURL(blob);
-  const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
-  if (!win) {
+  try {
+    win.location.href = blobUrl;
+    win.focus?.();
+  } catch {
     URL.revokeObjectURL(blobUrl);
-    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
+    try { win.close(); } catch { /* ignore */ }
+    throw new Error('Falha ao abrir a etiqueta em nova aba.');
   }
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120_000);
 };
@@ -276,6 +289,12 @@ export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     throw new Error('Sessão expirada. Entre novamente.');
+  }
+
+  // Abrir a aba imediatamente (evita bloqueio de pop-up por await/fetch)
+  const win = window.open('about:blank', '_blank', 'noopener,noreferrer');
+  if (!win) {
+    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a impressão.');
   }
 
   const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
@@ -298,6 +317,7 @@ export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> 
     } catch {
       /* corpo não-JSON */
     }
+    try { win.close(); } catch { /* ignore */ }
     throw new Error(msg);
   }
 
@@ -310,9 +330,12 @@ export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> 
   }
   if (!url) throw new Error('URL de impressão não retornada.');
 
-  const win = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!win) {
-    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a impressão.');
+  try {
+    win.location.href = url;
+    win.focus?.();
+  } catch {
+    try { win.close(); } catch { /* ignore */ }
+    throw new Error('Falha ao abrir a impressão em nova aba.');
   }
 };
 
