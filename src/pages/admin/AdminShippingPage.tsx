@@ -38,7 +38,15 @@ const AdminShippingPage: React.FC = () => {
       const data = await getShippingOrders();
       setOrders(data);
     } catch (e) {
-      console.error('Erro ao carregar pedidos de envio:', e);
+      const err = e as any;
+      // PostgrestError normalmente traz { message, details, hint, code }
+      console.error('Erro ao carregar pedidos de envio:', {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+        raw: err,
+      });
     } finally {
       setLoading(false);
     }

@@ -114,6 +114,12 @@ async function createMeShipment(
     // Fallback de documento: Perfil -> API Mercado Pago -> CPF Inválido
     const fallbackDoc = String(paymentObj?.payer?.identification?.number || "00000000000").replace(/\D/g, "");
     const destDoc = String(profile?.document_number || fallbackDoc).replace(/\D/g, "");
+    const toDocumentPayload: Record<string, string> = {};
+    if (destDoc.length > 11) {
+        toDocumentPayload.company_document = destDoc;
+    } else {
+        toDocumentPayload.document = destDoc;
+    }
 
     // Fallback de telefone: Perfil -> API Mercado Pago -> Telefone Default
     const fallbackPhone = String(paymentObj?.payer?.phone?.number || "11999999999").replace(/\D/g, "");
@@ -121,6 +127,15 @@ async function createMeShipment(
 
     // CEP de origem: store_settings > env var
     const originZip = ((store?.origin_cep ?? Deno.env.get("CEP_ORIGEM") ?? "")).replace(/\D/g, "");
+    
+    // Remetente CNPJ / CPF
+    const storeCnpj = ((store?.cnpj as string) ?? "").replace(/\D/g, "");
+    const fromDocumentPayload: Record<string, string> = {};
+    if (storeCnpj.length > 11) {
+        fromDocumentPayload.company_document = storeCnpj;
+    } else if (storeCnpj.length > 0) {
+        fromDocumentPayload.document = storeCnpj;
+    }
 
     // Lista de produtos para o ME
     const products = (items ?? []).map((item: Record<string, unknown>, idx: number) => {
@@ -166,8 +181,7 @@ async function createMeShipment(
             name: store?.store_name ?? "Aquimaq",
             phone: ((store?.phone as string) ?? "").replace(/\D/g, ""),
             email: (store?.email as string) ?? "",
-            document: ((store?.cnpj as string) ?? "").replace(/\D/g, ""),
-            company_document: ((store?.cnpj as string) ?? "").replace(/\D/g, ""),
+            ...fromDocumentPayload,
             address: (store?.origin_street as string) ?? "",
             number: (store?.origin_number as string) ?? "S/N",
             district: (store?.origin_district as string) ?? "",
@@ -180,7 +194,7 @@ async function createMeShipment(
             name: profile?.name ?? "Cliente",
             phone: destPhone,
             email: (profile?.email as string) ?? "",
-            document: destDoc,
+            ...toDocumentPayload,
             address: destStreet,
             number: destNumber,
             complement: destComplement,

@@ -230,7 +230,21 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<string> =
   const { data, error } = await supabase.functions.invoke('melhor-envios-print', {
     body: { orderId },
   });
-  if (error) throw error;
+  if (error) {
+    // `supabase.functions.invoke` encapsula a resposta em `error.context`.
+    // Aqui tentamos extrair `detail` retornado pela Edge Function para debug.
+    const rawBody = (error as any)?.context?.body;
+    if (typeof rawBody === 'string' && rawBody.trim()) {
+      try {
+        const parsed = JSON.parse(rawBody) as { error?: string; detail?: string };
+        const msg = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
+        if (msg) throw new Error(msg);
+      } catch {
+        // se não for JSON válido, cai no erro original
+      }
+    }
+    throw error;
+  }
   if (!data?.url) throw new Error('URL do PDF não retornada');
   return data.url as string;
 };
@@ -249,25 +263,32 @@ export const updateOrderTracking = async (
 export interface ShippingOrderRow {
   id: string;
   createdAt: string;
-  meOrderId: string;
+  meOrderId: string | null;
   shippingMethodLabel: string | null;
   shippingStatus: string | null;
   trackingCode: string | null;
   clienteName: string;
 }
 
-/** Lista pedidos enviados via Melhor Envios (me_order_id preenchido). */
+/** Lista pedidos do Melhor Envios (mesmo antes de gerar a etiqueta). */
 export const getShippingOrders = async (): Promise<ShippingOrderRow[]> => {
   const { data, error } = await (supabase
     .from('orders') as any)
-    .select('id, created_at, me_order_id, shipping_method_label, shipping_status, tracking_code, profiles(name)')
-    .not('me_order_id', 'is', null)
+    // Importante: a relação correta é orders.cliente_id -> profiles.id
+    .select('id, created_at, me_order_id, shipping_method_label, shipping_status, tracking_code, profiles:cliente_id(name)')
+    // Mostra:
+    // - pedidos que já têm me_order_id (etiqueta criada)
+    // - pedidos cujo método de envio é do Melhor Envios (IDs começam com "me_"), mesmo sem etiqueta ainda
+    .or('me_order_id.not.is.null,shipping_method.like.me_%')
+    // Não esconder sandbox: em teste o pedido pode ficar em aguardando_pagamento
+    // (webhook MP não aprovou / não retornou). Só ocultamos rascunhos.
+    .neq('status', 'draft')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((o: any) => ({
     id: o.id,
     createdAt: o.created_at,
-    meOrderId: o.me_order_id,
+    meOrderId: o.me_order_id ?? null,
     shippingMethodLabel: o.shipping_method_label ?? null,
     shippingStatus: o.shipping_status ?? null,
     trackingCode: o.tracking_code ?? null,
