@@ -52,18 +52,33 @@ function extractHttpUrlFromMeBody(raw: unknown): string {
 
 /**
  * Checkout retorna 422 quando o envio já foi pago no saldo ME (reimpressão / segundo clique).
- * Nesse caso o fluxo deve seguir para generate + impressão, não falhar.
+ * O body pode vir com acentos UTF-8 ou com escapes JSON (\u00e1); por isso parse + fallback no bruto.
  */
 function isMeCheckoutAlreadyPaidOrInvalidOrders(status: number, body: string): boolean {
     if (status !== 422) return false;
+    try {
+        const j = JSON.parse(body) as { message?: string; errors?: { orders?: string[] } };
+        const chunks: string[] = [];
+        if (typeof j.message === "string") chunks.push(j.message);
+        const ords = j.errors?.orders;
+        if (Array.isArray(ords)) chunks.push(...ords.filter((x): x is string => typeof x === "string"));
+        const decoded = chunks.join(" ").toLowerCase();
+        if (
+            decoded.includes("já foram pagas") ||
+            decoded.includes("ja foram pagas") ||
+            decoded.includes("foram pagas ou inválidas") ||
+            decoded.includes("foram pagas ou invalidas")
+        ) {
+            return true;
+        }
+    } catch {
+        /* ignora parse; usa bruto */
+    }
     const b = body.toLowerCase();
-    return (
-        b.includes("já foram pagas") ||
-        b.includes("ja foram pagas") ||
-        b.includes("already been paid") ||
-        b.includes("já paga") ||
-        (b.includes("inválid") && b.includes("orders"))
-    );
+    // Texto bruto: "foram pagas" costuma vir em ASCII mesmo quando "já" está como \u00e1
+    if (b.includes("foram pagas") && b.includes("orders")) return true;
+    if (b.includes("already been paid")) return true;
+    return false;
 }
 
 /** POST /me/shipment/print — mode só public | private (doc oficial). */
