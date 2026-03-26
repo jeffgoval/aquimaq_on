@@ -39,6 +39,7 @@ function mapOrderStatus(paymentStatus: string): string {
 async function createMeShipment(
     supabase: ReturnType<typeof createClient>,
     orderId: string,
+    paymentObj?: any
 ): Promise<void> {
     const meToken = Deno.env.get("MELHOR_ENVIO_TOKEN");
     if (!meToken) {
@@ -110,6 +111,14 @@ async function createMeShipment(
     const destCity = addr.city ?? profile?.city ?? "";
     const destState = addr.state ?? profile?.state ?? "";
 
+    // Fallback de documento: Perfil -> API Mercado Pago -> CPF Inválido
+    const fallbackDoc = String(paymentObj?.payer?.identification?.number || "00000000000").replace(/\D/g, "");
+    const destDoc = String(profile?.document_number || fallbackDoc).replace(/\D/g, "");
+
+    // Fallback de telefone: Perfil -> API Mercado Pago -> Telefone Default
+    const fallbackPhone = String(paymentObj?.payer?.phone?.number || "11999999999").replace(/\D/g, "");
+    const destPhone = String(profile?.phone || fallbackPhone).replace(/\D/g, "");
+
     // CEP de origem: store_settings > env var
     const originZip = ((store?.origin_cep ?? Deno.env.get("CEP_ORIGEM") ?? "")).replace(/\D/g, "");
 
@@ -168,9 +177,9 @@ async function createMeShipment(
         },
         to: {
             name: profile?.name ?? "Cliente",
-            phone: ((profile?.phone as string) ?? "").replace(/\D/g, ""),
+            phone: destPhone,
             email: (profile?.email as string) ?? "",
-            document: ((profile?.document_number as string) ?? "").replace(/\D/g, ""),
+            document: destDoc,
             address: destStreet,
             number: destNumber,
             complement: destComplement,
@@ -420,7 +429,7 @@ Deno.serve(async (req) => {
 
         // 4. Criar envio no Melhor Envios (não bloqueia o webhook se falhar)
         try {
-            await createMeShipment(supabase, orderIdUuid);
+            await createMeShipment(supabase, orderIdUuid, payment);
         } catch (meErr) {
             console.error("createMeShipment falhou inesperadamente:", meErr);
         }

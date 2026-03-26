@@ -85,9 +85,8 @@ const AdminOrdersManagement: React.FC = () => {
     const loadOrders = async () => {
         try {
             setLoading(true);
-            // Vendedor vê apenas seus próprios pedidos
-            const vendedorId = isVendedor ? user?.id : undefined;
-            const data = await getOrdersAdmin(vendedorId);
+            // Removido o filtro por vendedorId temporariamente para que vendedores vejam todos os pedidos da loja
+            const data = await getOrdersAdmin();
             setOrders(data as PedidoComCliente[]);
         } catch (error) {
             if (import.meta.env.DEV) console.error('Error loading orders:', error);

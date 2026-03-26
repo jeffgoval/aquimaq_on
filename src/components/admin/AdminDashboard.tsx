@@ -64,9 +64,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
         (async () => {
             try {
-                const vendedorId = isVendedor ? user?.id : undefined;
+                // Removido o filtro por vendedorId temporariamente para exibir as métricas gerais para quem opera o painel
                 const [{ stats: s, recentOrders: r }, alerts] = await Promise.all([
-                    getDashboardStats(vendedorId),
+                    getDashboardStats(),
                     getStockAlerts(),
                 ]);
                 if (mounted) {
