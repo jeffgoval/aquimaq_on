@@ -2,10 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, tryOpenMelhorEnviosLabelTab, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
+import { getAdminMePrintUrl, getShippingOrders, tryOpenMelhorEnviosLabelTab, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 import { useToast } from '@/contexts/ToastContext';
-import { OrderStatus } from '@/types';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   etiqueta_criada:   { label: 'Etiqueta criada',   color: 'bg-blue-100 text-blue-700' },
@@ -81,22 +80,14 @@ const AdminShippingPage: React.FC = () => {
     tryOpenMelhorEnviosLabelTab(order.id);
 
     try {
-      const prevStatus = await getOrderStatus(order.id);
-      const shouldAutoAdvance =
-        !!prevStatus &&
-        prevStatus !== OrderStatus.PICKING &&
-        prevStatus !== OrderStatus.SHIPPED &&
-        prevStatus !== OrderStatus.DELIVERED &&
-        prevStatus !== OrderStatus.CANCELLED;
-
-      if (shouldAutoAdvance && prevStatus) {
-        await updateOrderStatus(order.id, OrderStatus.PICKING);
-      }
+      // O backend avança pago→em_separacao após confirmar a etiqueta no ME.
+      // Recarregamos a lista para refletir o novo status.
+      await load();
     } catch (e: any) {
       const msg = String(e?.message ?? e ?? 'Erro desconhecido');
       setAlertState({
         open: true,
-        title: 'Erro ao atualizar status',
+        title: 'Erro ao atualizar pedidos',
         description: msg,
       });
     } finally {

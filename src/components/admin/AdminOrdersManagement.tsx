@@ -175,28 +175,18 @@ const AdminOrdersManagement: React.FC = () => {
 
     const handlePrintLabel = async (order: PedidoComCliente) => {
         setPrintingLabel(true);
-        const prevStatus = order.status;
-        const shouldAutoAdvance =
-            prevStatus !== OrderStatus.PICKING &&
-            prevStatus !== OrderStatus.SHIPPED &&
-            prevStatus !== OrderStatus.DELIVERED &&
-            prevStatus !== OrderStatus.CANCELLED;
 
-        // Pop-up primeiro (síncrono com o clique); depois grava no Supabase com await.
+        // Pop-up primeiro (síncrono com o clique); o backend avança o status
+        // de pago→em_separacao após confirmar a geração da etiqueta no ME.
         tryOpenMelhorEnviosLabelTab(order.id);
         setSelectedOrder(null);
 
         try {
-            if (shouldAutoAdvance) {
-                await updateOrderStatus(order.id, OrderStatus.PICKING);
-                setOrders(prev => prev.map(o =>
-                    o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
-                ));
-            }
-            setMessage(null);
+            // Recarrega a lista para refletir o novo status retornado pelo servidor.
+            await loadOrders();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
-            setMessage({ type: 'error', text: msg || 'Erro ao atualizar status no Supabase.' });
+            setMessage({ type: 'error', text: msg || 'Erro ao recarregar pedidos.' });
         } finally {
             setPrintingLabel(false);
         }
@@ -465,85 +455,136 @@ const AdminOrdersManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Order Details Modal */}
+            {/* Order Details Drawer */}
             {selectedOrder && (
-                <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-                    <div className="bg-white rounded-xl max-w-md w-full shadow-xl" onClick={e => e.stopPropagation()}>
-                        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
-                            <h3 className="font-medium text-stone-800">
-                                Pedido #{selectedOrder.id.slice(-8).toUpperCase()}
-                            </h3>
-                            <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="text-stone-400 hover:text-stone-600 p-1"
-                                aria-label="Fechar detalhes do pedido"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <>
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 transition-opacity"
+                        onClick={() => setSelectedOrder(null)}
+                    />
 
-                            {/* Address / Pickup details */}
-                            <div className={`p-4 rounded-xl border ${isPickupOrder(selectedOrder) ? 'bg-indigo-50 border-indigo-100' : 'bg-stone-50 border-stone-100'}`}>
+                    {/* Drawer */}
+                    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-[480px] bg-white shadow-2xl flex flex-col">
+
+                        {/* ── Header ── */}
+                        <div className="flex items-start justify-between px-6 py-5 border-b border-stone-100">
+                            <div>
+                                <p className="text-[11px] text-stone-400 font-medium uppercase tracking-widest mb-1">Pedido</p>
+                                <h2 className="text-xl font-bold text-stone-900 font-mono tracking-tight">
+                                    #{selectedOrder.id.slice(-8).toUpperCase()}
+                                </h2>
+                                <p className="text-[12px] text-stone-400 mt-0.5">{formatDate(selectedOrder.createdAt)}</p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusConfig[selectedOrder.status]?.color ?? 'bg-stone-100 text-stone-600'}`}>
+                                    {statusConfig[selectedOrder.status]?.label ?? selectedOrder.status}
+                                </span>
+                                <button
+                                    onClick={() => setSelectedOrder(null)}
+                                    className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                                    aria-label="Fechar"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* ── Scrollable Body ── */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+
+                            {/* Client + Delivery */}
+                            <div className="px-6 pt-5 pb-4 border-b border-stone-100">
+                                <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-3">Cliente</p>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center shrink-0">
+                                        <span className="text-sm font-bold text-stone-500">
+                                            {(selectedOrder.clientName ?? 'C')[0].toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-stone-800">{selectedOrder.clientName}</p>
+                                        <p className="text-xs text-stone-400">{formatClientPhoneDisplay(selectedOrder.clientPhone)}</p>
+                                    </div>
+                                </div>
+
                                 {isPickupOrder(selectedOrder) ? (
-                                    <>
-                                        <h4 className="text-[12px] font-medium text-indigo-700 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                            <Store size={14} /> Retirada na Loja
-                                        </h4>
-                                        <p className="text-indigo-600 text-[13px]">Cliente retira no balcão.</p>
-                                    </>
+                                    <div className="flex items-start gap-2.5 bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                                        <Store size={15} className="text-indigo-500 mt-0.5 shrink-0" />
+                                        <div>
+                                            <p className="text-[12px] font-semibold text-indigo-700">Retirada na loja</p>
+                                            <p className="text-[12px] text-indigo-500 mt-0.5">Cliente retira no balcão</p>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                            <Truck size={14} /> Endereço de Entrega
-                                        </h4>
-                                        <p className="text-stone-600 text-[13px]">{selectedOrder.clientAddress}</p>
-                                    </>
+                                    <div className="flex items-start gap-2.5 bg-stone-50 rounded-xl p-3 border border-stone-100">
+                                        <Truck size={15} className="text-stone-400 mt-0.5 shrink-0" />
+                                        <div>
+                                            <p className="text-[12px] font-semibold text-stone-600">Endereço de entrega</p>
+                                            <p className="text-[12px] text-stone-500 mt-0.5 leading-snug">{selectedOrder.clientAddress}</p>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 text-[13px]">
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Cliente</p>
-                                    <p className="text-stone-700">{selectedOrder.clientName}</p>
-                                </div>
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Telefone</p>
-                                    <p className="text-stone-700">{formatClientPhoneDisplay(selectedOrder.clientPhone)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Subtotal</p>
-                                    <p className="text-stone-700">{formatCurrency(selectedOrder.subtotal)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Frete</p>
-                                    <p className="text-stone-700">{formatCurrency(selectedOrder.shippingCost)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Total</p>
-                                    <p className="text-stone-800 font-semibold">{formatCurrency(selectedOrder.total)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Envio</p>
-                                    <p className="text-stone-700">{selectedOrder.shippingMethodLabel ?? selectedOrder.shippingMethod ?? 'N/A'}</p>
+                            {/* Financials */}
+                            <div className="px-6 pt-5 pb-4 border-b border-stone-100">
+                                <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-3">Resumo financeiro</p>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-[13px]">
+                                        <span className="text-stone-500">Subtotal</span>
+                                        <span className="text-stone-700">{formatCurrency(selectedOrder.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[13px]">
+                                        <span className="text-stone-500">Frete ({selectedOrder.shippingMethodLabel ?? selectedOrder.shippingMethod ?? 'N/A'})</span>
+                                        <span className="text-stone-700">{formatCurrency(selectedOrder.shippingCost)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm font-bold pt-2 border-t border-stone-100 mt-2">
+                                        <span className="text-stone-800">Total</span>
+                                        <span className="text-stone-900">{formatCurrency(selectedOrder.total)}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Tracking code Editor */}
-                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
-                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-2 flex items-center gap-2"><Package size={14} /> Código de Rastreio</h4>
+                            {/* Items */}
+                            <div className="px-6 pt-5 pb-4 border-b border-stone-100">
+                                <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                    <ShoppingBag size={12} /> {selectedOrder.items?.length ?? 0} {selectedOrder.items?.length === 1 ? 'item' : 'itens'}
+                                </p>
+                                <div className="space-y-1">
+                                    {selectedOrder.items && selectedOrder.items.length > 0 ? selectedOrder.items.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between py-2.5 border-b border-stone-50 last:border-0">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-stone-100 text-[11px] font-bold text-stone-500 shrink-0">
+                                                    {item.quantity}×
+                                                </span>
+                                                <p className="text-[13px] text-stone-700 font-medium truncate">{item.productName}</p>
+                                            </div>
+                                            <p className="text-[13px] font-semibold text-stone-800 ml-3 shrink-0">{formatCurrency(item.quantity * item.unitPrice)}</p>
+                                        </div>
+                                    )) : (
+                                        <p className="text-stone-400 text-[13px] text-center py-4">Nenhum item encontrado.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Tracking */}
+                            <div className="px-6 pt-5 pb-4">
+                                <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                    <Package size={12} /> Rastreamento
+                                </p>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         value={editingTracking?.id === selectedOrder.id ? editingTracking.code : (selectedOrder.trackingCode || '')}
                                         onChange={e => setEditingTracking({ id: selectedOrder.id, code: e.target.value })}
                                         placeholder="Ex: BR123456789BR"
-                                        className="flex-1 px-3 py-2 text-sm border border-stone-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300"
+                                        className="flex-1 px-3 py-2 text-sm border border-stone-200 bg-stone-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-300 focus:bg-white transition-colors font-mono"
                                     />
                                     <button
                                         onClick={handleTrackingSave}
                                         disabled={!editingTracking || editingTracking.id !== selectedOrder.id || editingTracking.code === selectedOrder.trackingCode}
-                                        className="px-4 py-2 bg-stone-800 text-white rounded-lg text-[13px] font-medium hover:bg-stone-700 disabled:opacity-50"
+                                        className="px-3 py-2 bg-stone-800 text-white rounded-lg text-[12px] font-medium hover:bg-stone-700 disabled:opacity-40 transition-colors"
                                     >
                                         Salvar
                                     </button>
@@ -551,60 +592,40 @@ const AdminOrdersManagement: React.FC = () => {
                                         <button
                                             onClick={handleSyncTrackingFromMe}
                                             disabled={syncingTracking}
-                                            className="px-4 py-2 bg-white text-stone-800 border border-stone-200 rounded-lg text-[13px] font-medium hover:bg-stone-50 disabled:opacity-50"
+                                            className="px-3 py-2 bg-white text-stone-600 border border-stone-200 rounded-lg text-[12px] font-medium hover:bg-stone-50 disabled:opacity-40 transition-colors whitespace-nowrap"
                                             title="Buscar automaticamente no Melhor Envios"
                                         >
-                                            {syncingTracking ? 'Buscando...' : 'Buscar no ME'}
+                                            {syncingTracking ? '…' : 'Sync ME'}
                                         </button>
                                     )}
                                 </div>
                             </div>
-
-                            {/* Imprimir Etiqueta Melhor Envios */}
-                            {selectedOrder.meOrderId && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <button
-                                        onClick={() => handlePrintLabel(selectedOrder)}
-                                        disabled={printingLabel}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-medium transition-colors"
-                                        title="Imprimir etiqueta térmica 10×15 (recomendado)"
-                                    >
-                                        <Printer size={15} />
-                                        {printingLabel ? 'Abrindo...' : 'Etiqueta 10×15'}
-                                    </button>
-
-                                    <button
-                                        onClick={() => handlePrintDocs(selectedOrder)}
-                                        disabled={printingLabel}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed text-stone-800 border border-stone-200 rounded-xl text-[13px] font-medium transition-colors"
-                                        title="Abrir página/URL de impressão (pode conter comprovantes/documentos)"
-                                    >
-                                        <Printer size={15} />
-                                        Docs (A4)
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Items list */}
-                            <div>
-                                <h4 className="text-[12px] font-medium text-stone-700 uppercase tracking-wide mb-3 flex items-center gap-2"><ShoppingBag size={14} /> Itens do Pedido</h4>
-                                <div className="space-y-3 bg-white border border-stone-100 rounded-xl p-4">
-                                    {selectedOrder.items && selectedOrder.items.length > 0 ? selectedOrder.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center pb-3 border-b border-stone-100 last:border-0 last:pb-0">
-                                            <div>
-                                                <p className="text-[13px] text-stone-700 font-medium">{item.productName}</p>
-                                                <p className="text-[12px] text-stone-500 mt-0.5">{item.quantity}x {formatCurrency(item.unitPrice)}</p>
-                                            </div>
-                                            <p className="text-[13px] font-medium text-stone-800">{formatCurrency(item.quantity * item.unitPrice)}</p>
-                                        </div>
-                                    )) : (
-                                        <p className="text-stone-500 text-[13px] text-center py-2">Nenhum item encontrado.</p>
-                                    )}
-                                </div>
-                            </div>
                         </div>
+
+                        {/* ── Footer Actions ── */}
+                        {selectedOrder.meOrderId && (
+                            <div className="px-6 py-4 border-t border-stone-100 bg-stone-50 flex gap-2">
+                                <button
+                                    onClick={() => handlePrintLabel(selectedOrder)}
+                                    disabled={printingLabel}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-700 disabled:opacity-50 text-white rounded-xl text-[13px] font-semibold transition-colors"
+                                >
+                                    <Printer size={14} />
+                                    {printingLabel ? 'Abrindo...' : 'Etiqueta 10×15'}
+                                </button>
+                                <button
+                                    onClick={() => handlePrintDocs(selectedOrder)}
+                                    disabled={printingLabel}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-stone-100 disabled:opacity-50 text-stone-700 border border-stone-200 rounded-xl text-[13px] font-semibold transition-colors"
+                                    title="Docs A4"
+                                >
+                                    <Printer size={14} />
+                                    A4
+                                </button>
+                            </div>
+                        )}
                     </div>
-                </div>
+                </>
             )}
         </div>
     );

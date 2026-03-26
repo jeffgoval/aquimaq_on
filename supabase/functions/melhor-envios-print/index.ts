@@ -526,6 +526,25 @@ Deno.serve(async (req) => {
             ? await runMePrintPageFlow(meOrderId, meToken)
             : await runMeFullPrintFlow(meOrderId, meToken);
 
+        // ── Automação: pago → em_separacao ────────────────────────────────────
+        // Executada APÓS checkout + generate com sucesso (etiqueta confirmada e
+        // paga no Melhor Envios). Guarda atômica: .eq('status', 'pago') garante
+        // que re-imprimir nunca faz rollback em estados mais avançados
+        // (em_separacao, enviado, entregue, cancelado).
+        const { error: pickingError } = await adminSupabase
+            .from("orders")
+            .update({ status: "em_separacao", updated_at: new Date().toISOString() })
+            .eq("id", body.orderId)
+            .eq("status", "pago");
+
+        if (pickingError) {
+            // Não bloqueia a resposta — a etiqueta já foi gerada com sucesso.
+            console.warn("Falha ao avançar status pago→em_separacao:", pickingError.message);
+        } else {
+            console.log("Status avançado: pago→em_separacao para pedido", body.orderId);
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         /**
          * PDF em S3 (presigned) pode falhar no visualizador do Chrome (CORS / range requests).
          * Com streamPdf, o Deno faz GET ao S3 sem CORS e devolve o binário ao browser (mesma sessão autenticada).
