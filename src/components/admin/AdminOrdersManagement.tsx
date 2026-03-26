@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     ShoppingBag,
     Search,
@@ -19,6 +19,7 @@ import {
     updateOrderStatus,
     updateOrderTracking,
     getAdminMePrintUrl,
+    printMelhorEnviosLabel,
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
@@ -140,7 +141,7 @@ const AdminOrdersManagement: React.FC = () => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Gerando etiqueta...' });
         try {
-            navigate(getAdminMePrintUrl(order.id, 'label'));
+            await printMelhorEnviosLabel(order.id);
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';

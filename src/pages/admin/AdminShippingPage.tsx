@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminMePrintUrl, getShippingOrders, type ShippingOrderRow } from '@/services/adminService';
+import { getAdminMePrintUrl, getShippingOrders, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -76,7 +76,7 @@ const AdminShippingPage: React.FC = () => {
   const handlePrint = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
     try {
-      navigate(getAdminMePrintUrl(order.id, 'label'));
+      await printMelhorEnviosLabel(order.id);
     } catch (e: any) {
       setAlertState({
         open: true,

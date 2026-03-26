@@ -231,9 +231,11 @@ export const updateOrderStatus = async (
  * para evitar falha do visualizador do Chrome com URLs presignadas S3 (CORS / range).
  */
 export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => {
-  // Navegação deve ser feita pelo caller (sem pop-up).
-  void orderId;
-  throw new Error('Use getAdminMePrintUrl(orderId, "label") para navegar.');
+  // Volta ao comportamento anterior: abrir etiqueta 10×15 em nova aba.
+  // (Docs permanece navegando na mesma aba.)
+  const url = `${window.location.origin}${getAdminMePrintUrl(orderId, 'label')}`;
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
 };
 
 /** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */
