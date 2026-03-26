@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStore } from '@/contexts/StoreContext';
 import { ROUTES } from '@/constants/routes';
 import AddressEditModal from '@/features/cart/components/AddressEditModal';
+import { maskDocument, maskPhone } from '@/utils/masks';
 import type { ProfileRow } from '@/types/database';
 
 const MAX_AVATAR_SIZE_MB = 3;
@@ -23,6 +24,8 @@ const AccountPage: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [fullName, setFullName] = useState('');
+    const [docNumber, setDocNumber] = useState('');
+    const [userPhone, setUserPhone] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -48,15 +51,17 @@ const AccountPage: React.FC = () => {
         setEmailNotifications((user.user_metadata?.preferences?.email_notifications as boolean) ?? true);
         supabase
             .from('profiles')
-            .select('name, avatar_url')
+            .select('name, avatar_url, document_number, phone')
             .eq('id', user.id)
             .maybeSingle()
             .then(({ data }) => {
                 const row = data as any;
                 if (row?.name) setFullName(row.name);
                 if (row?.avatar_url) setAvatarUrl(row.avatar_url);
+                if (row?.document_number) setDocNumber(maskDocument(row.document_number));
+                if (row?.phone) setUserPhone(maskPhone(row.phone));
             });
-    }, [user]);
+    }, [user, profile]);
 
     // Auto-dismiss success banner
     useEffect(() => {
@@ -105,10 +110,18 @@ const AccountPage: React.FC = () => {
         if (errAuth) { setSaving(false); setError(errAuth.message); return; }
         const { error: errProfile } = await supabase
             .from('profiles')
-            .update({ name: name ?? null, avatar_url: avatarUrl || null, updated_at: new Date().toISOString() } as any)
+            .update({ 
+                name: name ?? null, 
+                avatar_url: avatarUrl || null, 
+                document_number: docNumber.replace(/\D/g, '') || null,
+                phone: userPhone.replace(/\D/g, '') || null,
+                updated_at: new Date().toISOString() 
+            } as any)
             .eq('id', user.id);
         setSaving(false);
         if (errProfile) { setError(errProfile.message); return; }
+        
+        await refreshProfile();
         setSuccess(true);
     };
 
@@ -218,6 +231,40 @@ const AccountPage: React.FC = () => {
                             />
                         </div>
 
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            {/* CPF/CNPJ */}
+                            <div>
+                                <label htmlFor="account-doc" className="block text-sm font-medium text-slate-700 mb-1">
+                                    CPF / CNPJ
+                                </label>
+                                <input
+                                    id="account-doc"
+                                    type="text"
+                                    value={docNumber}
+                                    onChange={(e) => setDocNumber(maskDocument(e.target.value))}
+                                    placeholder="000.000.000-00"
+                                    maxLength={18}
+                                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-agro-500 focus:outline-none focus:ring-2 focus:ring-agro-500/20"
+                                />
+                            </div>
+
+                            {/* Telefone */}
+                            <div>
+                                <label htmlFor="account-phone" className="block text-sm font-medium text-slate-700 mb-1">
+                                    Telefone
+                                </label>
+                                <input
+                                    id="account-phone"
+                                    type="text"
+                                    value={userPhone}
+                                    onChange={(e) => setUserPhone(maskPhone(e.target.value))}
+                                    placeholder="(00) 00000-0000"
+                                    maxLength={15}
+                                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-agro-500 focus:outline-none focus:ring-2 focus:ring-agro-500/20"
+                                />
+                            </div>
+                        </div>
+
                         {/* Email */}
                         <div>
                             <label htmlFor="account-email" className="block text-sm font-medium text-slate-700 mb-1">
@@ -275,11 +322,6 @@ const AccountPage: React.FC = () => {
                             <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` — ${profile.complement}` : ''}</p>
                             <p className="text-slate-500">{profile.neighborhood} · {profile.city} / {profile.state}</p>
                             <p className="text-slate-400 font-mono text-xs mt-1 mb-1">{profile.zip_code}</p>
-                            {(profile.document_number || profile.phone) && (
-                                <p className="text-slate-500 text-xs pt-2 border-t border-slate-100">
-                                    CPF/CNPJ: {profile.document_number} • Tel: {profile.phone}
-                                </p>
-                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-6 text-center rounded-lg bg-slate-50 border border-dashed border-slate-200">
