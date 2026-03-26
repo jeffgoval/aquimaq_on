@@ -19,6 +19,7 @@ import {
     updateOrderStatus,
     updateOrderTracking,
     printMelhorEnviosLabel,
+    openMelhorEnviosPrintPage,
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
@@ -143,6 +144,20 @@ const AdminOrdersManagement: React.FC = () => {
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';
+            setMessage({ type: 'error', text: msg });
+        } finally {
+            setPrintingLabel(false);
+        }
+    };
+
+    const handlePrintDocs = async (order: PedidoComCliente) => {
+        setPrintingLabel(true);
+        setMessage({ type: 'success', text: 'Abrindo documentos...' });
+        try {
+            await openMelhorEnviosPrintPage(order.id);
+            setMessage(null);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Erro ao abrir documentos.';
             setMessage({ type: 'error', text: msg });
         } finally {
             setPrintingLabel(false);
@@ -485,14 +500,27 @@ const AdminOrdersManagement: React.FC = () => {
 
                             {/* Imprimir Etiqueta Melhor Envios */}
                             {selectedOrder.meOrderId && (
-                                <button
-                                    onClick={() => handlePrintLabel(selectedOrder)}
-                                    disabled={printingLabel}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-medium transition-colors"
-                                >
-                                    <Printer size={15} />
-                                    {printingLabel ? 'Gerando etiqueta...' : 'Imprimir Etiqueta Térmica (10×15)'}
-                                </button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => handlePrintLabel(selectedOrder)}
+                                        disabled={printingLabel}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-medium transition-colors"
+                                        title="Imprimir etiqueta térmica 10×15 (recomendado)"
+                                    >
+                                        <Printer size={15} />
+                                        {printingLabel ? 'Abrindo...' : 'Etiqueta 10×15'}
+                                    </button>
+
+                                    <button
+                                        onClick={() => handlePrintDocs(selectedOrder)}
+                                        disabled={printingLabel}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed text-stone-800 border border-stone-200 rounded-xl text-[13px] font-medium transition-colors"
+                                        title="Abrir página/URL de impressão (pode conter comprovantes/documentos)"
+                                    >
+                                        <Printer size={15} />
+                                        Docs (A4)
+                                    </button>
+                                </div>
                             )}
 
                             {/* Items list */}

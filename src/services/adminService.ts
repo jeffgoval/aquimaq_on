@@ -271,6 +271,51 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => 
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120_000);
 };
 
+/** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */
+export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Sessão expirada. Entre novamente.');
+  }
+
+  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: ENV.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ orderId }),
+  });
+
+  const text = await res.text().catch(() => '');
+  if (!res.ok) {
+    let msg = text?.trim() || `Erro ao abrir impressão (${res.status}).`;
+    try {
+      const parsed = JSON.parse(text) as { error?: string; detail?: string };
+      const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
+      if (combined) msg = combined;
+    } catch {
+      /* corpo não-JSON */
+    }
+    throw new Error(msg);
+  }
+
+  let url = '';
+  try {
+    const parsed = JSON.parse(text) as { url?: string };
+    url = typeof parsed.url === 'string' ? parsed.url : '';
+  } catch {
+    url = '';
+  }
+  if (!url) throw new Error('URL de impressão não retornada.');
+
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a impressão.');
+  }
+};
+
 /** Atualiza código de rastreio de um pedido. */
 export const updateOrderTracking = async (
   orderId: string,

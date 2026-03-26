@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
-import { getShippingOrders, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
+import { getShippingOrders, openMelhorEnviosPrintPage, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -79,6 +79,21 @@ const AdminShippingPage: React.FC = () => {
       setAlertState({
         open: true,
         title: 'Erro ao imprimir etiqueta',
+        description: String(e?.message ?? e ?? 'Erro desconhecido'),
+      });
+    } finally {
+      setPrintingId(null);
+    }
+  };
+
+  const handlePrintDocs = async (order: ShippingOrderRow) => {
+    setPrintingId(order.id);
+    try {
+      await openMelhorEnviosPrintPage(order.id);
+    } catch (e: any) {
+      setAlertState({
+        open: true,
+        title: 'Erro ao abrir documentos',
         description: String(e?.message ?? e ?? 'Erro desconhecido'),
       });
     } finally {
@@ -194,15 +209,27 @@ const AdminShippingPage: React.FC = () => {
                         {formatDate(order.createdAt)}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handlePrint(order)}
-                          disabled={printingId === order.id}
-                          title="Checkout + Gerar + Imprimir etiqueta (10×15)"
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-agro-600 text-white rounded-lg hover:bg-agro-700 disabled:opacity-50 transition-colors"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          {printingId === order.id ? 'Gerando...' : 'Etiqueta'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handlePrint(order)}
+                            disabled={printingId === order.id}
+                            title="Imprimir etiqueta térmica 10×15 (recomendado)"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-agro-600 text-white rounded-lg hover:bg-agro-700 disabled:opacity-50 transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            {printingId === order.id ? 'Abrindo...' : 'Etiqueta 10×15'}
+                          </button>
+
+                          <button
+                            onClick={() => handlePrintDocs(order)}
+                            disabled={printingId === order.id}
+                            title="Abrir link de impressão (pode conter comprovantes/documentos)"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            Docs
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -214,7 +241,7 @@ const AdminShippingPage: React.FC = () => {
 
         <p className="text-xs text-gray-400">
           {filtered.length} envio{filtered.length !== 1 ? 's' : ''} listado{filtered.length !== 1 ? 's' : ''}.
-          O botão "Etiqueta" executa checkout, geração e impressão em um clique.
+          O botão "Etiqueta 10×15" é o recomendado para impressora térmica. "Docs" abre a página/URL de impressão.
         </p>
       </div>
     </>
