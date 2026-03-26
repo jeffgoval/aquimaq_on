@@ -67,12 +67,11 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
         console.warn("ME generate exception:", e);
     }
 
-    // 3. Print: obter URL do PDF
-    const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
-        method: "POST",
+    // 3. Print (arquivo): obter URL direta do PDF
+    // Docs: GET /api/v2/me/imprimir/pdf/{id} -> retorna uma URL (string) para S3
+    const printRes = await fetch(`${ME_API_BASE}/me/imprimir/pdf/${meOrderId}`, {
+        method: "GET",
         headers: meHeaders(token),
-        // mode aceita apenas "private" | "public" (docs Melhor Envios)
-        body: JSON.stringify({ orders: [meOrderId], mode: "public" }),
     });
 
     if (!printRes.ok) {
@@ -83,8 +82,9 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
     const contentType = printRes.headers.get("content-type") ?? "";
     let pdfUrl: string;
     if (contentType.includes("application/json")) {
+        // pode vir como string JSON (ex: "https://...") ou objeto
         const json = await printRes.json();
-        pdfUrl = json.url ?? json.link ?? json;
+        pdfUrl = typeof json === "string" ? json : (json.url ?? json.link ?? "");
     } else {
         pdfUrl = (await printRes.text()).trim().replace(/^"|"$/g, "");
     }
