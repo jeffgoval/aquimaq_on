@@ -50,6 +50,22 @@ function extractHttpUrlFromMeBody(raw: unknown): string {
     return "";
 }
 
+/**
+ * Checkout retorna 422 quando o envio já foi pago no saldo ME (reimpressão / segundo clique).
+ * Nesse caso o fluxo deve seguir para generate + impressão, não falhar.
+ */
+function isMeCheckoutAlreadyPaidOrInvalidOrders(status: number, body: string): boolean {
+    if (status !== 422) return false;
+    const b = body.toLowerCase();
+    return (
+        b.includes("já foram pagas") ||
+        b.includes("ja foram pagas") ||
+        b.includes("already been paid") ||
+        b.includes("já paga") ||
+        (b.includes("inválid") && b.includes("orders"))
+    );
+}
+
 /** POST /me/shipment/print — mode só public | private (doc oficial). */
 async function meShipmentPrintPublic(meOrderId: string, token: string): Promise<string> {
     const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
@@ -102,10 +118,14 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
     });
     const checkoutBody = await checkoutRes.text().catch(() => "");
     if (!checkoutRes.ok) {
-        throw new MelhorEnvioFlowError(
-            `ME checkout failed (${checkoutRes.status}): ${checkoutBody}`,
-            422,
-        );
+        if (isMeCheckoutAlreadyPaidOrInvalidOrders(checkoutRes.status, checkoutBody)) {
+            console.log(`ME checkout skipped (envio já pago ou equivalente): ${meOrderId}`);
+        } else {
+            throw new MelhorEnvioFlowError(
+                `ME checkout failed (${checkoutRes.status}): ${checkoutBody}`,
+                422,
+            );
+        }
     }
 
     // 2. Generate — doc: resposta 200 com { [orderId]: { status, message } }
