@@ -245,8 +245,9 @@ export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => 
   // (Docs permanece navegando na mesma aba.)
   const url = `${window.location.origin}${getAdminMePrintUrl(orderId, 'label')}`;
   const win = window.open(url, '_blank', 'noopener,noreferrer');
-  // Se o browser bloquear o pop-up, faz fallback para abrir na mesma aba (sem aviso).
-  if (!win) window.location.assign(url);
+  // Se o browser bloquear o pop-up, não faz fallback na mesma aba (prejudica UX).
+  // O caller pode oferecer um CTA "Abrir" (clique do usuário não é bloqueado).
+  if (!win) throw new Error('POPUP_BLOCKED');
 };
 
 /** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */

@@ -92,11 +92,20 @@ const AdminShippingPage: React.FC = () => {
         });
       }
     } catch (e: any) {
+      const msg = String(e?.message ?? e ?? 'Erro desconhecido');
+      if (msg === 'POPUP_BLOCKED') {
+        showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
+          duration: 10000,
+          actionLabel: 'Abrir etiqueta',
+          onAction: () => { void printMelhorEnviosLabel(order.id); },
+        });
+      } else {
       setAlertState({
         open: true,
         title: 'Erro ao imprimir etiqueta',
-        description: String(e?.message ?? e ?? 'Erro desconhecido'),
+        description: msg,
       });
+      }
     } finally {
       setPrintingId(null);
     }

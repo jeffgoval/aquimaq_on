@@ -198,8 +198,17 @@ const AdminOrdersManagement: React.FC = () => {
             }
             setMessage(null);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';
-            setMessage({ type: 'error', text: msg });
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg === 'POPUP_BLOCKED') {
+                showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
+                    duration: 10000,
+                    actionLabel: 'Abrir etiqueta',
+                    onAction: () => { void printMelhorEnviosLabel(order.id); },
+                });
+                setMessage(null);
+            } else {
+                setMessage({ type: 'error', text: msg || 'Erro ao gerar etiqueta.' });
+            }
         } finally {
             setPrintingLabel(false);
         }
