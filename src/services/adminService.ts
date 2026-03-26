@@ -1,4 +1,4 @@
-import { ENV } from '@/config/env';
+import { ROUTES } from '@/constants/routes';
 import { supabase } from './supabase';
 
 export interface StockAlertRow {
@@ -231,112 +231,16 @@ export const updateOrderStatus = async (
  * para evitar falha do visualizador do Chrome com URLs presignadas S3 (CORS / range).
  */
 export const printMelhorEnviosLabel = async (orderId: string): Promise<void> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Sessão expirada. Entre novamente.');
-  }
-
-  // Abrir a aba imediatamente (evita bloqueio de pop-up por await/fetch)
-  const win = window.open('about:blank', '_blank', 'noopener,noreferrer');
-  if (!win) {
-    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
-  }
-
-  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: ENV.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ orderId, streamPdf: true }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    let msg = text?.trim() || `Erro ao gerar etiqueta (${res.status}).`;
-    try {
-      const parsed = JSON.parse(text) as { error?: string; detail?: string };
-      const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
-      if (combined) msg = combined;
-    } catch {
-      /* corpo não-JSON */
-    }
-    try { win.close(); } catch { /* ignore */ }
-    throw new Error(msg);
-  }
-
-  const blob = await res.blob();
-  if (!blob.size) {
-    try { win.close(); } catch { /* ignore */ }
-    throw new Error('PDF da etiqueta veio vazio.');
-  }
-
-  const blobUrl = URL.createObjectURL(blob);
-  try {
-    win.location.href = blobUrl;
-    win.focus?.();
-  } catch {
-    URL.revokeObjectURL(blobUrl);
-    try { win.close(); } catch { /* ignore */ }
-    throw new Error('Falha ao abrir a etiqueta em nova aba.');
-  }
-  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120_000);
+  const url = `${window.location.origin}${ROUTES.ADMIN_ME_PRINT}?orderId=${encodeURIComponent(orderId)}&kind=label`;
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a etiqueta.');
 };
 
 /** Abre a página/URL de impressão da ME (pode conter outros documentos além da etiqueta). */
 export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Sessão expirada. Entre novamente.');
-  }
-
-  // Abrir a aba imediatamente (evita bloqueio de pop-up por await/fetch)
-  const win = window.open('about:blank', '_blank', 'noopener,noreferrer');
-  if (!win) {
-    throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a impressão.');
-  }
-
-  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: ENV.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ orderId, printPage: true }),
-  });
-
-  const text = await res.text().catch(() => '');
-  if (!res.ok) {
-    let msg = text?.trim() || `Erro ao abrir impressão (${res.status}).`;
-    try {
-      const parsed = JSON.parse(text) as { error?: string; detail?: string };
-      const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
-      if (combined) msg = combined;
-    } catch {
-      /* corpo não-JSON */
-    }
-    try { win.close(); } catch { /* ignore */ }
-    throw new Error(msg);
-  }
-
-  let url = '';
-  try {
-    const parsed = JSON.parse(text) as { url?: string };
-    url = typeof parsed.url === 'string' ? parsed.url : '';
-  } catch {
-    url = '';
-  }
-  if (!url) throw new Error('URL de impressão não retornada.');
-
-  try {
-    win.location.href = url;
-    win.focus?.();
-  } catch {
-    try { win.close(); } catch { /* ignore */ }
-    throw new Error('Falha ao abrir a impressão em nova aba.');
-  }
+  const url = `${window.location.origin}${ROUTES.ADMIN_ME_PRINT}?orderId=${encodeURIComponent(orderId)}&kind=docs`;
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) throw new Error('Pop-up bloqueado. Permita janelas para este site para ver a impressão.');
 };
 
 /** Atualiza código de rastreio de um pedido. */

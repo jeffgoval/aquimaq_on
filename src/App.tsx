@@ -45,6 +45,7 @@ const AdminSeasonalPage = lazy(() => import('./components/admin/AdminSeasonalPag
 const AdminReviewsManagement = lazy(() => import('./components/admin/AdminReviewsManagement'));
 const AdminCouponManagement = lazy(() => import('./components/admin/AdminCouponManagement'));
 const AdminShippingPage = lazy(() => import('./pages/admin/AdminShippingPage'));
+const AdminMePrintPage = lazy(() => import('./pages/admin/AdminMePrintPage'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -172,6 +173,11 @@ function AdminRoutes() {
                 <Route path={ROUTE_PATHS.ADMIN_SHIPPING} element={
                     <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
                         <AdminShippingPage />
+                    </ProtectedRoute>
+                } />
+                <Route path={ROUTE_PATHS.ADMIN_ME_PRINT} element={
+                    <ProtectedRoute allowedRoles={['admin', 'gerente', 'vendedor']}>
+                        <AdminMePrintPage />
                     </ProtectedRoute>
                 } />
             </Routes>
