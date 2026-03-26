@@ -91,19 +91,7 @@ const AdminShippingPage: React.FC = () => {
 
       if (shouldAutoAdvance && prevStatus) {
         await updateOrderStatus(order.id, OrderStatus.PICKING);
-        showToast('Status atualizado para “Em Separação”.', 'info', {
-          duration: 10000,
-          actionLabel: 'Desfazer',
-          onAction: () => {
-            void updateOrderStatus(order.id, prevStatus).catch(() => {
-              setAlertState({
-                open: true,
-                title: 'Erro ao desfazer',
-                description: 'Não foi possível restaurar o status anterior.',
-              });
-            });
-          },
-        });
+        showToast('Status atualizado para "Em Separação".', 'info');
       }
     } catch (e: any) {
       const msg = String(e?.message ?? e ?? 'Erro desconhecido');

@@ -192,20 +192,7 @@ const AdminOrdersManagement: React.FC = () => {
                 setOrders(prev => prev.map(o =>
                     o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
                 ));
-                showToast('Status atualizado para “Em Separação”.', 'info', {
-                    duration: 10000,
-                    actionLabel: 'Desfazer',
-                    onAction: () => {
-                        void updateOrderStatus(order.id, prevStatus).then(() => {
-                            setOrders(prev => prev.map(o =>
-                                o.id === order.id ? { ...o, status: prevStatus } : o
-                            ));
-                            setSelectedOrder(prev2 => prev2 && prev2.id === order.id ? { ...prev2, status: prevStatus } : prev2);
-                        }).catch(() => {
-                            setMessage({ type: 'error', text: 'Não foi possível desfazer o status.' });
-                        });
-                    },
-                });
+                showToast('Status atualizado para "Em Separação".', 'info');
             }
             setMessage(null);
         } catch (err: unknown) {
