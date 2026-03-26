@@ -81,6 +81,41 @@ function isMeCheckoutAlreadyPaidOrInvalidOrders(status: number, body: string): b
     return false;
 }
 
+/** Remove acentos para comparar mensagens ME (ex.: está → esta). */
+function normalizeMeText(s: string): string {
+    return s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
+/**
+ * Generate pode devolver 200 com status:false quando o envio/etiqueta já foi gerado antes (reimpressão).
+ * Nesse caso seguimos para imprimir/pdf ou shipment/print.
+ */
+function isMeGenerateShipmentAlreadyGenerated(
+    generateOk: boolean,
+    bodyText: string,
+    meOrderId: string,
+    genPayload: Record<string, { status?: boolean; message?: string }> | null,
+): boolean {
+    const entry = genPayload?.[meOrderId];
+    const msgMatches = (msg: string | undefined): boolean => {
+        if (!msg) return false;
+        const n = normalizeMeText(msg);
+        return (
+            n.includes("ja esta gerado") ||
+            n.includes("ja foi gerado") ||
+            n.includes("etiqueta ja") ||
+            n.includes("already generated")
+        );
+    };
+    if (entry && msgMatches(entry.message)) return true;
+    if (!generateOk && bodyText) {
+        if (msgMatches(bodyText)) return true;
+        const n = normalizeMeText(bodyText);
+        if (n.includes("ja esta gerado") || n.includes("ja foi gerado")) return true;
+    }
+    return false;
+}
+
 /** POST /me/shipment/print — mode só public | private (doc oficial). */
 async function meShipmentPrintPublic(meOrderId: string, token: string): Promise<string> {
     const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
@@ -150,28 +185,43 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
         body: JSON.stringify({ orders: [meOrderId] }),
     });
     const generateBodyText = await generateRes.text().catch(() => "");
-    if (!generateRes.ok) {
+    let genPayload: Record<string, { status?: boolean; message?: string }> | null = null;
+    if (generateBodyText) {
+        try {
+            genPayload = JSON.parse(generateBodyText) as Record<string, { status?: boolean; message?: string }>;
+        } catch {
+            genPayload = null;
+        }
+    }
+    const genEntry = genPayload?.[meOrderId];
+    const generateAlreadyDone = isMeGenerateShipmentAlreadyGenerated(
+        generateRes.ok,
+        generateBodyText,
+        meOrderId,
+        genPayload,
+    );
+
+    if (!generateRes.ok && !generateAlreadyDone) {
         throw new MelhorEnvioFlowError(
             `ME generate failed (${generateRes.status}): ${generateBodyText}`,
             422,
         );
     }
-    let genPayload: Record<string, { status?: boolean; message?: string }>;
-    try {
-        genPayload = JSON.parse(generateBodyText) as Record<string, { status?: boolean; message?: string }>;
-    } catch {
+    if (generateRes.ok && !genPayload) {
         throw new MelhorEnvioFlowError(
             `ME generate: JSON inválido: ${generateBodyText.slice(0, 500)}`,
             422,
         );
     }
-    const genEntry = genPayload[meOrderId];
-    if (!genEntry || genEntry.status !== true) {
-        const msg = genEntry?.message ?? JSON.stringify(genEntry);
+    if (!generateAlreadyDone && (!genEntry || genEntry.status !== true)) {
+        const msg = genEntry?.message ?? JSON.stringify(genEntry ?? {});
         throw new MelhorEnvioFlowError(
             `ME generate: etiqueta não gerada para ${meOrderId}: ${msg}`,
             422,
         );
+    }
+    if (generateAlreadyDone && (!genEntry || genEntry.status !== true)) {
+        console.log(`ME generate skipped (envio ou etiqueta já gerado): ${meOrderId}`);
     }
 
     // 3a. Impressão em arquivo PDF (doc: GET /api/v2/me/imprimir/pdf/{id})
