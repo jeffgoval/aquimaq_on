@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { supabase } from './supabase';
+import { ENV } from '@/config/env';
 
 export interface StockAlertRow {
   id: string;
@@ -247,6 +248,45 @@ export const openMelhorEnviosPrintPage = async (orderId: string): Promise<void> 
 
 export const getAdminMePrintUrl = (orderId: string, kind: 'label' | 'docs'): string => {
   return `${ROUTES.ADMIN_ME_PRINT}?orderId=${encodeURIComponent(orderId)}&kind=${encodeURIComponent(kind)}`;
+};
+
+export interface MeTrackingSyncResult {
+  trackingCode: string | null;
+  trackingUrl: string | null;
+}
+
+export const syncOrderTrackingFromMelhorEnvios = async (orderId: string): Promise<MeTrackingSyncResult> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
+
+  const res = await fetch(`${ENV.VITE_SUPABASE_URL}/functions/v1/melhor-envios-print`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: ENV.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ orderId, syncTracking: true }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let msg = text?.trim() || `Erro ao sincronizar rastreio (${res.status}).`;
+    try {
+      const parsed = JSON.parse(text) as { error?: string; detail?: string };
+      const combined = [parsed.error, parsed.detail].filter(Boolean).join(' - ');
+      if (combined) msg = combined;
+    } catch {
+      /* corpo não-JSON */
+    }
+    throw new Error(msg);
+  }
+
+  const data = (await res.json()) as Partial<MeTrackingSyncResult>;
+  return {
+    trackingCode: typeof data.trackingCode === 'string' ? data.trackingCode : null,
+    trackingUrl: typeof data.trackingUrl === 'string' ? data.trackingUrl : null,
+  };
 };
 
 /** Atualiza código de rastreio de um pedido. */

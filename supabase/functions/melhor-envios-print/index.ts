@@ -178,6 +178,33 @@ async function meShipmentPrintPublic(meOrderId: string, token: string): Promise<
     return url;
 }
 
+type MeOrderDetails = {
+    tracking?: string | null;
+    self_tracking?: string | null;
+    tracking_url?: string | null;
+};
+
+async function fetchMeOrderDetails(meOrderId: string, token: string): Promise<MeOrderDetails> {
+    const res = await fetch(`${ME_API_BASE}/me/orders/${encodeURIComponent(meOrderId)}`, {
+        method: "GET",
+        headers: meHeaders(token),
+    });
+    const text = await res.text().catch(() => "");
+    if (!res.ok) {
+        throw new MelhorEnvioFlowError(`ME orders/${meOrderId} failed (${res.status}): ${text}`, 502);
+    }
+    try {
+        const j = JSON.parse(text) as Record<string, unknown>;
+        return {
+            tracking: (j.tracking as string | null | undefined) ?? null,
+            self_tracking: (j.self_tracking as string | null | undefined) ?? null,
+            tracking_url: (j.tracking_url as string | null | undefined) ?? null,
+        };
+    } catch {
+        throw new MelhorEnvioFlowError(`ME orders/${meOrderId}: resposta inválida: ${text.slice(0, 500)}`, 502);
+    }
+}
+
 /**
  * Fluxo alinhado à doc Melhor Envios:
  * 1. checkout (comprar do saldo)
@@ -420,7 +447,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    let body: { orderId?: string; streamPdf?: boolean; printPage?: boolean };
+    let body: { orderId?: string; streamPdf?: boolean; printPage?: boolean; syncTracking?: boolean };
     try {
         body = await req.json();
     } catch {
@@ -439,7 +466,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await adminSupabase
         .from("orders")
-        .select("id, me_order_id, tracking_code")
+        .select("id, me_order_id, tracking_code, tracking_url, shipping_status")
         .eq("id", body.orderId)
         .maybeSingle();
 
@@ -459,6 +486,27 @@ Deno.serve(async (req) => {
     }
 
     try {
+        if (body.syncTracking === true) {
+            const details = await fetchMeOrderDetails(meOrderId, meToken);
+            const trackingCode = (details.tracking ?? details.self_tracking ?? null) || null;
+            const trackingUrl = details.tracking_url ?? null;
+
+            const updatePayload: Record<string, unknown> = {
+                updated_at: new Date().toISOString(),
+            };
+            if (trackingCode) updatePayload.tracking_code = trackingCode;
+            if (trackingUrl) updatePayload.tracking_url = trackingUrl;
+
+            if (Object.keys(updatePayload).length > 1) {
+                await adminSupabase.from("orders").update(updatePayload).eq("id", body.orderId);
+            }
+
+            return new Response(JSON.stringify({ trackingCode, trackingUrl }), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
         const pdfUrl = body.printPage === true
             ? await runMePrintPageFlow(meOrderId, meToken)
             : await runMeFullPrintFlow(meOrderId, meToken);

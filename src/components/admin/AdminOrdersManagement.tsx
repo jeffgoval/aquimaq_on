@@ -20,6 +20,7 @@ import {
     updateOrderTracking,
     getAdminMePrintUrl,
     printMelhorEnviosLabel,
+    syncOrderTrackingFromMelhorEnvios,
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
@@ -78,6 +79,7 @@ const AdminOrdersManagement: React.FC = () => {
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
     const [printingLabel, setPrintingLabel] = useState(false);
+    const [syncingTracking, setSyncingTracking] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
@@ -134,6 +136,32 @@ const AdminOrdersManagement: React.FC = () => {
             setMessage({ type: 'error', text: 'Erro ao atualizar rastreio.' });
         } finally {
             setEditingTracking(null);
+        }
+    };
+
+    const handleSyncTrackingFromMe = async () => {
+        if (!selectedOrder) return;
+        setSyncingTracking(true);
+        setMessage({ type: 'success', text: 'Buscando rastreio no Melhor Envios...' });
+        try {
+            const { trackingCode } = await syncOrderTrackingFromMelhorEnvios(selectedOrder.id);
+            if (!trackingCode) {
+                setMessage({ type: 'error', text: 'Ainda não há código de rastreio disponível no Melhor Envios.' });
+                return;
+            }
+
+            setOrders(prev => prev.map(o =>
+                o.id === selectedOrder.id ? { ...o, trackingCode } : o
+            ));
+            setSelectedOrder(prev => prev ? { ...prev, trackingCode } : prev);
+            setEditingTracking({ id: selectedOrder.id, code: trackingCode });
+            setMessage({ type: 'success', text: 'Código de rastreio sincronizado.' });
+            setTimeout(() => setMessage(null), 2000);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Erro ao buscar rastreio.';
+            setMessage({ type: 'error', text: msg });
+        } finally {
+            setSyncingTracking(false);
         }
     };
 
@@ -496,6 +524,16 @@ const AdminOrdersManagement: React.FC = () => {
                                     >
                                         Salvar
                                     </button>
+                                    {selectedOrder.meOrderId && (
+                                        <button
+                                            onClick={handleSyncTrackingFromMe}
+                                            disabled={syncingTracking}
+                                            className="px-4 py-2 bg-white text-stone-800 border border-stone-200 rounded-lg text-[13px] font-medium hover:bg-stone-50 disabled:opacity-50"
+                                            title="Buscar automaticamente no Melhor Envios"
+                                        >
+                                            {syncingTracking ? 'Buscando...' : 'Buscar no ME'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
