@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { getShippingOrders, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
+import { AlertDialog } from '@/components/ui/AlertDialog';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   etiqueta_criada:   { label: 'Etiqueta criada',   color: 'bg-blue-100 text-blue-700' },
@@ -31,6 +32,11 @@ const AdminShippingPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [printingId, setPrintingId] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; description: string }>({
+    open: false,
+    title: '',
+    description: '',
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,7 +77,11 @@ const AdminShippingPage: React.FC = () => {
       const url = await printMelhorEnviosLabel(order.id);
       window.open(url, '_blank');
     } catch (e: any) {
-      alert(`Erro ao imprimir etiqueta: ${e?.message ?? e}`);
+      setAlertState({
+        open: true,
+        title: 'Erro ao imprimir etiqueta',
+        description: String(e?.message ?? e ?? 'Erro desconhecido'),
+      });
     } finally {
       setPrintingId(null);
     }
@@ -96,6 +106,13 @@ const AdminShippingPage: React.FC = () => {
       <Helmet><title>Logística | Aquimaq Admin</title></Helmet>
 
       <div className="space-y-4">
+        <AlertDialog
+          open={alertState.open}
+          title={alertState.title}
+          description={alertState.description}
+          tone="danger"
+          onClose={() => setAlertState({ open: false, title: '', description: '' })}
+        />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
