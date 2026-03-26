@@ -229,7 +229,15 @@ function AppContent() {
                 <div className="fixed top-4 right-4 z-[9999] space-y-2 pointer-events-none">
                     {toasts.map(toast => (
                         <div key={toast.id} className="pointer-events-auto">
-                            <Toast id={toast.id} message={toast.message} type={toast.type} onClose={(id) => hideToast(id)} />
+                            <Toast
+                                id={toast.id}
+                                message={toast.message}
+                                type={toast.type}
+                                duration={toast.duration}
+                                actionLabel={toast.actionLabel}
+                                onAction={toast.onAction}
+                                onClose={(id) => hideToast(id)}
+                            />
                         </div>
                     ))}
                 </div>

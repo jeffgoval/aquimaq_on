@@ -226,6 +226,15 @@ export const updateOrderStatus = async (
   if (error) throw error;
 };
 
+export const getOrderStatus = async (orderId: string): Promise<string | null> => {
+  const { data, error } = await (supabase.from('orders') as any)
+    .select('status')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.status as string | null | undefined) ?? null;
+};
+
 
 /**
  * Abre a etiqueta em nova aba. O PDF é obtido via proxy na Edge Function (streamPdf)

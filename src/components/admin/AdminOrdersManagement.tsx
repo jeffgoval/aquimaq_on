@@ -25,6 +25,7 @@ import {
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 
 const PAGE_SIZE = 20;
 
@@ -80,6 +81,7 @@ const AdminOrdersManagement: React.FC = () => {
     const [editingTracking, setEditingTracking] = useState<{ id: string, code: string } | null>(null);
     const [printingLabel, setPrintingLabel] = useState(false);
     const [syncingTracking, setSyncingTracking] = useState(false);
+    const { showToast } = useToast();
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
@@ -169,7 +171,31 @@ const AdminOrdersManagement: React.FC = () => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Gerando etiqueta...' });
         try {
+            const prevStatus = order.status;
+            // Importante: abrir a nova aba SEM await antes, para não cair em popup blocker.
             await printMelhorEnviosLabel(order.id);
+
+            if (prevStatus === OrderStatus.PAID) {
+                void updateOrderStatus(order.id, OrderStatus.PICKING);
+                setOrders(prev => prev.map(o =>
+                    o.id === order.id ? { ...o, status: OrderStatus.PICKING } : o
+                ));
+                if (selectedOrder && selectedOrder.id === order.id) {
+                    setSelectedOrder({ ...selectedOrder, status: OrderStatus.PICKING });
+                }
+
+                showToast('Status atualizado para “Em Separação”.', 'info', {
+                    duration: 10000,
+                    actionLabel: 'Desfazer',
+                    onAction: () => {
+                        void updateOrderStatus(order.id, prevStatus);
+                        setOrders(prev => prev.map(o =>
+                            o.id === order.id ? { ...o, status: prevStatus } : o
+                        ));
+                        setSelectedOrder(prev => prev && prev.id === order.id ? { ...prev, status: prevStatus } : prev);
+                    },
+                });
+            }
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';

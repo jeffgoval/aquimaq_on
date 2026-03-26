@@ -135,6 +135,10 @@ Deno.serve(async (req) => {
     if (newStatus) {
         updatePayload.shipping_status = newStatus;
     }
+    if (event === "order.posted") {
+        // Automatiza o status do pedido na loja quando o ME confirma postagem.
+        updatePayload.status = "enviado";
+    }
     if (tracking) {
         updatePayload.tracking_code = tracking;
     }
@@ -144,10 +148,17 @@ Deno.serve(async (req) => {
     updatePayload.updated_at = new Date().toISOString();
 
     // Look up order by me_order_id column
-    const { error: updateError } = await supabase
+    let q = supabase
         .from("orders")
         .update(updatePayload)
         .eq("me_order_id", meOrderId);
+
+    // Guard-rails: não sobrescrever status final.
+    if (event === "order.posted") {
+        q = q.not("status", "in", "(entregue,cancelado)");
+    }
+
+    const { error: updateError } = await q;
 
     if (updateError) {
         // Column may not exist yet — log and return 200 to avoid ME retries

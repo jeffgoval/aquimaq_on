@@ -9,9 +9,11 @@ export interface ToastProps {
   type: ToastType;
   onClose: (id: number) => void;
   duration?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 5000 }) => {
+const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 5000, actionLabel, onAction }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose(id);
@@ -49,6 +51,17 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 50
     >
       <div className="flex-shrink-0">{getIcon()}</div>
       <p className="flex-1 text-sm font-medium">{message}</p>
+      {actionLabel && onAction && (
+        <button
+          onClick={() => {
+            onAction();
+            onClose(id);
+          }}
+          className="px-2 py-1 text-xs font-semibold rounded border border-current/30 hover:bg-black hover:bg-opacity-10 transition-colors"
+        >
+          {actionLabel}
+        </button>
+      )}
       <button
         onClick={() => onClose(id)}
         className="flex-shrink-0 p-1 hover:bg-black hover:bg-opacity-10 rounded transition-colors"

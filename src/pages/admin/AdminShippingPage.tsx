@@ -2,8 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminMePrintUrl, getShippingOrders, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
+import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, printMelhorEnviosLabel, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
+import { useToast } from '@/contexts/ToastContext';
+import { OrderStatus } from '@/types';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   etiqueta_criada:   { label: 'Etiqueta criada',   color: 'bg-blue-100 text-blue-700' },
@@ -29,6 +31,7 @@ const STATUS_FILTER_OPTIONS = [
 
 const AdminShippingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<ShippingOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -77,6 +80,17 @@ const AdminShippingPage: React.FC = () => {
     setPrintingId(order.id);
     try {
       await printMelhorEnviosLabel(order.id);
+
+      // Importante: só fazemos awaits depois de abrir a nova aba, para não cair em popup blocker.
+      const prevStatus = await getOrderStatus(order.id);
+      if (prevStatus === OrderStatus.PAID) {
+        await updateOrderStatus(order.id, OrderStatus.PICKING);
+        showToast('Status atualizado para “Em Separação”.', 'info', {
+          duration: 10000,
+          actionLabel: 'Desfazer',
+          onAction: () => { void updateOrderStatus(order.id, prevStatus); },
+        });
+      }
     } catch (e: any) {
       setAlertState({
         open: true,
