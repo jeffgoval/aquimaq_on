@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, printMelhorEnviosLabel, tryOpenMelhorEnviosLabelTab, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
+import { getAdminMePrintUrl, getOrderStatus, getShippingOrders, tryOpenMelhorEnviosLabelTab, updateOrderStatus, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 import { useToast } from '@/contexts/ToastContext';
 import { OrderStatus } from '@/types';
@@ -78,7 +78,7 @@ const AdminShippingPage: React.FC = () => {
 
   const handlePrint = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
-    const opened = tryOpenMelhorEnviosLabelTab(order.id);
+    tryOpenMelhorEnviosLabelTab(order.id);
 
     try {
       const prevStatus = await getOrderStatus(order.id);
@@ -114,14 +114,6 @@ const AdminShippingPage: React.FC = () => {
       });
     } finally {
       setPrintingId(null);
-    }
-
-    if (!opened) {
-      showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
-        duration: 10000,
-        actionLabel: 'Abrir etiqueta',
-        onAction: () => { void printMelhorEnviosLabel(order.id); },
-      });
     }
   };
 

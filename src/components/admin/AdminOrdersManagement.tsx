@@ -19,7 +19,6 @@ import {
     updateOrderStatus,
     updateOrderTracking,
     getAdminMePrintUrl,
-    printMelhorEnviosLabel,
     tryOpenMelhorEnviosLabelTab,
     syncOrderTrackingFromMelhorEnvios,
     type OrderAdminRow
@@ -179,7 +178,7 @@ const AdminOrdersManagement: React.FC = () => {
             prevStatus !== OrderStatus.CANCELLED;
 
         // Pop-up primeiro (síncrono com o clique); depois grava no Supabase com await.
-        const opened = tryOpenMelhorEnviosLabelTab(order.id);
+        tryOpenMelhorEnviosLabelTab(order.id);
 
         try {
             if (shouldAutoAdvance) {
@@ -211,14 +210,6 @@ const AdminOrdersManagement: React.FC = () => {
             setMessage({ type: 'error', text: msg || 'Erro ao atualizar status no Supabase.' });
         } finally {
             setPrintingLabel(false);
-        }
-
-        if (!opened) {
-            showToast('Clique para abrir a etiqueta em nova aba.', 'info', {
-                duration: 10000,
-                actionLabel: 'Abrir etiqueta',
-                onAction: () => { void printMelhorEnviosLabel(order.id); },
-            });
         }
     };
 
