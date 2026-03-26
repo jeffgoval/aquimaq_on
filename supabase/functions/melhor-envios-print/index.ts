@@ -71,7 +71,8 @@ async function runMeFullPrintFlow(meOrderId: string, token: string): Promise<str
     const printRes = await fetch(`${ME_API_BASE}/me/shipment/print`, {
         method: "POST",
         headers: meHeaders(token),
-        body: JSON.stringify({ orders: [meOrderId], mode: "public/pdf" }),
+        // mode aceita apenas "private" | "public" (docs Melhor Envios)
+        body: JSON.stringify({ orders: [meOrderId], mode: "public" }),
     });
 
     if (!printRes.ok) {
