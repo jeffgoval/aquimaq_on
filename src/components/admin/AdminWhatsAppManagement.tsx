@@ -16,6 +16,7 @@ import type {
 } from '@/types/whatsapp';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/contexts/AuthContext';
+import { maskPhone, unmask } from '@/utils/masks';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -59,11 +60,19 @@ const formatDate = (iso: string | null): string => {
   });
 };
 
+const formatLogPhoneDisplay = (phone: string): string => {
+  if (phone === '—' || !phone.trim()) return phone;
+  const d = unmask(phone);
+  if (d.length >= 10 && d.length <= 13) return maskPhone(phone);
+  return phone;
+};
+
 const getLogRecipient = (log: N8nWebhookLogRow): { name: string; phone: string; ref?: string } => {
   const p = log.payload as Record<string, unknown> | null;
   if (!p) return { name: '—', phone: '—' };
   const name = (p.name as string) || '—';
-  const phone = (p.phone as string) || '—';
+  const rawPhone = (p.phone as string) || '—';
+  const phone = rawPhone === '—' ? rawPhone : formatLogPhoneDisplay(rawPhone);
   if (log.event_type === 'order.follow_up') {
     const orderId = (p as unknown as OrderFollowUpPayload).order_id;
     return { name, phone, ref: orderId ? `#${String(orderId).slice(-8)}` : undefined };

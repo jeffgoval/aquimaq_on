@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { supabase } from '@/services/supabase';
-import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
+import { MASK_INPUT_MAX_LENGTH, MASK_PLACEHOLDER, maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { useStore } from '@/contexts/StoreContext';
@@ -463,21 +463,21 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                             <Field label="CNPJ" required error={errors.cnpj}>
                                 <div className="relative">
                                     <input name="cnpj" value={formData.cnpj} onChange={handleChange}
-                                        className={inputCls(errors.cnpj)} placeholder="00.000.000/0000-00" maxLength={18} />
+                                        className={inputCls(errors.cnpj)} placeholder={MASK_PLACEHOLDER.cnpj} maxLength={MASK_INPUT_MAX_LENGTH.cpfCnpj} inputMode="numeric" autoComplete="off" />
                                 </div>
                             </Field>
                             <Field label="Telefone" required error={errors.phone}>
                                 <div className="relative">
                                     <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                     <input name="phone" value={formData.phone} onChange={handleChange}
-                                        className={cn(inputCls(errors.phone), 'pl-8')} placeholder="(00) 00000-0000" />
+                                        className={cn(inputCls(errors.phone), 'pl-8')} placeholder={MASK_PLACEHOLDER.phone} maxLength={MASK_INPUT_MAX_LENGTH.phone} inputMode="tel" autoComplete="tel" />
                                 </div>
                             </Field>
                             <Field label="WhatsApp" hint="Deixe em branco para usar o mesmo que o telefone.">
                                 <div className="relative">
                                     <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                     <input name="whatsapp" value={formData.whatsapp} onChange={handleChange}
-                                        className={cn(inputCls(), 'pl-8')} placeholder="(00) 00000-0000" />
+                                        className={cn(inputCls(), 'pl-8')} placeholder={MASK_PLACEHOLDER.phone} maxLength={MASK_INPUT_MAX_LENGTH.phone} inputMode="tel" autoComplete="tel" />
                                 </div>
                             </Field>
                             <Field label="E-mail" required error={errors.email}>
@@ -544,7 +544,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({ onBack }) => {
                                 <input value={formData.address.zip}
                                     onChange={e => handleAddressChange('zip', e.target.value)}
                                     className={inputCls(errors['address.zip'])}
-                                    placeholder="00000-000" maxLength={9} />
+                                    placeholder={MASK_PLACEHOLDER.cep} maxLength={MASK_INPUT_MAX_LENGTH.cep} inputMode="numeric" autoComplete="postal-code" />
                                 {isLoadingAddress && <p className="mt-1 text-xs text-stone-400">Buscando endereço...</p>}
                             </Field>
 

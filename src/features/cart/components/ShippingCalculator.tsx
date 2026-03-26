@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Truck, MapPin, Loader2, Store, AlertCircle } from 'lucide-react';
 import { calculateShipping } from '@/services/shippingService';
 import { validateCEP } from '@/utils/validators';
-import { maskCEP } from '@/utils/masks';
+import { MASK_INPUT_MAX_LENGTH, MASK_PLACEHOLDER, maskCEP } from '@/utils/masks';
 import { formatCurrency } from '@/utils/format';
 import { CartItem, ShippingOption } from '@/types';
 
@@ -133,9 +133,11 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
             type="text"
             value={cep}
             onChange={handleCepChange}
-            placeholder="00000-000"
+            placeholder={MASK_PLACEHOLDER.cep}
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-agro-500 focus:border-agro-500 text-sm"
-            maxLength={9}
+            maxLength={MASK_INPUT_MAX_LENGTH.cep}
+            inputMode="numeric"
+            autoComplete="postal-code"
           />
           <MapPin size={16} className="absolute left-3 top-2.5 text-gray-400" />
         </div>

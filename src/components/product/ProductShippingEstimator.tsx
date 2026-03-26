@@ -2,7 +2,7 @@ import React from 'react';
 import { Truck, MapPin, Store, Loader2 } from 'lucide-react';
 import type { ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
-import { maskCEP } from '@/utils/masks';
+import { MASK_INPUT_MAX_LENGTH, MASK_PLACEHOLDER, maskCEP } from '@/utils/masks';
 import { validateCEP } from '@/utils/validators';
 
 interface ProductShippingEstimatorProps {
@@ -45,8 +45,10 @@ export const ProductShippingEstimator: React.FC<ProductShippingEstimatorProps> =
               onCepChange(maskCEP(e.target.value));
               onShippingErrorClear();
             }}
-            placeholder="00000-000"
-            maxLength={9}
+            placeholder={MASK_PLACEHOLDER.cep}
+            maxLength={MASK_INPUT_MAX_LENGTH.cep}
+            inputMode="numeric"
+            autoComplete="postal-code"
             className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
           />
         </div>

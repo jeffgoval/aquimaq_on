@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
-import { maskCEP, maskDocument, maskPhone } from '@/utils/masks';
+import { MASK_INPUT_MAX_LENGTH, MASK_PLACEHOLDER, maskCEP, maskDocument, maskPhone } from '@/utils/masks';
 import { fetchAddressByCEP } from '@/services/addressService';
 
 interface AddressUser {
@@ -201,22 +201,26 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
                   setDocNumber(maskDocument(e.target.value));
                   setError(null);
                 }}
-                maxLength={18}
-                placeholder="000.000.000-00"
+                maxLength={MASK_INPUT_MAX_LENGTH.cpfCnpj}
+                placeholder={MASK_PLACEHOLDER.cpfCnpj}
+                inputMode="numeric"
+                autoComplete="off"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
               <input
-                type="text"
+                type="tel"
                 value={phone}
                 onChange={(e) => {
                   setPhone(maskPhone(e.target.value));
                   setError(null);
                 }}
-                maxLength={15}
-                placeholder="(00) 00000-0000"
+                maxLength={MASK_INPUT_MAX_LENGTH.phone}
+                placeholder={MASK_PLACEHOLDER.phone}
+                inputMode="tel"
+                autoComplete="tel"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
               />
             </div>
@@ -231,8 +235,10 @@ const AddressEditModal: React.FC<AddressEditModalProps> = ({ user, onSave, onClo
                 type="text"
                 value={address.zip}
                 onChange={(e) => handleChange('zip', e.target.value)}
-                maxLength={9}
-                placeholder="00000-000"
+                maxLength={MASK_INPUT_MAX_LENGTH.cep}
+                placeholder={MASK_PLACEHOLDER.cep}
+                inputMode="numeric"
+                autoComplete="postal-code"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-agro-500/20 focus:border-agro-500 outline-none"
               />
               {isLoadingCep && (

@@ -8,6 +8,7 @@ import { useStore } from '@/contexts/StoreContext';
 import StarRating from './StarRating';
 import Image from './Image';
 import { formatCurrency } from '@/utils/format';
+import { brazilPhoneDigitsForWhatsApp } from '@/utils/masks';
 import type { SeasonalStatus } from '@/utils/cropCalendar';
 import { SEASONAL_STATUS_LABEL } from '@/utils/cropCalendar';
 import type { ShippingRule } from '@/types/store';
@@ -40,6 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const { isInWishlist, toggleWishlist } = useWishlist();
     const isFavorite = isInWishlist(product.id);
     const shippingRule = getShippingRestriction(settings?.shippingRules, product.category);
+    const logisticsWhatsAppDigits = settings?.phone ? brazilPhoneDigitsForWhatsApp(settings.phone) : '';
 
     const isOutOfStock = product.stock === 0;
     const isLowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
@@ -205,9 +207,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     <ShoppingCart size={15} />
                     {isOutOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
                 </button>
-                {shippingRule && settings?.phone && (
+                {shippingRule && logisticsWhatsAppDigits && (
                     <a
-                        href={`https://wa.me/55${settings.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, gostaria de saber sobre a logística do produto: ${product.name}`)}`}
+                        href={`https://wa.me/${logisticsWhatsAppDigits}?text=${encodeURIComponent(`Olá, gostaria de saber sobre a logística do produto: ${product.name}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium rounded-lg transition-colors"

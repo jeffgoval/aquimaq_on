@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { CartItem, Coupon, ShippingOption } from '@/types';
 import { formatCurrency } from '@/utils/format';
+import { formatCepDisplay, maskDocument, maskPhone } from '@/utils/masks';
 import { calculateItemPrice, calculateItemSubtotal } from '@/utils/price';
 import ShippingCalculator from './ShippingCalculator';
 import CartProgress from './CartProgress';
@@ -333,10 +334,10 @@ const Cart: React.FC<CartProps> = ({
                                             {profile.complement ? `, ${profile.complement}` : ''}
                                         </p>
                                         <p>{profile.neighborhood} — {profile.city} / {profile.state}</p>
-                                        <p className="text-gray-400 text-xs font-mono mb-1">{profile.zip_code}</p>
+                                        <p className="text-gray-400 text-xs font-mono mb-1">{formatCepDisplay(profile.zip_code)}</p>
                                         {(profile.document_number || profile.phone) && (
                                             <p className="text-gray-500 text-xs pt-2 border-t border-gray-100">
-                                                CPF/CNPJ: {profile.document_number} • Tel: {profile.phone}
+                                                CPF/CNPJ: {profile.document_number ? maskDocument(profile.document_number) : '—'} • Tel: {profile.phone ? maskPhone(profile.phone) : '—'}
                                             </p>
                                         )}
                                     </div>

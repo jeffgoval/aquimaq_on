@@ -26,8 +26,14 @@ import {
 import { OrderStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { maskPhone } from '@/utils/masks';
 
 const PAGE_SIZE = 20;
+
+const formatClientPhoneDisplay = (raw: string | null | undefined): string => {
+    const s = (raw ?? '').trim();
+    return s ? maskPhone(s) : '—';
+};
 
 interface PedidoComCliente extends OrderAdminRow {
     status: OrderStatus;
@@ -169,7 +175,6 @@ const AdminOrdersManagement: React.FC = () => {
 
     const handlePrintLabel = async (order: PedidoComCliente) => {
         setPrintingLabel(true);
-        setMessage({ type: 'success', text: 'Gerando etiqueta...' });
         const prevStatus = order.status;
         const shouldAutoAdvance =
             prevStatus !== OrderStatus.PICKING &&
@@ -387,7 +392,7 @@ const AdminOrdersManagement: React.FC = () => {
                                             <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
                                                 <div>
                                                     <p className="text-sm text-stone-700">{order.clientName}</p>
-                                                    <p className="text-xs text-stone-400">{order.clientPhone}</p>
+                                                    <p className="text-xs text-stone-400">{formatClientPhoneDisplay(order.clientPhone)}</p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-1.5 align-middle w-px whitespace-nowrap">
@@ -520,7 +525,7 @@ const AdminOrdersManagement: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Telefone</p>
-                                    <p className="text-stone-700">{selectedOrder.clientPhone}</p>
+                                    <p className="text-stone-700">{formatClientPhoneDisplay(selectedOrder.clientPhone)}</p>
                                 </div>
                                 <div>
                                     <p className="text-stone-400 text-[11px] uppercase tracking-wide mb-0.5">Subtotal</p>

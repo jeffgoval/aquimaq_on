@@ -5,12 +5,13 @@ import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useStore } from '@/contexts/StoreContext';
-import { maskPhone } from '@/utils/masks';
+import { brazilPhoneDigitsForWhatsApp, formatCepDisplay, maskPhone } from '@/utils/masks';
 
 const ContactPage: React.FC = () => {
     const { settings } = useStore();
 
     const phone = settings?.phone || '';
+    const phoneWhatsAppDigits = phone ? brazilPhoneDigitsForWhatsApp(phone) : '';
     const email = settings?.email || '';
     const openingHours = settings?.openingHours || '';
     const address = settings?.address;
@@ -20,7 +21,7 @@ const ContactPage: React.FC = () => {
         ? [
             `${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ''}`,
             `${address.district ? address.district + ', ' : ''}${address.city}/${address.state}`,
-            address.zip ? `CEP ${address.zip.replace(/(\d{5})(\d{3})/, '$1-$2')}` : '',
+            address.zip ? `CEP ${formatCepDisplay(address.zip)}` : '',
           ].filter(Boolean).join(' — ')
         : null;
 
@@ -63,9 +64,13 @@ const ContactPage: React.FC = () => {
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">WhatsApp</h3>
                                         <p className="text-gray-500 text-sm mb-2">Fale conosco pelo WhatsApp</p>
-                                        <a href={`https://wa.me/55${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-semibold hover:underline">
-                                            {maskPhone(phone)}
-                                        </a>
+                                        {phoneWhatsAppDigits ? (
+                                            <a href={`https://wa.me/${phoneWhatsAppDigits}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-semibold hover:underline">
+                                                {maskPhone(phone)}
+                                            </a>
+                                        ) : (
+                                            <span className="text-blue-700 font-semibold">{maskPhone(phone)}</span>
+                                        )}
                                     </div>
                                 </div>
                             )}

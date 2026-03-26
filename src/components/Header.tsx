@@ -6,7 +6,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductCategory } from '@/types';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { maskPhone } from '@/utils/masks';
+import { brazilPhoneDigitsForWhatsApp, MASK_PLACEHOLDER, maskPhone } from '@/utils/masks';
 import MegaMenu from './MegaMenu';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { ROUTES } from '@/constants/routes';
@@ -131,6 +131,8 @@ const Header: React.FC<HeaderProps> = ({
 
     const isActive = (path: string) => location.pathname === path;
     const isHomeActive = selectedCategory === 'ALL' && location.pathname === ROUTES.HOME && !searchQuery;
+    const headerContactPhone = settings?.whatsapp ?? settings?.phone ?? '';
+    const headerWhatsAppDigits = headerContactPhone ? brazilPhoneDigitsForWhatsApp(headerContactPhone) : '';
 
     return (
         <header role="banner" className="flex flex-col w-full shadow-md sticky top-0 z-50 font-sans">
@@ -138,19 +140,26 @@ const Header: React.FC<HeaderProps> = ({
             <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 hidden md:block border-b border-slate-800">
                 <div className="max-w-7xl mx-auto flex justify-end items-center">
                     <div className="flex space-x-6">
-                        {(settings?.whatsapp ?? settings?.phone) ? (
+                        {headerContactPhone ? (
+                            headerWhatsAppDigits ? (
                             <a
-                                href={`https://wa.me/55${(settings.whatsapp || settings.phone || '').replace(/\D/g, '')}`}
+                                href={`https://wa.me/${headerWhatsAppDigits}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="flex items-center hover:text-white transition-colors"
                             >
                                 <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
-                                Central de Vendas: {maskPhone(settings.whatsapp || settings.phone || '')}
+                                Central de Vendas: {maskPhone(headerContactPhone)}
                             </a>
+                            ) : (
+                            <span className="flex items-center hover:text-white transition-colors">
+                                <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
+                                Central de Vendas: {maskPhone(headerContactPhone)}
+                            </span>
+                            )
                         ) : (
                             <span className="flex items-center">
                                 <WhatsAppIcon size={14} className="mr-2 text-agro-500 shrink-0" />
-                                Central de Vendas: (00) 00000-0000
+                                Central de Vendas: {MASK_PLACEHOLDER.phone}
                             </span>
                         )}
                     </div>

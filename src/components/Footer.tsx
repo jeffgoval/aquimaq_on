@@ -4,7 +4,7 @@ import { Mail, MapPin, Facebook, Instagram, Youtube, Clock, HelpCircle, Package 
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { useStore } from '@/contexts/StoreContext';
 import { ROUTES } from '@/constants/routes';
-import { maskPhone } from '@/utils/masks';
+import { brazilPhoneDigitsForWhatsApp, formatCepDisplay, formatCnpjDisplay, maskPhone } from '@/utils/masks';
 
 // ─── SVG payment logos ────────────────────────────────────────────────────────
 
@@ -97,24 +97,10 @@ const FooterHeading: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 const Footer: React.FC = () => {
     const { settings } = useStore();
 
-    const formatCNPJ = (doc: string | null) => {
-        if (!doc) return null;
-        const cleaned = doc.replace(/\D/g, '');
-        if (cleaned.length !== 14) return doc;
-        return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    };
-
-    const formatCEP = (zip: string | null) => {
-        if (!zip) return null;
-        const cleaned = zip.replace(/\D/g, '');
-        if (cleaned.length !== 8) return zip;
-        return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
-    };
-
     const phone = settings?.phone ? maskPhone(settings.phone) : null;
-    const phoneRaw = settings?.phone?.replace(/\D/g, '') ?? null;
+    const phoneWa = settings?.phone ? brazilPhoneDigitsForWhatsApp(settings.phone) : '';
     const email = settings?.email ?? null;
-    const cnpj = formatCNPJ(settings?.cnpj ?? null);
+    const cnpj = formatCnpjDisplay(settings?.cnpj ?? null);
     const razaoSocial = settings?.razaoSocial || null;
     const storeName = settings?.storeName || 'Aquimaq';
     const openingHours = settings?.openingHours || null;
@@ -130,7 +116,7 @@ const Footer: React.FC = () => {
         : addr?.city
             ? [addr.city, addr.state].filter(Boolean).join(' - ')
             : null;
-    const addrCEP = formatCEP(addr?.zip ?? null);
+    const addrCEP = addr?.zip ? formatCepDisplay(addr.zip) : null;
 
     const facebookUrl = settings?.socialMedia?.facebook || null;
     const instagramUrl = settings?.socialMedia?.instagram || null;
@@ -184,9 +170,9 @@ const Footer: React.FC = () => {
                     <div>
                         <FooterHeading>Atendimento</FooterHeading>
                         <ul className="space-y-3 text-sm">
-                            {phone && phoneRaw && (
+                            {phone && phoneWa && (
                                 <li>
-                                    <a href={`https://wa.me/55${phoneRaw}`} target="_blank" rel="noopener noreferrer"
+                                    <a href={`https://wa.me/${phoneWa}`} target="_blank" rel="noopener noreferrer"
                                         className="flex items-center gap-2 hover:text-white transition-colors">
                                         <WhatsAppIcon size={15} className="text-agro-400 shrink-0" />
                                         {phone}
