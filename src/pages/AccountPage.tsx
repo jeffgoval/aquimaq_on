@@ -14,7 +14,7 @@ const MAX_AVATAR_SIZE_MB = 3;
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
 
 const isAddressComplete = (p: ProfileRow | null): boolean =>
-    !!(p?.street && p?.number && p?.city && p?.state);
+    !!(p?.document_number && p?.phone && p?.street && p?.number && p?.city && p?.state);
 
 const AccountPage: React.FC = () => {
     const navigate = useNavigate();
@@ -274,7 +274,12 @@ const AccountPage: React.FC = () => {
                         <div className="text-sm text-slate-700 space-y-0.5">
                             <p className="font-medium">{profile.street}, {profile.number}{profile.complement ? ` — ${profile.complement}` : ''}</p>
                             <p className="text-slate-500">{profile.neighborhood} · {profile.city} / {profile.state}</p>
-                            <p className="text-slate-400 font-mono text-xs mt-1">{profile.zip_code}</p>
+                            <p className="text-slate-400 font-mono text-xs mt-1 mb-1">{profile.zip_code}</p>
+                            {(profile.document_number || profile.phone) && (
+                                <p className="text-slate-500 text-xs pt-2 border-t border-slate-100">
+                                    CPF/CNPJ: {profile.document_number} • Tel: {profile.phone}
+                                </p>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-6 text-center rounded-lg bg-slate-50 border border-dashed border-slate-200">
@@ -331,6 +336,8 @@ const AccountPage: React.FC = () => {
                 <AddressEditModal
                     user={{
                         ...profile,
+                        document_number: profile.document_number || '',
+                        phone: profile.phone || '',
                         address: {
                             street: profile.street || '',
                             number: profile.number || '',
@@ -347,6 +354,8 @@ const AccountPage: React.FC = () => {
                         const { error: saveErr } = await supabase
                             .from('profiles')
                             .update({
+                                document_number: updatedData.document_number,
+                                phone: updatedData.phone,
                                 street: addr.street,
                                 number: addr.number,
                                 complement: addr.complement,
