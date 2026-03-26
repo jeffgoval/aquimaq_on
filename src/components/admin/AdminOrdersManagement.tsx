@@ -18,8 +18,7 @@ import {
     getOrdersAdmin,
     updateOrderStatus,
     updateOrderTracking,
-    printMelhorEnviosLabel,
-    openMelhorEnviosPrintPage,
+    getAdminMePrintUrl,
     type OrderAdminRow
 } from '@/services/adminService';
 import { OrderStatus } from '@/types';
@@ -64,6 +63,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 const AdminOrdersManagement: React.FC = () => {
+    const navigate = useNavigate();
     const { user, hasRole } = useAuth();
     const isVendedor = hasRole(['vendedor']);
 
@@ -140,7 +140,7 @@ const AdminOrdersManagement: React.FC = () => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Gerando etiqueta...' });
         try {
-            await printMelhorEnviosLabel(order.id);
+            navigate(getAdminMePrintUrl(order.id, 'label'));
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao gerar etiqueta.';
@@ -154,7 +154,7 @@ const AdminOrdersManagement: React.FC = () => {
         setPrintingLabel(true);
         setMessage({ type: 'success', text: 'Abrindo documentos...' });
         try {
-            await openMelhorEnviosPrintPage(order.id);
+            navigate(getAdminMePrintUrl(order.id, 'docs'));
             setMessage(null);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Erro ao abrir documentos.';

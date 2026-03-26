@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Truck, RefreshCw, Printer, Search } from 'lucide-react';
-import { getShippingOrders, openMelhorEnviosPrintPage, printMelhorEnviosLabel, type ShippingOrderRow } from '@/services/adminService';
+import { useNavigate } from 'react-router-dom';
+import { getAdminMePrintUrl, getShippingOrders, type ShippingOrderRow } from '@/services/adminService';
 import { AlertDialog } from '@/components/ui/AlertDialog';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -27,6 +28,7 @@ const STATUS_FILTER_OPTIONS = [
 ];
 
 const AdminShippingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<ShippingOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -74,7 +76,7 @@ const AdminShippingPage: React.FC = () => {
   const handlePrint = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
     try {
-      await printMelhorEnviosLabel(order.id);
+      navigate(getAdminMePrintUrl(order.id, 'label'));
     } catch (e: any) {
       setAlertState({
         open: true,
@@ -89,7 +91,7 @@ const AdminShippingPage: React.FC = () => {
   const handlePrintDocs = async (order: ShippingOrderRow) => {
     setPrintingId(order.id);
     try {
-      await openMelhorEnviosPrintPage(order.id);
+      navigate(getAdminMePrintUrl(order.id, 'docs'));
     } catch (e: any) {
       setAlertState({
         open: true,
