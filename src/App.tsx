@@ -13,6 +13,7 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from '@/features/catalog/pages/HomePage';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 const ProductPage = lazy(() => import('@/features/catalog/pages/ProductPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage'));
@@ -194,6 +195,7 @@ function AppContent() {
 
     return (
         <>
+            <SpeedInsights />
             <BrowserRouter>
                 <ScrollToTop />
                 <ErrorBoundary>
