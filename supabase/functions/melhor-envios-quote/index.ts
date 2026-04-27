@@ -1,12 +1,33 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-/** Retorna o origin permitido: domínio de produção ou localhost em desenvolvimento. */
+const buildAllowedOrigins = (): string[] => {
+  const configuredOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
+
+  try {
+    const url = new URL(configuredOrigin);
+    const hostname = url.hostname.replace(/^www\./, "");
+    return Array.from(new Set([
+      configuredOrigin,
+      `${url.protocol}//${hostname}`,
+      `${url.protocol}//www.${hostname}`,
+    ]));
+  } catch {
+    return [configuredOrigin, "https://aquimaq.com.br", "https://www.aquimaq.com.br"];
+  }
+};
+
+/** Retorna o origin permitido: domínio de produção (com e sem www) ou localhost em desenvolvimento. */
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get("Origin") ?? "";
-  const prodOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "https://aquimaq.com.br";
   const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-  return (isLocalhost || origin === prodOrigin) ? origin : prodOrigin;
+  const allowedOrigins = buildAllowedOrigins();
+
+  if (isLocalhost || allowedOrigins.includes(origin)) {
+    return origin;
+  }
+
+  return allowedOrigins[0] ?? "https://aquimaq.com.br";
 }
 
 interface CartItem {
@@ -24,6 +45,49 @@ interface QuoteRequest {
   items: CartItem[];
   insurance_value?: number;
 }
+
+interface MelhorEnvioOption {
+  id?: string | number;
+  name?: string;
+  price?: string | number;
+  custom_price?: string | number;
+  delivery_time?: number;
+  custom_delivery_time?: number;
+  error?: string;
+  company?: {
+    name?: string;
+  } | null;
+}
+
+const normalizeCarrierError = (error: string): string => {
+  const trimmed = error.trim();
+
+  if (/zip\s*code\s*not\s*served|postal\s*code\s*not\s*served|cep.+nao.+atendido/i.test(trimmed)) {
+    return "O CEP informado nao e atendido pelas transportadoras disponiveis.";
+  }
+
+  if (/weight|width|height|length|dimension|package|volume/i.test(trimmed)) {
+    return "Os produtos do carrinho precisam de peso e dimensoes validos para cotacao.";
+  }
+
+  if (/origin|from\.postal_code|sender|source/i.test(trimmed)) {
+    return "O CEP de origem da loja nao esta configurado corretamente.";
+  }
+
+  return trimmed;
+};
+
+const summarizeCarrierErrors = (errors: string[]): string => {
+  if (errors.length === 0) {
+    return "Nenhuma transportadora retornou frete para este CEP.";
+  }
+
+  if (errors.length === 1) {
+    return errors[0];
+  }
+
+  return `Nenhuma transportadora retornou frete para este CEP. Motivos: ${errors.slice(0, 2).join(" | ")}`;
+};
 
 Deno.serve(async (req) => {
   const corsHeaders = {
@@ -60,7 +124,7 @@ Deno.serve(async (req) => {
     }
 
     // CEP de origem: store_settings (igual ao createMeShipment) > CEP_ORIGEM env > fallback
-    let CEP_ORIGEM = "01001000";
+    let CEP_ORIGEM: string | null = null;
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (supabaseUrl && serviceRoleKey) {
@@ -73,9 +137,16 @@ Deno.serve(async (req) => {
       const originCep = (store as { origin_cep?: string } | null)?.origin_cep?.replace(/\D/g, "");
       if (originCep && originCep.length === 8) CEP_ORIGEM = originCep;
     }
-    if (CEP_ORIGEM === "01001000") {
+    if (!CEP_ORIGEM) {
       const envCep = Deno.env.get("CEP_ORIGEM")?.replace(/\D/g, "");
       if (envCep && envCep.length === 8) CEP_ORIGEM = envCep;
+    }
+    if (!CEP_ORIGEM) {
+      console.error("CEP de origem nao configurado em store_settings.origin_cep nem em CEP_ORIGEM.");
+      return new Response(JSON.stringify({ error: "CEP de origem da loja nao configurado." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // We use Sandbox API for default, or Production if env specified
@@ -130,12 +201,13 @@ Deno.serve(async (req) => {
     }
 
     const data = await res.json();
+    const options = Array.isArray(data) ? (data as MelhorEnvioOption[]) : [];
 
     // Transform the response array to our expected ShippingOption interface
     // Note: The structure depends on the API answer. Usually it returns an array of objects.
-    const shippingOptions = data
-      .filter((option: any) => !option.error) // Remove options with errors (e.g., zip code not served)
-      .map((option: any) => ({
+    const shippingOptions = options
+      .filter((option) => !option.error)
+      .map((option) => ({
         id: `me_${option.id}`,
         carrier: option.company?.name || "Transportadora",
         service: option.name || "Padrão",
@@ -143,7 +215,28 @@ Deno.serve(async (req) => {
         estimatedDays: option.custom_delivery_time || option.delivery_time,
       }));
 
-    return new Response(JSON.stringify({ options: shippingOptions }), {
+    const carrierErrors = Array.from(
+      new Set(
+        options
+          .map((option) => option.error)
+          .filter((error): error is string => Boolean(error))
+          .map(normalizeCarrierError)
+      )
+    );
+
+    if (shippingOptions.length === 0 && carrierErrors.length > 0) {
+      console.warn("Nenhuma cotacao valida retornada pelo Melhor Envio:", carrierErrors);
+      return new Response(JSON.stringify({
+        options: [],
+        error: summarizeCarrierErrors(carrierErrors),
+        carrierErrors,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    return new Response(JSON.stringify({ options: shippingOptions, carrierErrors }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

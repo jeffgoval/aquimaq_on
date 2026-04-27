@@ -82,6 +82,8 @@ export interface ShippingResult {
   error?: string;
   /** true quando a transportadora não atende o CEP informado */
   cepNotServiced?: boolean;
+  /** Mensagens detalhadas retornadas pelas transportadoras/integração */
+  carrierErrors?: string[];
 }
 
 export interface Order {

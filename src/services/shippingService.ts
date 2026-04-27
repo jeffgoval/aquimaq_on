@@ -88,7 +88,11 @@ export const calculateShipping = async (
 
     const responseData = await response.json();
 
-    const data = responseData as { options?: ShippingOption[]; error?: string };
+    const data = responseData as {
+      options?: ShippingOption[];
+      error?: string;
+      carrierErrors?: string[];
+    };
 
     const beforeCount = resultOptions.length;
     if (data.options?.length) {
@@ -102,12 +106,17 @@ export const calculateShipping = async (
       options: resultOptions,
       error: data.error,
       cepNotServiced: noCarriers && !data.error,
+      carrierErrors: data.carrierErrors,
     };
   } catch (e) {
     if (import.meta.env.DEV) console.error('Shipping quote error:', e);
+    const errorMessage =
+      e instanceof Error && e.message
+        ? e.message
+        : 'Não foi possível calcular o frete. Use retirada no balcão.';
     return {
       options: [PICKUP_OPTION],
-      error: 'Não foi possível calcular o frete. Use retirada no balcão.',
+      error: errorMessage,
     };
   }
 };
